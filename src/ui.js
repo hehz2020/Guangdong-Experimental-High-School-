@@ -4,21 +4,21 @@ import { itemPolygon, stadium } from './kit.js';
 
 const CSS = `
 .hud{position:fixed;z-index:5;font-family:system-ui,"PingFang SC","Microsoft YaHei",sans-serif;color:#eef2f6;user-select:none;-webkit-user-select:none}
-#hud-map{top:10px;right:10px;background:rgba(12,16,22,.55);border-radius:8px;padding:4px}
+#hud-map{top:calc(10px + env(safe-area-inset-top,0px));right:calc(10px + env(safe-area-inset-right,0px));background:rgba(12,16,22,.55);border-radius:8px;padding:4px}
 #hud-map canvas{display:block;border-radius:5px}
-#hud-time{top:10px;left:50%;transform:translateX(-50%);background:rgba(12,16,22,.55);border-radius:8px;padding:5px 10px;font-size:13px;display:flex;gap:8px;align-items:center}
+#hud-time{top:calc(10px + env(safe-area-inset-top,0px));left:50%;transform:translateX(-50%);background:rgba(12,16,22,.55);border-radius:8px;padding:5px 10px;font-size:13px;display:flex;gap:8px;align-items:center}
 #hud-time input{width:150px}
-#hud-help-btn{top:10px;left:10px;width:34px;height:34px;border-radius:17px;border:0;background:rgba(12,16,22,.6);color:#eef2f6;font-size:18px}
-#hud-help{top:52px;left:10px;max-width:260px;background:rgba(12,16,22,.8);border-radius:8px;padding:10px 12px;font-size:13px;line-height:1.7}
-#stick{left:24px;bottom:24px;width:130px;height:130px;border-radius:65px;background:rgba(255,255,255,.12);border:2px solid rgba(255,255,255,.35);touch-action:none}
+#hud-help-btn{top:calc(10px + env(safe-area-inset-top,0px));left:calc(10px + env(safe-area-inset-left,0px));width:34px;height:34px;border-radius:17px;border:0;background:rgba(12,16,22,.6);color:#eef2f6;font-size:18px}
+#hud-help{top:calc(52px + env(safe-area-inset-top,0px));left:calc(10px + env(safe-area-inset-left,0px));max-width:260px;background:rgba(12,16,22,.8);border-radius:8px;padding:10px 12px;font-size:13px;line-height:1.7}
+#stick{left:calc(24px + env(safe-area-inset-left,0px));bottom:calc(24px + env(safe-area-inset-bottom,0px));width:130px;height:130px;border-radius:65px;background:rgba(255,255,255,.12);border:2px solid rgba(255,255,255,.35);touch-action:none}
 #stick i{position:absolute;left:40px;top:40px;width:50px;height:50px;border-radius:25px;background:rgba(255,255,255,.55)}
-.tbtn{right:24px;width:64px;height:64px;border-radius:32px;border:2px solid rgba(255,255,255,.4);background:rgba(255,255,255,.14);color:#fff;font-size:15px;touch-action:none}
-#btn-jump{bottom:28px}#btn-run{bottom:104px}#btn-run.on{background:rgba(255,200,90,.5)}
+.tbtn{right:calc(24px + env(safe-area-inset-right,0px));width:64px;height:64px;border-radius:32px;border:2px solid rgba(255,255,255,.4);background:rgba(255,255,255,.14);color:#fff;font-size:15px;touch-action:none}
+#btn-jump{bottom:calc(28px + env(safe-area-inset-bottom,0px))}#btn-run{bottom:calc(104px + env(safe-area-inset-bottom,0px))}#btn-run.on{background:rgba(255,200,90,.5)}
 @media (max-width:640px){
   #hud-map canvas{width:104px;height:auto}
-  #hud-time{left:52px;transform:none;padding:4px 8px;font-size:12px}
+  #hud-time{left:calc(52px + env(safe-area-inset-left,0px));transform:none;padding:4px 8px;font-size:12px}
   #hud-time input{width:84px}
-  #notice{top:52px!important;bottom:auto!important;left:10px!important;max-width:calc(100% - 140px)!important;font-size:11px!important}
+  #notice{top:calc(52px + env(safe-area-inset-top,0px))!important;bottom:auto!important;left:calc(10px + env(safe-area-inset-left,0px))!important;max-width:calc(100% - 140px)!important;font-size:11px!important}
 }
 `;
 
