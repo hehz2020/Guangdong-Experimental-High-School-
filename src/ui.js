@@ -14,6 +14,12 @@ const CSS = `
 #stick i{position:absolute;left:40px;top:40px;width:50px;height:50px;border-radius:25px;background:rgba(255,255,255,.55)}
 .tbtn{right:24px;width:64px;height:64px;border-radius:32px;border:2px solid rgba(255,255,255,.4);background:rgba(255,255,255,.14);color:#fff;font-size:15px;touch-action:none}
 #btn-jump{bottom:28px}#btn-run{bottom:104px}#btn-run.on{background:rgba(255,200,90,.5)}
+@media (max-width:640px){
+  #hud-map canvas{width:104px;height:auto}
+  #hud-time{left:52px;transform:none;padding:4px 8px;font-size:12px}
+  #hud-time input{width:84px}
+  #notice{top:52px!important;bottom:auto!important;left:10px!important;max-width:calc(100% - 140px)!important;font-size:11px!important}
+}
 `;
 
 export function initUI({ player, lighting, campus, camera, renderer, view }) {
@@ -66,7 +72,8 @@ export function initUI({ player, lighting, campus, camera, renderer, view }) {
   if (touch && player) {
     const stick = el('div', 'stick', 'hud', '<i></i>'), knob = stick.firstChild;
     const jump = el('button', 'btn-jump', 'hud tbtn', '跳'), run = el('button', 'btn-run', 'hud tbtn', '跑');
-    const notice = document.getElementById('notice'); if (notice) { notice.style.bottom = 'auto'; notice.style.top = '52px'; notice.style.left = '52px'; }
+    // the notice would sit under the stick: move it below the top bar and let it fade out after a while
+    const notice = document.getElementById('notice'); if (notice) { notice.style.bottom = 'auto'; notice.style.top = '52px'; notice.style.left = '10px'; setTimeout(() => { notice.hidden = true; }, 15000); }
     const start = document.getElementById('start');
     if (start) {
       const how = document.getElementById('start-how'); if (how) how.textContent = '点一下开始：左下摇杆移动，右半屏滑动转向';
