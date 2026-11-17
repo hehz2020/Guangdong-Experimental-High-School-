@@ -64,7 +64,9 @@ export function build(item, ctx) {
   // ---- eight piers carrying the band ----
   for (let j = 0; j < 8; j++) {
     const a = END_ANGLE + j * Math.PI / 4;
-    v.frame(cx, cz, -a).box('wallWhite', r2 - 0.14, H / 2, 0, 0.36, H, 0.55);
+    // under a ring roof the piers run full height; on the open tower each stops at the top of the band where it stands
+    const h = !open || j === 0 ? H : top * (TURNS - 1 + j / 8) / TURNS + PARAPET;
+    v.frame(cx, cz, -a).box('wallWhite', r2 - 0.14, h / 2, 0, 0.36, h, 0.55);
   }
   ctx.add(v.build({ name: item.id + '-visual' }));
 

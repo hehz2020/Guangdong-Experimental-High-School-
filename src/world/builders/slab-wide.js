@@ -110,7 +110,7 @@ export function build(item, ctx) {
   both('wallWhite', xs0 + FLIGHT, 0, zh, 0.2, roofY, RUN);                            // spine between the flights
   for (let k = 0; k < FLOORS; k++) {
     const y = k * FH, last = k === FLOORS - 1;
-    if (k) both('wallWhite', xs0, y - 0.15, zl, xs1 - xs0, 0.15, zc - zl);            // floor landing
+    if (k) { both('wallWhite', xs0, y - 0.15, zl, xs1 - xs0, 0.15, zc - zl); v.slab('floorGrey', xs0, y, zl, xs1 - xs0, 0.02, zc - zl, 'D'); }   // floor landing
     if (last) { both('wallWhite', xs0 + FLIGHT, y, zl - 0.1, FLIGHT + 0.2, 1.1, 0.1); continue; }   // guard where no flight goes up
     both('wallWhite', xs0, y + FH / 2 - 0.15, zsn, xs1 - xs0, 0.15, zh - zsn);        // half landing
     for (let i = 0; i < STEPS; i++) {

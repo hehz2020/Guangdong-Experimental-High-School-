@@ -42,7 +42,10 @@ const SPECIAL = {
 
 const local = {};
 function lm(name) {
-  if (!local[name]) local[name] = new THREE.MeshStandardMaterial({ color: 0x8fc4e6, roughness: 0.6 });   // the light-blue rooftop item
+  if (!local[name]) {
+    local[name] = name === 'blue' ? new THREE.MeshStandardMaterial({ color: 0x8fc4e6, roughness: 0.6 })      // the light-blue rooftop item
+      : new THREE.MeshStandardMaterial({ color: 0x2c3b40, roughness: 0.12, metalness: 0.35 });               // 'curtain': the dark glazed section
+  }
   return local[name];
 }
 
@@ -69,9 +72,10 @@ function sloganMaterial(text, width, height, pitch, size) {
   const S = 160, c = document.createElement('canvas'); c.width = Math.round(width * S); c.height = Math.round(height * S);
   const g = c.getContext('2d');
   g.font = `bold ${Math.round(size * S)}px "PingFang SC","Microsoft YaHei","Heiti SC","SimHei","Noto Sans CJK SC","Source Han Sans SC","WenQuanYi Zen Hei",sans-serif`;
-  g.fillStyle = '#b3241d'; g.textAlign = 'center'; g.textBaseline = 'middle';
+  g.fillStyle = g.strokeStyle = '#c0261e'; g.textAlign = 'center'; g.textBaseline = 'middle';
+  g.lineWidth = size * S * 0.035; g.lineJoin = 'round';     // a stroke on top of the fill: heavy strokes whatever font the system has
   const chars = [...text], x0 = (width - pitch * (chars.length - 1)) / 2;
-  chars.forEach((ch, i) => g.fillText(ch, (x0 + i * pitch) * S, c.height / 2 + size * S * 0.04));
+  chars.forEach((ch, i) => { const cx = (x0 + i * pitch) * S, cy = c.height / 2 + size * S * 0.04; g.fillText(ch, cx, cy); g.strokeText(ch, cx, cy); });
   const t = new THREE.CanvasTexture(c); t.colorSpace = THREE.SRGBColorSpace; t.anisotropy = 8;
   t.repeat.set(1 / width, 1 / height);                       // Batch.quad gives texture coordinates in metres
   return new THREE.MeshStandardMaterial({ map: t, transparent: true, alphaTest: 0.08, roughness: 0.7 });
@@ -141,7 +145,7 @@ export function build(item, ctx) {
           for (let k = 0; k < FLOORS; k++) {
             const y = k * FH;
             if (k) put('wallWhite', a, b, FACE, back - 0.06, y - 0.12, y);
-            put('roofPale', a, b, FACE, FACE + 0.08, y, y + 1.0);
+            put('metalWhite', a, b, FACE, FACE + 0.08, y, y + 1.0);
             put('metalWhite', m - 0.06, m + 0.06, FACE, FACE + 0.1, y + 1.0, y + FH - 0.12);
             put('glassDark', a + 0.35, b - 0.35, back - 0.1, back - 0.06, y + 0.05, y + 2.25);
             put('metalWhite', a + 0.3, b - 0.3, back - 0.11, back - 0.06, y + 2.25, y + 2.33);
@@ -150,7 +154,7 @@ export function build(item, ctx) {
       }
     } else {                                                                           // dark glazed section, slightly recessed
       xGlazedWest = x0;
-      put('glassDark', x0, x1, FACE + 0.5, FACE + 0.56, 0, yF);
+      put(lm('curtain'), x0, x1, FACE + 0.5, FACE + 0.56, 0, yF);
       const n = Math.max(2, Math.round(len / 2.9));
       for (let i = 1; i < n; i++) put('metalWhite', x0 + i * len / n - 0.05, x0 + i * len / n + 0.05, FACE + 0.42, FACE + 0.5, 0, yF);
       for (let k = 1; k < FLOORS; k++) put('wallWhite', x0, x1, FACE + 0.3, FACE + 0.5, k * FH - 0.3, k * FH);
