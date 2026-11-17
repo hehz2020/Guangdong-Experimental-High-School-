@@ -3,6 +3,7 @@ import { CAMPUS } from './campus-data.js';
 import { buildWorld } from './world/index.js';
 import { createLighting } from './lighting.js';
 import { createPlayer } from './player.js';
+import { initUI } from './ui.js';
 
 const params = new URLSearchParams(location.search);
 const view = params.get('view');                       // null = walk, 'top', 'overview'
@@ -16,7 +17,12 @@ renderer.setSize(innerWidth, innerHeight);
 document.body.appendChild(renderer.domElement);
 
 const scene = new THREE.Scene();
-const { root, colliders, report } = await buildWorld(CAMPUS);
+// ?only=id,id builds just those items (close-up checks of one building)
+const only = params.get('only') ? new Set(params.get('only').split(',')) : null;
+// ?try=style:file.js,style:file.js mounts builders from src/world/builders/ for this page load; ?tryx=file.js,... mounts extras from src/world/extras/
+const tryBuilders = Object.fromEntries((params.get('try') || '').split(',').filter(Boolean).map(s => { const i = s.indexOf(':'); return [s.slice(0, i), './builders/' + s.slice(i + 1)]; }));
+const tryExtras = (params.get('tryx') || '').split(',').filter(Boolean).map(f => './extras/' + f);
+const { root, colliders, report } = await buildWorld(CAMPUS, only, tryBuilders, tryExtras);
 scene.add(root);
 
 let lighting = null;
@@ -55,13 +61,15 @@ if (view === 'top') {
 addEventListener('resize', () => {
   renderer.setSize(innerWidth, innerHeight);
   if (camera.isPerspectiveCamera) { camera.aspect = innerWidth / innerHeight; camera.updateProjectionMatrix(); }
+  if (lighting && lighting.resize) lighting.resize(innerWidth, innerHeight);
 });
 
 document.getElementById('loading').remove();
 
 // Start panel and status notice. Hidden in the top-down check view so alignment screenshots stay clean.
 const startPanel = document.getElementById('start'), notice = document.getElementById('notice');
-if (player) {
+const showUi = params.get('ui') !== '0';              // ?ui=0 hides the panel and notice (clean screenshots)
+if (player && showUi) {
   startPanel.hidden = false; notice.hidden = false;
   if (!player.canLock) {
     // Touch devices: keyboard and mouse hints do not apply, so hide them rather than show advice that cannot be followed.
@@ -71,9 +79,12 @@ if (player) {
   startPanel.addEventListener('click', () => player.requestLock());
   player.controls.addEventListener('lock', () => { startPanel.hidden = true; });
   player.controls.addEventListener('unlock', () => { startPanel.hidden = false; });
-} else if (view !== 'top') {
+} else if (view !== 'top' && showUi) {
   notice.hidden = false;
 }
+
+// Optional interface layer (touch controls, HUD). src/ui.js may return { update(dt), input() }; input() supplies extra movement for the player.
+const ui = showUi ? initUI({ player, lighting, campus: CAMPUS, camera, renderer, scene, view: view || 'walk' }) : null;
 
 const timer = new THREE.Timer();
 let frames = 0;
@@ -81,10 +92,12 @@ renderer.setAnimationLoop(timestamp => {
   timer.update(timestamp);
   const dt = Math.min(timer.getDelta(), 0.1);          // seconds; clamped so a long frame or a tab switch cannot teleport the player
   if (player) {
-    player.update(dt);
-    if (lighting && frames % 30 === 0) lighting.follow(camera.position.x, camera.position.z);
+    player.update(dt, ui && ui.input ? ui.input() : undefined);
+    if (lighting) { lighting.moveFill(camera.position.x, camera.position.y, camera.position.z); if (frames % 30 === 0) lighting.follow(camera.position.x, camera.position.z); }
   }
-  renderer.render(scene, camera); frames++;
+  if (ui && ui.update) ui.update(dt);
+  if (lighting && lighting.render) lighting.render(scene, camera); else renderer.render(scene, camera);
+  frames++;
 });
 
 window.__app = {

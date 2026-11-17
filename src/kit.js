@@ -2,22 +2,62 @@
 import * as THREE from 'three';
 
 const cache = new Map();
+// name: [colour, roughness, texture kind, tile size in metres]
 const PALETTE = {
-  wallWhite: [0xf1efe8, 0.85], wallCream: [0xe9dcb8, 0.85], wallMaroon: [0x8a2f2b, 0.8], brickRed: [0xa5452f, 0.9],
-  terracotta: [0xb5563a, 0.85], concrete: [0xb9b6ad, 0.9], roofGrey: [0x6f7173, 0.95], roofPale: [0xdcdad2, 0.8],
-  metalWhite: [0xf4f4f2, 0.5], glassTeal: [0x3f8f86, 0.25], glassDark: [0x2c3a40, 0.2], glassGreen: [0x6fae9a, 0.2],
-  trackRed: [0x9c4235, 0.95], apronGreen: [0x2f8a6a, 0.95], grass: [0x5f9a4a, 1.0], lawn: [0x6aa552, 1.0],
-  paving: [0xc9c3b6, 0.95], asphalt: [0x55585c, 0.95], water: [0x3d5a55, 0.3], earth: [0x77805f, 1.0], generic: [0xd9d6cf, 0.9],
-  courtGreen: [0x2f7a55, 0.95], courtRed: [0xa9483d, 0.95], seatBlue: [0x2f5fb3, 0.8], steel: [0xb8bcc0, 0.4],
+  wallWhite: [0xf1efe8, 0.8, 'tile', 0.6], wallCream: [0xe9dcb8, 0.85, 'tile', 0.6], wallMaroon: [0x8a2f2b, 0.75, 'tile', 0.45],
+  brickRed: [0xa5452f, 0.9, 'brick', 1.0], terracotta: [0xb5563a, 0.85, 'panel', 1.2], concrete: [0xb9b6ad, 0.92, 'noise', 3],
+  roofGrey: [0x6f7173, 0.95, 'noise', 4], roofPale: [0xdcdad2, 0.8, 'noise', 4], metalWhite: [0xf4f4f2, 0.45], steel: [0xb8bcc0, 0.35],
+  glassTeal: [0x2f7d78, 0.08], glassDark: [0x1f2a30, 0.06], glassGreen: [0x5fa590, 0.08], glassClear: [0x9fc3cc, 0.05],
+  trackRed: [0x9c4235, 0.95, 'noise', 2], apronGreen: [0x2f8a6a, 0.95, 'noise', 2], grass: [0x5f9a4a, 1.0, 'grass', 4], lawn: [0x6aa552, 1.0, 'grass', 4],
+  paving: [0xc9c3b6, 0.9, 'paving', 1.2], pavingRed: [0xb98a78, 0.9, 'paving', 1.2], asphalt: [0x55585c, 0.95, 'noise', 3], water: [0x3d5a55, 0.15],
+  earth: [0x77805f, 1.0, 'grass', 6], generic: [0xd9d6cf, 0.9], courtGreen: [0x2f7a55, 0.9, 'noise', 2], courtRed: [0xa9483d, 0.9, 'noise', 2],
+  seatBlue: [0x2f5fb3, 0.6], seatRed: [0xc0392b, 0.6], seatGreen: [0x2e9c6b, 0.6], wood: [0xc9a878, 0.7, 'wood', 1.2], woodDark: [0x8a5a34, 0.7, 'wood', 1.2],
+  floorGrey: [0x8f8f8b, 0.6, 'paving', 0.8], black: [0x18181a, 0.6], white: [0xffffff, 0.6], red: [0xc8201c, 0.6], gold: [0xd9a520, 0.4], granite: [0x7a2f2a, 0.35, 'noise', 1],
 };
-/** Shared MeshStandardMaterial by palette name. */
+const GLASS = new Set(['glassTeal', 'glassDark', 'glassGreen', 'glassClear', 'water']);
+
+// Deterministic pseudo-random numbers so generated textures are identical on every load.
+function rng(seed) { let s = seed >>> 0; return () => ((s = (s * 1664525 + 1013904223) >>> 0) / 4294967296); }
+function canvasTexture(kind, hex, tile) {
+  const S = 256, c = document.createElement('canvas'); c.width = c.height = S;
+  const g = c.getContext('2d'), r = rng(hex ^ 0x9e3779b9);
+  // Work on the raw sRGB bytes: THREE.Color would convert the hex value to linear space and darken the canvas.
+  const rgb = [hex >> 16 & 255, hex >> 8 & 255, hex & 255];
+  const shade = k => `rgb(${rgb.map(ch => Math.max(0, Math.min(255, Math.round(ch * k)))).join(',')})`;
+  g.fillStyle = shade(1); g.fillRect(0, 0, S, S);
+  if (kind === 'brick') {            // 1 m tile: 4 bricks wide, 12 courses
+    const bw = S / 4, bh = S / 12; g.fillStyle = shade(0.72); g.fillRect(0, 0, S, S);
+    for (let row = 0; row < 12; row++) for (let i = -1; i < 4; i++) {
+      g.fillStyle = shade(0.88 + r() * 0.22); g.fillRect(i * bw + (row % 2 ? bw / 2 : 0) + 1.5, row * bh + 1.5, bw - 3, bh - 3);
+    }
+  } else if (kind === 'tile' || kind === 'paving' || kind === 'panel') {
+    const n = kind === 'tile' ? 6 : kind === 'paving' ? 3 : 2, w = S / n;
+    for (let y = 0; y < n; y++) for (let x = 0; x < n; x++) { g.fillStyle = shade(0.95 + r() * 0.08); g.fillRect(x * w, y * w, w, w); }
+    g.strokeStyle = shade(kind === 'paving' ? 0.8 : 0.93); g.lineWidth = kind === 'tile' ? 1 : 2.5;
+    for (let i = 0; i <= n; i++) { g.beginPath(); g.moveTo(i * w, 0); g.lineTo(i * w, S); g.moveTo(0, i * w); g.lineTo(S, i * w); g.stroke(); }
+  } else if (kind === 'wood') {
+    for (let y = 0; y < S; y += 2) { g.fillStyle = shade(0.9 + r() * 0.16); g.fillRect(0, y, S, 2); }
+    g.strokeStyle = shade(0.75); g.lineWidth = 1.5; for (let i = 0; i <= 4; i++) { g.beginPath(); g.moveTo(0, i * S / 4); g.lineTo(S, i * S / 4); g.stroke(); }
+  } else {                           // 'noise' and 'grass': mottled speckle
+    const n = kind === 'grass' ? 9000 : 5000, lo = kind === 'grass' ? 0.8 : 0.9, span = kind === 'grass' ? 0.4 : 0.2;
+    for (let i = 0; i < n; i++) { g.fillStyle = shade(lo + r() * span); const s = 1 + r() * (kind === 'grass' ? 3 : 5); g.fillRect(r() * S, r() * S, s, s); }
+  }
+  const t = new THREE.CanvasTexture(c);
+  t.wrapS = t.wrapT = THREE.RepeatWrapping; t.repeat.set(1 / tile, 1 / tile); t.colorSpace = THREE.SRGBColorSpace; t.anisotropy = 8;
+  return t;
+}
+/** Shared material by palette name. Textured ones tile in real metres (texture coordinates must be in metres). */
 export function mat(name) {
   if (!cache.has(name)) {
-    const [color, roughness] = PALETTE[name] || PALETTE.generic;
-    cache.set(name, new THREE.MeshStandardMaterial({ color, roughness, metalness: name === 'steel' ? 0.6 : 0 }));
+    const [color, roughness, kind, tile] = PALETTE[name] || PALETTE.generic;
+    const m = new THREE.MeshStandardMaterial({ color, roughness, metalness: name === 'steel' ? 0.7 : GLASS.has(name) ? 0.35 : 0 });
+    if (kind && typeof document !== 'undefined') { m.map = canvasTexture(kind, color, tile); m.color.set(0xffffff); }
+    if (name === 'glassClear') { m.transparent = true; m.opacity = 0.32; m.depthWrite = false; }
+    m.name = name; cache.set(name, m);
   }
   return cache.get(name);
 }
+export const MATERIAL_NAMES = Object.keys(PALETTE);
 
 /** Prism over a ground polygon [[x,z],...] from y0 to y1. */
 export function prism(points, y0, y1, material) {

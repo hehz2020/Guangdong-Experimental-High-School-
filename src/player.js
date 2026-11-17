@@ -62,6 +62,11 @@ export function createPlayer(camera, domElement, colliders, start = { x: 0, z: 0
 
   return {
     controls, canLock, requestLock, keys,
+    /** Turn the view by angles in radians (for touch look). Positive dYaw turns right, positive dPitch looks up. */
+    look(dYaw, dPitch) {
+      const e = camera.rotation; e.order = 'YXZ';
+      e.y -= dYaw; e.x = Math.max(-1.45, Math.min(1.45, e.x + dPitch)); e.z = 0;
+    },
     update(dt, extra) {
       carry = Math.min(carry + dt, 0.25);
       const input = extra ? { ...keys, ...extra } : keys;

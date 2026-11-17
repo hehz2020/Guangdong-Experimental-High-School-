@@ -42,6 +42,55 @@ export const CAMPUS = {
     ],
     "basis": "Infield grass measured on the satellite image (crisp edges): 71.4 x 109.3 m. Outer extent measured on near-vertical frames 79-81 of the 2022 sports-day video using the infield as scale: 177.2 x 92.2 m, within 0.3 m of a standard 400 m track, so standard geometry is used. Track centre is 1.1 m south and 0.4 m east of the infield centre in those frames. An earlier satellite-only reading (160 m long) was wrong: the south bend is under tree shadow and was also cut by the crop boundary."
   },
+  "courts": {
+    "block": {
+      "w": 55.6,
+      "n": 14.3,
+      "e": 126.5,
+      "s": 77.5
+    },
+    "columnCentresX": [
+      66.5,
+      83.1,
+      100.5,
+      117.1
+    ],
+    "rowCentresZ": [
+      30.1,
+      61.4
+    ],
+    "hoopBandZ": 45.8,
+    "courtSize": [
+      15,
+      28
+    ],
+    "dividerBandsX": {
+      "west": [
+        55.6,
+        58.9
+      ],
+      "between-1-2": [
+        74,
+        75.7
+      ],
+      "between-2-3": [
+        90.5,
+        93
+      ],
+      "between-3-4": [
+        108.1,
+        109.5
+      ],
+      "east": [
+        124.6,
+        126.5
+      ]
+    },
+    "confidence": "8 full courts, 4 columns by 2 rows: satellite and 2018 video agree. Court size is assumed (15 x 28 m), not measured. North, south and east edges of the paved block are inferred, only the west edge is seen.",
+    "paintNote": "2018 video: dark green courts with red keys, red centre discs, red-brown divider bands, one court (north row, third from west) in bright teal with a pink-red surround, an orange round logo on the north-west court. The satellite image shows all eight green with white centre marks. The two sources were not reconciled; the video paint scheme is used.",
+    "extras": "Double-sided hoop stands on green steel posts back to back on the central band; chain-link fence; steel railing on the west edge; row of about six trees on the west; white slogan boards on the east edge (2018 video).",
+    "measuredBy": "measurement agent (courts), single reading, recheck pending"
+  },
   "items": [
     {
       "id": "grandstand-roof",
@@ -217,7 +266,7 @@ export const CAMPUS = {
       "id": "teaching-slab-west",
       "name": "East-west teaching slab west of the plaza",
       "kind": "building",
-      "style": "teaching-slab",
+      "style": "teaching-slab-wide",
       "height": 20.7,
       "heightBasis": "5 to 6 open-corridor levels seen in the 2018 video; 5 used; estimate",
       "solid": true,
@@ -480,7 +529,13 @@ export const CAMPUS = {
           209.4,
           -103.2
         ]
-      ]
+      ],
+      "mainBar": {
+        "w": 209.7,
+        "n": -120.2,
+        "e": 258.3,
+        "s": -108.1
+      }
     },
     {
       "id": "slab-north-east-stair",
@@ -656,7 +711,13 @@ export const CAMPUS = {
           203.1,
           -64.7
         ]
-      ]
+      ],
+      "mainBar": {
+        "w": 203.1,
+        "n": -81.5,
+        "e": 251.4,
+        "s": -69.9
+      }
     },
     {
       "id": "slab-south-east-stair",
@@ -956,7 +1017,7 @@ export const CAMPUS = {
       "id": "block-north-of-canopy-east-end",
       "name": "East end of the block on the north side of the plaza canopy",
       "kind": "building",
-      "style": "teaching-slab",
+      "style": "plain",
       "height": 20.7,
       "heightBasis": "5 storeys counted in the 2018 video x assumed 3.9 m floor height + 1.2 m parapet; estimate",
       "solid": true,
@@ -1217,6 +1278,290 @@ export const CAMPUS = {
         [
           312.2,
           -135.7
+        ]
+      ]
+    },
+    {
+      "id": "dorm-a-north-slab",
+      "name": "Long east-west block A, north bar (called a dormitory by the measurement agent; use not established - its fascia carries a slogan in the 2018 video)",
+      "kind": "building",
+      "style": "slab-block",
+      "height": 20.8,
+      "heightBasis": "6 floor lines counted by the measurement agent on one block's north facade in the satellite image; 3.3 m floor height assumed; estimate, +/- 4 m",
+      "solid": true,
+      "walkUnder": false,
+      "confidence": "confirmed in video",
+      "measuredBy": "measurement agent (dorms), single reading, recheck pending",
+      "positionAccuracyM": 2.5,
+      "correctedForObliqueView": true,
+      "notes": "Roof outline as seen: 349 x 43 px = 95.9 x 11.8 m, exactly east-west. Beige flat roof; band of rooftop structures along the north half (y 1662-1679, incl. a light-blue item at x 1382-1397 and white ribbed blocks), plain band along the south half, white south parapet at y 1699-1701. White parapet bar on the west end (x 1216-1220). SE corner is notched: the plain south band stops at x~1558 and there is a dark recess at x 1530-1556, y 1690-1703. IMPORTANT: imagery is oblique; roofs of these ~6-floor slabs are displaced about 41 px south and 6 px west of their bases, so the estimated ground footprint is rect [1223,1617,1572,1660] (+/-8 px), not directly visible because trees cover it. Video f_006-f_009 show its north facade: white roof parapet carrying a row of red characters (unreadable), red-brick sections with recessed balconies separated by white vertical bays, white west end bay; only the top ~3 floor rows show above the trees. EAST END: Part of the A north slab, not a separate building: bright white ribbed roof strip 87 x 21 px (24 x 5.8 m) at the east end. In the video this end of the north facade is a full-height row of slender white columns in front of glazing (about 6 column lines; satellite shows them as leaning lines at x~1490,1506,1519,1532,1544,1562, pitch ~12.5 px = 3.4 m, visible from y 1625 to 1658 north of the roof edge). Occupies roughly the east quarter of the slab length. Function not established.",
+      "shape": "polygon",
+      "points": [
+        [
+          142.7,
+          21.7
+        ],
+        [
+          238.5,
+          21.7
+        ],
+        [
+          238.5,
+          33.6
+        ],
+        [
+          142.7,
+          33.6
+        ]
+      ]
+    },
+    {
+      "id": "dorm-a-south-slab",
+      "name": "Long east-west block A, south bar (use not established)",
+      "kind": "building",
+      "style": "slab-block",
+      "height": 20.8,
+      "heightBasis": "6 floor lines counted by the measurement agent on one block's north facade in the satellite image; 3.3 m floor height assumed; estimate, +/- 4 m",
+      "solid": true,
+      "walkUnder": false,
+      "confidence": "seen in satellite only",
+      "measuredBy": "measurement agent (dorms), single reading, recheck pending",
+      "positionAccuracyM": 2.5,
+      "correctedForObliqueView": true,
+      "notes": "Roof outline as seen: 291 x 44 px = 79.9 x 12.1 m, parallel to A north. Beige flat roof; plain band on the north (court) side, rooftop structures along the south half (y 1750-1774: light-blue item at x 1385-1400, white ribbed blocks at x 1417-1443 and 1467-1495), white south parapet line at y 1771-1774 with its shadow strip just north of it. East end x 1522 is +/-5 (clutter between 1515 and 1530). Estimated ground footprint after removing lean: rect [1237,1690,1528,1734] (+/-8). Its north facade is partly visible in the gap as a dark shaded band with floor lines every ~7 px. Only a roofline behind A north is hinted in the video; not matched.",
+      "shape": "polygon",
+      "points": [
+        [
+          146.5,
+          41.8
+        ],
+        [
+          226.4,
+          41.8
+        ],
+        [
+          226.4,
+          53.9
+        ],
+        [
+          146.5,
+          53.9
+        ]
+      ]
+    },
+    {
+      "id": "dorm-b-north-slab",
+      "name": "Long east-west block B, north bar (use not established)",
+      "kind": "building",
+      "style": "slab-block",
+      "height": 20.8,
+      "heightBasis": "6 floor lines counted by the measurement agent on one block's north facade in the satellite image; 3.3 m floor height assumed; estimate, +/- 4 m",
+      "solid": true,
+      "walkUnder": false,
+      "confidence": "seen in satellite only",
+      "measuredBy": "measurement agent (dorms), single reading, recheck pending",
+      "positionAccuracyM": 2.5,
+      "correctedForObliqueView": true,
+      "notes": "Roof outline as seen: 315 x 44 px = 86.5 x 12.1 m, exactly east-west. White north parapet line at y 1853, rooftop structures along the north half (light-blue item at x 1360-1375, ribbed block at x 1425-1455), plain band on the south, white south parapet at y 1891-1892. White bar on west end x 1217-1221. Dark recess at SE corner x 1500-1529, y 1871-1892. A white leaning line at x 1528-1536 running y 1838-1900 is the east end wall/corner seen obliquely, so east edge is +/-4. Estimated ground footprint: rect [1223,1807,1538,1851] (+/-8), hidden by trees; bluish patches north of the roof at x~1220-1245, 1305-1315, 1360-1375, 1515-1530 are white facade bays in shade.",
+      "shape": "polygon",
+      "points": [
+        [
+          142.7,
+          73.9
+        ],
+        [
+          229.2,
+          73.9
+        ],
+        [
+          229.2,
+          86
+        ],
+        [
+          142.7,
+          86
+        ]
+      ]
+    },
+    {
+      "id": "dorm-b-south-slab",
+      "name": "Block B, south bar, rotated about 10 degrees (use not established)",
+      "kind": "building",
+      "style": "slab-block",
+      "height": 20.8,
+      "heightBasis": "6 floor lines counted by the measurement agent on one block's north facade in the satellite image; 3.3 m floor height assumed; estimate, +/- 4 m",
+      "solid": true,
+      "walkUnder": false,
+      "confidence": "seen in satellite only",
+      "measuredBy": "measurement agent (dorms), single reading, recheck pending",
+      "positionAccuracyM": 2.7,
+      "correctedForObliqueView": true,
+      "notes": "Rotated about 10 degrees anticlockwise from east-west (east end swung north): north roof edge runs y = 1952.5 - 0.1765*(x-1275), checked at x 1275, 1295, 1350, 1462. About 263 px long x 42 px deep = 72 x 11.5 m. South edge is +/-6: a dark strip (parapet shadow) lies just inside it and the parapet merges with bright pavement. East end shape (square or chamfered) uncertain, +/-6. Rooftop: white ribbed blocks around x 1385-1437, light-blue item at x 1437-1452. Its shaded north facade is visible obliquely north of the roof edge: 6 floor lines at 6.5-7 px pitch running parallel to this slab, and the white west end bay spans y 1917-1957 at x 1234-1246, giving a lean of ~41 px. Estimated ground footprint: [[1230,1920.5],[1489,1875],[1496,1916],[1237,1962]] (+/-8).",
+      "shape": "polygon",
+      "points": [
+        [
+          144.6,
+          105.1
+        ],
+        [
+          215.7,
+          92.6
+        ],
+        [
+          217.7,
+          103.9
+        ],
+        [
+          146.5,
+          116.5
+        ]
+      ]
+    },
+    {
+      "id": "dorm-a-round-tower",
+      "name": "Round tower at the east end of block A (spiral stair or ramp; not established)",
+      "kind": "building",
+      "style": "round-tower",
+      "height": 20.8,
+      "heightBasis": "6 floor lines counted by the measurement agent on one block's north facade in the satellite image; 3.3 m floor height assumed; estimate, +/- 4 m",
+      "solid": true,
+      "walkUnder": false,
+      "confidence": "seen in satellite only",
+      "measuredBy": "measurement agent (dorms), single reading, recheck pending",
+      "positionAccuracyM": 2.4,
+      "correctedForObliqueView": true,
+      "notes": "White ring about 38 px = 10.4 m across, immediately east of the A south slab end and south of the link block. Top shows two concentric arcs like a spiral stair or ramp, C-shaped and open toward the north-west. Position is the top as seen; if it is as tall as the slabs its base is ~41 px further north. Height not established.",
+      "shape": "circle",
+      "cx": 233,
+      "cz": 45.9,
+      "radius": 5.2
+    },
+    {
+      "id": "dorm-b-round-tower",
+      "name": "Round tower at the east end of block B",
+      "kind": "building",
+      "style": "round-tower",
+      "height": 20.8,
+      "heightBasis": "6 floor lines counted by the measurement agent on one block's north facade in the satellite image; 3.3 m floor height assumed; estimate, +/- 4 m",
+      "solid": true,
+      "walkUnder": false,
+      "confidence": "seen in satellite only",
+      "measuredBy": "measurement agent (dorms), single reading, recheck pending",
+      "positionAccuracyM": 2.4,
+      "correctedForObliqueView": true,
+      "notes": "Clean light ring, outer diameter ~35 px = 9.6 m (x 1490-1524), with a dark roughly octagonal centre of radius ~10.5 px (open well or dark roof). Sits at the east end of the rotated B south slab. Height not established; position is the top as seen.",
+      "shape": "circle",
+      "cx": 222.3,
+      "cz": 96.2,
+      "radius": 4.9
+    },
+    {
+      "id": "dorm-a-east-link",
+      "name": "Link closing the east end of block A at roof level",
+      "kind": "building",
+      "style": "plain",
+      "height": 20.8,
+      "heightBasis": "6 floor lines counted by the measurement agent on one block's north facade in the satellite image; 3.3 m floor height assumed; estimate, +/- 4 m",
+      "solid": true,
+      "walkUnder": false,
+      "confidence": "seen in satellite only",
+      "measuredBy": "measurement agent (dorms), single reading, recheck pending",
+      "positionAccuracyM": 2.5,
+      "correctedForObliqueView": true,
+      "notes": "Pale sunlit roof 28 x 28 px (7.7 x 7.7 m) closing the east end of the gap between the two A slabs, at roof level (a low roof could not appear here). White edge line along its east side x 1556-1560 running from y 1682 down to the round tower.",
+      "shape": "polygon",
+      "points": [
+        [
+          228.6,
+          33.8
+        ],
+        [
+          236.3,
+          33.8
+        ],
+        [
+          236.3,
+          41.5
+        ],
+        [
+          228.6,
+          41.5
+        ]
+      ]
+    },
+    {
+      "id": "dorm-b-east-link",
+      "name": "Link at the east end of block B (level assumed)",
+      "kind": "building",
+      "style": "plain",
+      "height": 20.8,
+      "heightBasis": "6 floor lines counted by the measurement agent on one block's north facade in the satellite image; 3.3 m floor height assumed; estimate, +/- 4 m",
+      "solid": true,
+      "walkUnder": false,
+      "confidence": "seen in satellite only",
+      "measuredBy": "measurement agent (dorms), single reading, recheck pending",
+      "positionAccuracyM": 2.8,
+      "correctedForObliqueView": true,
+      "notes": "Pale surface about 29 x 21 px (8 x 5.8 m) between the SE corner of the B north slab and the round tower, same arrangement as block A. Edges are soft; dark diagonal lines run from (1500,1900) toward (1478,1925). Level not established, assumed roof level by analogy with A.",
+      "shape": "polygon",
+      "points": [
+        [
+          220.7,
+          85.7
+        ],
+        [
+          228.6,
+          85.7
+        ],
+        [
+          228.6,
+          91.5
+        ],
+        [
+          220.7,
+          91.5
+        ]
+      ]
+    },
+    {
+      "id": "dorm-b-south-paved-strip",
+      "name": "Paved strip south of block B",
+      "kind": "road",
+      "style": "pavement",
+      "height": 0,
+      "heightBasis": "ground surface",
+      "solid": false,
+      "walkUnder": false,
+      "confidence": "seen in satellite only",
+      "measuredBy": "measurement agent (dorms), single reading",
+      "positionAccuracyM": 1.6,
+      "correctedForObliqueView": false,
+      "notes": "Bright paving visible south of the B south slab roof, 22-32 px (6-9 m) wide, parallel to that slab; a dark area begins south of it (y ~2027 at x 1250, ~1983 at x 1470). Its real width is larger: the northern ~41 px is hidden under the leaning roof. Continues east into a north-south road with parked cars at x ~1500-1600, y 1900-2060.",
+      "shape": "polygon",
+      "points": [
+        [
+          144.9,
+          129.7
+        ],
+        [
+          216.1,
+          117
+        ],
+        [
+          217.4,
+          123.6
+        ],
+        [
+          191.3,
+          128.3
+        ],
+        [
+          169.4,
+          134
+        ],
+        [
+          148.8,
+          136.2
         ]
       ]
     }

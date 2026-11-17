@@ -5,9 +5,20 @@ import { build as generic } from './builders/generic.js';
 
 export const BUILDERS = {
   // style -> module path, filled in as dedicated builders are written
+  'teaching-slab': './builders/teaching-slab.js',
 };
 
-export async function buildWorld(campus) {
+// Modules that add things not tied to one data item (track furniture, courts, landscape...). Each exports build(ctx).
+export const EXTRAS = [
+];
+
+/**
+ * only: optional Set of item ids to build (others are skipped), for close-up checks of one building.
+ * tryBuilders: optional { style: './builders/file.js' } used on top of BUILDERS for this page load (testing a builder before it is registered).
+ * tryExtras: optional list of './extras/file.js' loaded in addition to EXTRAS.
+ */
+export async function buildWorld(campus, only = null, tryBuilders = {}, tryExtras = []) {
+  const builders = { ...BUILDERS, ...tryBuilders };
   const root = new THREE.Group(); root.name = 'campus';
   const colliders = new THREE.Group(); colliders.name = 'colliders';
   const report = { built: [], fallback: [], failed: [] };
@@ -31,6 +42,7 @@ export async function buildWorld(campus) {
   }
 
   for (const item of campus.items) {
+    if (only && !only.has(item.id)) continue;
     const group = new THREE.Group(); group.name = item.id; root.add(group);
     const ctx = {
       campus, item,
@@ -42,7 +54,7 @@ export async function buildWorld(campus) {
         const c = new THREE.Mesh(mesh.geometry); c.matrixAutoUpdate = false; c.matrix.copy(mesh.matrixWorld); colliders.add(c); return mesh;
       },
     };
-    const path = BUILDERS[item.style];
+    const path = builders[item.style];
     try {
       if (path) { (await import(path)).build(item, ctx); report.built.push(item.id); }
       else { generic(item, ctx); report.fallback.push(item.id); }
@@ -50,6 +62,16 @@ export async function buildWorld(campus) {
       console.error('builder failed for', item.id, err);
       group.clear(); generic(item, ctx); report.failed.push(item.id);
     }
+  }
+  for (const path of [...EXTRAS, ...tryExtras]) {
+    const group = new THREE.Group(); group.name = path; root.add(group);
+    const ctx = {
+      campus,
+      add: obj => { group.add(obj); return obj; },
+      collide: mesh => { mesh.updateWorldMatrix(true, false); const c = new THREE.Mesh(mesh.geometry); c.matrixAutoUpdate = false; c.matrix.copy(mesh.matrixWorld); colliders.add(c); return mesh; },
+    };
+    try { (await import(path)).build(ctx); report.built.push(path); }
+    catch (err) { console.error('extra module failed:', path, err); group.clear(); report.failed.push(path); }
   }
   return { root, colliders, report };
 }

@@ -49,10 +49,19 @@ const items = M.items.map(it => {
     else if (it.bandPx) px = bandToPolygon(it.bandPx.centreline, it.bandPx.depth);
     else throw new Error('no geometry for ' + it.id);
     Object.assign(out, { shape: 'polygon', points: px.map(p => toM(shift(p))) });
+    if (it.mainBarPx) { const [w, n, e, s] = it.mainBarPx, a = toM(shift([w, n])), b = toM(shift([e, s])); out.mainBar = { w: a[0], n: a[1], e: b[0], s: b[1] }; }
   }
   return out;
 });
 
+const C = M.courts, cPt = (px, py) => toM([px, py]);
+const courts = C && (() => {
+  const [w, n, e, s] = C.blockPx, a = cPt(w, n), b = cPt(e, s);
+  const xs = C.columnCentresPxX.map(x => cPt(x, 0)[0]), zs = C.rowCentresPxY.map(y => cPt(0, y)[1]);
+  const bands = Object.fromEntries(Object.entries(C.dividerBandsPxX).map(([k, [x0, x1]]) => [k, [cPt(x0, 0)[0], cPt(x1, 0)[0]]]));
+  return { block: { w: a[0], n: a[1], e: b[0], s: b[1] }, columnCentresX: xs, rowCentresZ: zs, hoopBandZ: cPt(0, C.hoopBandCentrePxY)[1], courtSize: C.courtSizeMetres,
+    dividerBandsX: bands, confidence: C.confidence, paintNote: C.paintNote, extras: C.extras, measuredBy: C.measuredBy };
+})();
 const T = M.track, outerR = T.innerRadius + T.lanes * T.laneWidth;
 const [olon, olat] = lonLat(ox, oy);
 const CAMPUS = {
@@ -68,6 +77,7 @@ const CAMPUS = {
     infield: { cx: r1(-offE), cz: r1(-offS), sizeX: r1((ie - iw) * mpp), sizeZ: r1((is - inn) * mpp) },
     features: T.features, basis: T.basis,
   },
+  courts,
   items,
 };
 writeFileSync('src/campus-data.js', '// GENERATED FILE. Source of truth: data/measurements.json. Regenerate with: npm run data\nexport const CAMPUS = ' + JSON.stringify(CAMPUS, null, 2) + ';\n');
