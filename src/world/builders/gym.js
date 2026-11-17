@@ -21,7 +21,7 @@
 // - South face (frame 20): red brick with white pilasters, a white band above the ground storey, tall window strips above.
 // - East face (frames 9, 10, 21): tall slender columns (dark red below, silver-grey above) carrying the eave over the
 //   forecourt, a white band at first-floor level (drawn as a gallery with a solid parapet), dark glazing behind it,
-//   two tan panels, white wall at both ends, a dark recessed ground level.
+//   two tan panels, white wall at both ends, a dark recessed ground level. Frame 21 looks north under this eave.
 // - Slogan, legible in frame 71: 今天我以省实为荣 (emblem) 明天省实以我为荣.
 //
 // ASSUMED (not supported by any reference)
@@ -33,7 +33,7 @@
 // - South end above about 8 m (hidden by trees): clerestory copied from the north end. South doors: positions invented.
 // - North face: the lower parts of the east bays (hidden by trees) are plain brick.
 // - East face: depth and height of the gallery, the piers under it, the ground-level glazing, where exactly the tan
-//   panels and white wall parts sit, the white end walls of the gallery.
+//   panels and white wall parts sit.
 // - THE WHOLE INTERIOR. No interior view exists. It is one open hall with a wooden floor raised to the level of the
 //   west platform, three basketball courts side by side, hoops, concrete bleachers with blue seats along the east
 //   wall, a pale ceiling and hanging lamps. Only the two west doors are open; all other doors are closed.
@@ -102,24 +102,33 @@ function courtTexture() {
     }
   });
 }
+// Runs before a glass mesh is drawn: scales its glow by the scene's sky (hemisphere) light, so windows are not bright at night.
+let skyLight = null;
+function followDaylight(renderer, scene) {
+  if (!skyLight || skyLight.parent !== scene) skyLight = scene.children.find(o => o.isHemisphereLight) || null;
+  this.material.emissiveIntensity = this.material.userData.glow * (skyLight ? Math.min(1, Math.max(0.04, skyLight.intensity)) : 1);
+}
 const local = {};
 function lm(name) {
   if (local[name]) return local[name];
   const S = (color, roughness = 0.8, metalness = 0, extra = {}) => new THREE.MeshStandardMaterial({ color, roughness, metalness, ...extra });
+  // Glass gets some emissive colour standing in for the daylight it reflects or lets through, so that it does not go
+  // black under the eaves or from indoors; build() makes that glow follow the brightness of the sky.
+  const G = (color, roughness, metalness, emissive, glow) => { const g = S(color, roughness, metalness, { emissive, emissiveIntensity: glow }); g.userData.glow = glow; return g; };
   const decal = { transparent: true, depthWrite: false, polygonOffset: true, polygonOffsetFactor: -2, polygonOffsetUnits: -2 };
   const m = name === 'roof' ? S(0xffffff, 0.6, 0.05, { map: roofTexture() })
     : name === 'soffit' ? S(0x4b4f54, 0.9)
     : name === 'ceiling' ? S(0xd9d8d0, 0.9)
-    : name === 'tealA' ? S(0xa9ddd0, 0.35)                 // upper, paler row of the teal band
-    : name === 'tealB' ? S(0x62ab9e, 0.2, 0.1)
-    : name === 'clere' ? S(0x39464b, 0.2, 0.15)            // dark clerestory and east glazing, seen from outside
-    : name === 'glassIn' ? S(0xb7cdd4, 0.9, 0, { emissive: 0xa9c0c8, emissiveIntensity: 0.5 })   // the same panes seen from inside, against the daylight
-    : name === 'tealIn' ? S(0x9fd6c9, 0.9, 0, { emissive: 0x7fbfae, emissiveIntensity: 0.45 })
+    : name === 'tealA' ? G(0xa9ddd0, 0.35, 0, 0x9fd6c8, 0.35)        // upper, paler row of the teal band
+    : name === 'tealB' ? G(0x62ab9e, 0.2, 0.1, 0x5aa89a, 0.3)
+    : name === 'clere' ? G(0x39464b, 0.2, 0.15, 0x39464b, 0.25)      // dark clerestory and east glazing, seen from outside
+    : name === 'glassIn' ? G(0xb7cdd4, 0.9, 0, 0xa9c0c8, 0.5)        // the same panes seen from inside, against the daylight
+    : name === 'tealIn' ? G(0x9fd6c9, 0.9, 0, 0x7fbfae, 0.45)
     : name === 'beige' ? S(0xcbb48c, 0.85)
     : name === 'silver' ? S(0xb4b9bd, 0.45, 0.3)
     : name === 'monitor' ? S(0xbfc4c2, 0.5, 0.1)
     : name === 'skyTop' ? S(0xcfe0e6, 0.15, 0.2)           // glazed canopy seen from above
-    : name === 'skyPanel' ? new THREE.MeshBasicMaterial({ color: 0xe6eff4 })                    // the same glazing seen from below, against the sky
+    : name === 'skyPanel' ? G(0xdfe9ee, 0.9, 0, 0xdfe9ee, 0.8)       // the same glazing seen from below, against the sky
     : name === 'lamp' ? S(0xffffff, 0.6, 0, { emissive: 0xfff4d8, emissiveIntensity: 0.9 })
     : name === 'rim' ? S(0xe2581e, 0.5)
     : name === 'slogan' ? S(0xffffff, 0.5, 0, { map: sloganTexture(), emissive: 0x3a2a08, ...decal })
@@ -276,7 +285,7 @@ export function build(item, ctx) {
     const a = j === 0 ? 1.3 : G[j] + 0.3, e = j === 6 ? Lw - 1.3 : G[j + 1] - 0.3;
     v.slab('wallMaroon', xE - 0.1, 0, z(a), 0.04, 0.5, e - a); glaze(lm('clere'), a, e, 0.5, yDeck - 0.6, [2.6]);
   }
-  // gallery level: what frame 10 shows between the columns, from north to south (w = white wall, g = glazing, b = tan panel)
+  // gallery level: what frame 10 shows between the columns, from north to south (g = glazing, b = tan panel; the rest stays white wall)
   for (const [t0, t1, kind] of [[2.5, 5.2, 'g'], [5.8, 9.3, 'b'], [9.3, 13.0, 'g'], [13.6, 20.8, 'g'], [21.4, 32.2, 'g'], [32.8, 35.4, 'g'], [35.4, 40.0, 'b'], [40.6, 45.0, 'g']]) {
     const a = t0 * f, e = t1 * f, y0 = yDeck + 0.15, y1 = hE - 0.7, yt = Math.min(y1, 9.6 * k);
     if (kind === 'b') { v.slab(lm('beige'), xE - 0.1, y0, z(a), 0.06, y1 - y0, e - a); continue; }
@@ -285,7 +294,7 @@ export function build(item, ctx) {
   v.slab('metalWhite', xE - 0.1, yDeck - 0.3, zN, xd - xE + 0.1, 0.3, Lw);                                         // gallery slab
   v.slab('floorGrey', xE - 0.1, yDeck, zN + 0.25, xd - xE - 0.05, 0.02, Lw - 0.5, 'D');
   v.slab('wallWhite', xd - 0.15, yDeck, zN, 0.15, 1.1, Lw);                                                       // solid parapet
-  for (const zc of [zN, zS - 0.25]) for (let x = xE - 0.1; x < xd - 0.01; x += 2) { const dx = Math.min(2, xd - x); v.slab('wallWhite', x, yDeck, zc, dx, yBot(x) + 0.05 - yDeck, 0.25); }   // white end walls
+  for (const zc of [zN, zS - 0.15]) v.slab('wallWhite', xE - 0.1, yDeck, zc, xd - xE + 0.1, 1.1, 0.15);          // parapet returns; the gallery is open at both ends (frame 21)
   for (const t of [0.45, ...G.slice(1, 7), Lw - 0.45]) {
     v.cyl('wallMaroon', xc, 0, z(t), 0.42, yDeck + 1.1, 16).cyl(lm('silver'), xc, yDeck + 1.1, z(t), 0.3, yBot(xc) - yDeck - 1.0, 16, false);
     c.slab('generic', xc - 0.4, 0, z(t) - 0.4, 0.8, 4, 0.8);
@@ -367,7 +376,7 @@ export function build(item, ctx) {
 
   // ================= ASSEMBLY AND COLLISION =================
   const vis = ctx.add(v.build({ name: item.id + '-visual' }));
-  vis.traverse(o => { if (o.isMesh && o.material.transparent) o.renderOrder = 1; });
+  vis.traverse(o => { if (!o.isMesh) return; if (o.material.transparent) o.renderOrder = 1; if (o.material.userData.glow) o.onBeforeRender = followDaylight; });
   const cg = ctx.add(c.build({ name: item.id + '-colliders' })); cg.visible = false;
   // inclined plates (collision only) over the platform steps and the bleacher aisles
   const ramps = new THREE.Group(); ramps.position.set(b.w, 0, b.n); ramps.visible = false; ctx.add(ramps);

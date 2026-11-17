@@ -15,11 +15,14 @@
 //   carried on very tall slender white columns (inner corner, beside the glass box, free-standing beyond the outer corner).
 // - East end, 2018 frames 2-3 (that this block is the arc's east end is the facade notes' guess): dark-red end wall with
 //   a large cream panel holding a few small windows, open top level under the canopy.
-// - North side, frame 58 only: red parapet, white posts and the canopy edge. Nothing below the parapet is visible.
+// - North side, frame 58: red parapet, white posts and the canopy edge; nothing below the parapet is visible.
+//   2018 frames 43, 53 and 67 show red wall behind the glass box on the outer side of the west end, with white columns
+//   standing in front of it.
 //
 // ASSUMED (no reference supports these)
-// - The whole convex (north) face below the parapet: kept plain, the same cream bands and ribbon windows without
-//   ledges, air-conditioners or red piers.
+// - The whole convex (north) face below the parapet: kept plain, the same bands and ribbon windows as the concave
+//   face but without ledges, air-conditioners, red piers or doors. Its first bays, under the tilted roof, are red
+//   (see above); where the red stops and how the windows sit in it is a guess.
 // - Which stretch of the concave face the 2022 frames show, hence the number of red-framed fields (five) and the
 //   width of the red piers between them (two bays); bay length 3 m; pane size; curtain colours per window.
 // - Storey heights: item.height (an estimate) is split 1.2 : 1 : 1 : 1 storeys, then parapet, posts and canopy edge in
@@ -28,14 +31,16 @@
 //   glazed double door in the middle of each field.
 // - The tilted west roof: its plan outline, fold line and overhangs, its rise (0.37 x item.height above the canopy at
 //   the tip, read from frames 53 and 67, so the tip stands ABOVE item.height), and the number and exact places of the
-//   tall columns. The louvred panel's size and number of slats. The glass box's depth.
+//   tall columns. The louvred panel's size, number of slats and the two props under it. The glass box's depth.
 // - Canopy details: post spacing (every third bay), cross beams, size of the openings, interior posts.
-// - Positions, sizes and species of the rooftop trees and shrubs (planting is seen, its layout is not).
+// - Positions and sizes of the rooftop trees and shrubs (planting is seen, its layout is not); they use the shared
+//   tree shape from plants.js.
 // - Size and position of the cream panel and its windows on the east end wall.
 // NOT MODELLED: interiors; the green bicycle shelter at the foot of the west end (2018 frames 55-56); the dark green
 // glazed section beside the east end (2018 frame 2); the junction with the round dome building.
 import { THREE, mat } from '../../kit.js';
 import { Batch } from '../../batch.js';
+import { tree } from '../../plants.js';
 
 const BAY = 2.97, PANES = 3, ATLAS = 8;      // bay length on the concave face = three window panes; panes drawn in the window texture
 const T = 0.3, PROUD = 0.15, OV = 0.6;       // wall thickness; how far the red frame stands proud of the cream field; canopy overhang
@@ -131,28 +136,9 @@ function materials() {
     curtain: std({ color: dom ? 0xffffff : 0x54b8b2, roughness: 0.15, metalness: 0.05, map: dom ? canvasTex(256, 256, 2.4, 2.4, drawCurtainWall) : null }),
     white: std({ color: 0xf1f0ea, roughness: 0.85 }),                       // painted concrete: posts, beams, ledges, columns
     ac: std({ color: 0xe6e6e0, roughness: 0.6 }), fan: std({ color: 0x565c60, roughness: 0.7 }), pane: std({ color: 0x7d968e, roughness: 0.2, metalness: 0.1 }),             // plain glass of the doors and small windows
-    leaf: std({ vertexColors: true, roughness: 1 }),
   };
   return M;
 }
-/** All tree crowns and shrubs as one mesh of lumpy ellipsoids with per-vertex colour. */
-function blobMesh(list, material) {
-  const base = new THREE.IcosahedronGeometry(1, 1).getAttribute('position'), n = base.count;
-  const pos = new Float32Array(list.length * n * 3), nor = new Float32Array(pos.length), col = new Float32Array(pos.length);
-  list.forEach((b, i) => {
-    for (let k = 0; k < n; k++) {
-      const x = base.getX(k), y = base.getY(k), z = base.getZ(k), o = (i * n + k) * 3, shade = 0.72 + 0.28 * (y + 1) / 2;
-      pos[o] = b.x + x * b.rx; pos[o + 1] = b.y + y * b.ry; pos[o + 2] = b.z + z * b.rz;
-      const nx = x / b.rx, ny = y / b.ry, nz = z / b.rz, l = Math.hypot(nx, ny, nz);
-      nor[o] = nx / l; nor[o + 1] = ny / l; nor[o + 2] = nz / l;
-      col[o] = b.c.r * shade; col[o + 1] = b.c.g * shade; col[o + 2] = b.c.b * shade;
-    }
-  });
-  const geo = new THREE.BufferGeometry();
-  geo.setAttribute('position', new THREE.BufferAttribute(pos, 3)); geo.setAttribute('normal', new THREE.BufferAttribute(nor, 3)); geo.setAttribute('color', new THREE.BufferAttribute(col, 3));
-  const mesh = new THREE.Mesh(geo, material); mesh.castShadow = mesh.receiveShadow = true; mesh.name = 'roof-planting'; return mesh;
-}
-
 export function build(item, ctx) {
   const H = item.height, m = materials(), rnd = rng(20221);
 
@@ -229,9 +215,9 @@ export function build(item, ctx) {
           }
         }
       } else {                                                                                 // white surround of the top row
-        v.slab(m.white, 0, hd, 0, L, 0.14, 0.1, ends).slab(m.white, 0, s - 0.14, 0, L, 0.14, 0.1, ends);
-        if (first) v.slab(m.white, 0, s - 0.14, 0, 0.14, WIN + 0.28, 0.1, 'N');
-        if (last) v.slab(m.white, L - 0.14, s - 0.14, 0, 0.14, WIN + 0.28, 0.1, 'N');
+        v.slab(m.white, 0, hd - 0.1, -0.14, L, 0.1, 0.24, ends).slab(m.white, 0, s - 0.14, 0, L, 0.14, 0.1, ends);
+        if (first) v.slab(m.white, 0, s - 0.14, 0, 0.14, WIN + 0.14, 0.1, 'N');
+        if (last) v.slab(m.white, L - 0.14, s - 0.14, 0, 0.14, WIN + 0.14, 0.1, 'N');
       }
     }
     for (let k = door ? 1 : 0; k < 4; k++) glaze(A, B, k, 0, L);
@@ -256,7 +242,7 @@ export function build(item, ctx) {
     v.slab(m.red, -PROUD, 0, -T, L + 2 * PROUD, parapet, T + PROUD, 'D').slab(m.white, -PROUD, parapet, -T - 0.03, L + 2 * PROUD, 0.09, T + PROUD + 0.06, 'D');
     v.slab('wallCream', px, 1.0, PROUD, pw, deck - 2.4, 0.05, 'N');
     for (const k of [1, 2]) for (const f of [0.14, 0.44, 0.74]) {
-      v.slab(m.pane, px + f * pw, sill[k], PROUD + 0.05, 1.0, 1.0, 0.03, 'N').slab(m.white, px + f * pw - 0.05, sill[k] - 0.07, PROUD + 0.05, 1.1, 0.07, 0.08, 'N');
+      v.slab(m.pane, px + f * pw, sill[k], PROUD + 0.05, 1.0, 1.0, 0.08, 'N').slab(m.white, px + f * pw - 0.05, sill[k] - 0.07, PROUD + 0.05, 1.1, 0.07, 0.14, 'N');
     }
   }
 
@@ -265,7 +251,7 @@ export function build(item, ctx) {
   const W0 = along(v, O[0], I[0]), glassTop = Math.max(parapet + 1.2, Math.floor((H - 0.5) / 1.2) * 1.2);
   {
     v.slab(m.curtain, -0.1, 0, -GD, GX + 0.1, glassTop, GD + 0.1, 'D');
-    for (const [x, z] of [[-0.22, -0.1], [GX - 0.1, -0.1], [-0.22, -GD - 0.12], [GX - 0.1, -GD - 0.12]]) v.slab(m.white, x, 0, z, 0.24, glassTop, 0.24, 'D');
+    for (const [x, z] of [[-0.1, 0.1], [GX, 0.1], [-0.1, -GD], [GX, -GD]]) v.slab(m.white, x - 0.15, 0, z - 0.15, 0.3, glassTop, 0.3, 'D');   // corner posts
     v.slab(m.white, -0.3, glassTop, -GD - 0.2, GX + 0.5, 0.25, GD + 0.5);
     const x0 = GX, x1 = W0 - T, ww = 4 * PW, wx = x1 - 1.3 - ww, sx = GX + 1.0, sw = 0.7, zw = -RECESS - T;
     let y = 0;
@@ -286,6 +272,7 @@ export function build(item, ctx) {
     };
     for (let i = 0; i < n; i++) sl(lx0, lx1, i / n, (i + 0.62) / n);
     sl(lx0 - 0.12, lx0, 0, 1); sl(lx1, lx1 + 0.12, 0, 1);
+    for (const x of [lx0 - 0.16, lx1 - 0.04]) v.slab(m.white, x, deck, zb - 0.1, 0.2, yb - deck, 0.2, 'D');      // ASSUMED props under its upper edge
   }
 
   // ---------- the tilted roof over the west end: a plane hinged on a fold line, rising toward the outer west corner ----------
@@ -301,7 +288,10 @@ export function build(item, ctx) {
   {
     const secs = [[swIn, tip]];
     for (let j = 0; j <= jfo; j++) secs.push([pt(j, dF[j]), j < jfo ? pt(j, W[j] + ovOut(j)) : Fo]);
-    const edge = (p0, p1, outDir) => face(v, m.white, [P3(p0, top(p0) - 0.5), P3(p1, top(p1) - 0.5), P3(p1, top(p1) + 0.06), P3(p0, top(p0) + 0.06)], [outDir[0], 0, outDir[1]]);
+    const edge = (p0, p1, outDir) => {                                                         // white edge of the tilted slab, seen from both sides
+      const ring = [P3(p0, top(p0) - 0.5), P3(p1, top(p1) - 0.5), P3(p1, top(p1) + 0.06), P3(p0, top(p0) + 0.06)];
+      face(v, m.white, ring, [outDir[0], 0, outDir[1]]); face(v, m.white, ring, [-outDir[0], 0, -outDir[1]]);
+    };
     for (let s = 0; s < secs.length - 1; s++) {
       const [a0, b0] = secs[s], [a1, b1] = secs[s + 1], ring = [a0, a1, b1, b0];
       face(v, 'roofGrey', ring.map(p => P3(p, top(p))), UP); face(v, m.white, ring.map(p => P3(p, top(p) - WTH)), DOWN);
@@ -310,7 +300,7 @@ export function build(item, ctx) {
     }
     edge(swIn, tip, q);
     // very tall slender columns from the ground to the tilted roof (collide), and shorter posts on the convex parapet
-    const cols = [add(I[0], mul(q, 0.55), mul(e, -0.55)), add(O[0], mul(e, -(GX + 0.45)), mul(q, 0.6)), add(O[0], mul(e, 0.65), mul(q, 0.6)), add(O[0], mul(e, 6.0), mul(q, 1.0))];
+    const cols = [add(I[0], mul(q, 0.55), mul(e, -0.55)), add(O[0], mul(e, -(GX + 0.45)), mul(q, 0.6)), add(O[0], mul(e, 0.65), mul(q, 0.6)), add(O[0], mul(e, 5.4), mul(q, 1.2))];
     for (const j of [2, 4, 6]) if (j < jfo) cols.push(pt(j, W[j] + ovOut(j) - 0.7));
     c.frame(0, 0, 0);
     for (const p of cols) { v.cyl(m.white, p[0], 0, p[1], 0.3, top(p) - WTH, 14, false); c.box('generic', p[0], 3, p[1], 0.6, 6, 0.6); }
@@ -325,44 +315,39 @@ export function build(item, ctx) {
     }
   }
   for (let j = jfi; j < NB; j++) {
-    let L = along(v, pt(j, -OV), pt(j + 1, -OV)); v.slab(m.white, 0, beamY, -0.16, L, FASCIA + 0.05, 0.16, 'EWN');                 // south edge
+    let L = along(v, pt(j, -OV), pt(j + 1, -OV)); v.slab(m.white, 0, beamY, -0.16, L, FASCIA + 0.05, 0.16, 'EW');                  // south edge
     if (j < jfo) continue;
-    L = along(v, pt(j + 1, W[j + 1] + OV), pt(j, W[j] + OV)); v.slab(m.white, 0, beamY, -0.16, L, FASCIA + 0.05, 0.16, 'EWN');     // north edge
+    L = along(v, pt(j + 1, W[j + 1] + OV), pt(j, W[j] + OV)); v.slab(m.white, 0, beamY, -0.16, L, FASCIA + 0.05, 0.16, 'EW');      // north edge
     for (const d of [D1, D2]) { L = along(v, pt(j, d), pt(j + 1, d)); v.slab(m.white, 0, H - SLAB, -0.08, L, SLAB + 0.2, 0.16, 'EW'); }   // rims of the openings
   }
-  { const L = along(v, pt(NB, -OV), pt(NB, W[NB] + OV)); v.slab(m.white, 0, beamY, -0.16, L, FASCIA + 0.05, 0.16, 'N'); }           // east edge
+  { const L = along(v, pt(NB, -OV), pt(NB, W[NB] + OV)); v.slab(m.white, 0, beamY, -0.16, L, FASCIA + 0.05, 0.16); }                // east edge
   for (let j = jfi; j <= NB; j++) {
     if (!(j === NB || j === jfo || ((j - jfi) % 3 === 0 && NB - j >= 2))) continue;
-    const full = j >= jfo, dEnd = dF[j];
+    const full = j >= jfo, dEnd = dF[j], z = j === NB ? -0.3 : 0;                                // the last frame stands just inside the east end wall
     along(v, I[j], O[j]);                                                                       // local x = distance in from the concave face
-    if (dEnd > 0.5) v.slab(m.white, -OV, beamY, -0.18, dEnd + OV, FASCIA - SLAB, 0.36, 'U');   // cross beam under the slab
-    if (full) v.slab(m.white, D1, H - SLAB, -0.18, D2 - D1, SLAB + 0.2, 0.36, 'D');            // and across the row of openings
-    v.box(m.white, 0.08, (parapet + 0.09 + beamY) / 2, 0, 0.45, beamY - parapet - 0.09, 0.45, 'UD');                               // post on the south parapet
+    if (dEnd > 0.5) v.slab(m.white, -OV, beamY, z - 0.18, dEnd + OV, FASCIA - SLAB, 0.36, 'U');   // cross beam under the slab
+    if (full) v.slab(m.white, D1, H - SLAB, z - 0.18, D2 - D1, SLAB + 0.2, 0.36, 'D');            // and across the row of openings
+    v.box(m.white, 0.08, (parapet + 0.09 + beamY) / 2, z, 0.45, beamY - parapet - 0.09, 0.45, 'UD');                               // post on the south parapet
     if (full) {
-      v.box(m.white, W[j] - 0.08, (parapet + 0.09 + beamY) / 2, 0, 0.45, beamY - parapet - 0.09, 0.45, 'UD');                      // post on the north parapet
-      v.box(m.white, D2 + 0.08, (deck + beamY) / 2, 0, 0.35, beamY - deck, 0.35, 'UD');                                             // post inside the garden
+      v.box(m.white, W[j] - 0.08, (parapet + 0.09 + beamY) / 2, z, 0.45, beamY - parapet - 0.09, 0.45, 'UD');                      // post on the north parapet
+      v.box(m.white, D2 + 0.08, (deck + beamY) / 2, z, 0.35, beamY - deck, 0.35, 'UD');                                             // post inside the garden
     }
   }
 
   // ---------- roof garden: lawn, a paved strip, trees and shrubs (layout ASSUMED) ----------
   v.frame(0, 0, 0);
   const inset = mul(q, -RECESS - T), dk = (j, d) => j ? pt(j, d) : add(pt(0, Math.min(d, W[0] - GX)), inset);   // bay 0 starts behind the recessed end wall
-  const blobs = [], greens = [0x4d8a3a, 0x3d7231, 0x5e9a46, 0x6aa24a].map(h => new THREE.Color(h));
   for (let j = 0; j < NB; j++) {
     const w0 = W[j], w1 = W[j + 1];
     face(v, 'lawn', [P3(dk(j, T), deck), P3(pt(j + 1, T), deck), P3(pt(j + 1, w1 - T), deck), P3(dk(j, w0 - T), deck)], UP);
     face(v, 'paving', [P3(dk(j, 0.44 * w0), deck + 0.02), P3(pt(j + 1, 0.44 * w1), deck + 0.02), P3(pt(j + 1, 0.56 * w1), deck + 0.02), P3(dk(j, 0.56 * w0), deck + 0.02)], UP);
-    const n = j ? 1 + (rnd() < 0.5 ? 1 : 0) + (rnd() < 0.25 ? 1 : 0) : 0;                      // none in bay 0: it would hang over the recessed end wall
+  }
+  for (let j = 1; j < NB; j++) {                                                               // none in bay 0: it would hang over the recessed end wall
+    const n = 1 + (rnd() < 0.5 ? 1 : 0) + (rnd() < 0.25 ? 1 : 0), wmin = Math.min(W[j], W[j + 1]);
     for (let i = 0; i < n; i++) {
-      const f = 0.2 + rnd() * 0.6, wmin = Math.min(w0, w1) - (j ? 0 : GX), d = 1.0 + rnd() * (wmin - 2.0), p = mix(dk(j, d), pt(j + 1, d), f);
-      const open = j >= jfo && d > D1 + 0.9 && d < D2 - 0.9, shrub = !open && rnd() < 0.3, col = greens[Math.floor(rnd() * greens.length)];
-      const tall = shrub ? 0.8 + rnd() * 0.6 : open ? 4.4 + rnd() * 1.8 : 1.9 + rnd() * 1.9;    // only trees under an opening grow past the canopy
-      const r = shrub ? tall * 0.7 : open ? 1.0 + rnd() * 0.3 : tall * (0.3 + rnd() * 0.1), ry = shrub ? tall * 0.55 : r * (0.9 + rnd() * 0.3);
-      blobs.push({ x: p[0], y: deck + tall - ry, z: p[1], rx: r, ry, rz: r * (0.85 + rnd() * 0.3), c: col });
-      if (!shrub) {
-        v.cyl('woodDark', p[0], deck, p[1], 0.07, tall - ry, 6, false);
-        if (rnd() < 0.6) blobs.push({ x: p[0] + (rnd() - 0.5) * r, y: deck + tall - ry * 1.5, z: p[1] + (rnd() - 0.5) * r, rx: r * 0.7, ry: ry * 0.6, rz: r * 0.7, c: greens[Math.floor(rnd() * greens.length)] });
-      }
+      const f = 0.2 + rnd() * 0.6, d = 1.0 + rnd() * (wmin - 2.0), p = mix(pt(j, d), pt(j + 1, d), f);
+      const open = j >= jfo && d > D1 + 0.9 && d < D2 - 0.9, shrub = !open && rnd() < 0.3;
+      tree(v, p[0], p[1], shrub ? 0.9 + rnd() * 0.6 : open ? 4.6 + rnd() * 1.6 : 2.0 + rnd() * 1.8, deck);   // only trees under an opening grow past the canopy
     }
   }
 
@@ -372,7 +357,6 @@ export function build(item, ctx) {
   c.slab('generic', -0.1, 0, -GD, GX + 0.2, parapet, GD + 0.1).slab('generic', GX, 0, -GD, W0 - GX + PROUD, parapet, GD - RECESS).slab('generic', W0 - T, 0, -RECESS, T + PROUD, parapet, RECESS);
 
   ctx.add(v.build({ name: item.id + '-visual' }));
-  ctx.add(blobMesh(blobs, m.leaf));
   const cg = ctx.add(c.build({ name: item.id + '-colliders' })); cg.visible = false;
   cg.traverse(o => { if (o.isMesh) ctx.collide(o); });
 }

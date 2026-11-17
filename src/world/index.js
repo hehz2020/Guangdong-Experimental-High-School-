@@ -6,7 +6,7 @@ import { build as generic } from './builders/generic.js';
 export const BUILDERS = {
   // style -> module path, filled in as dedicated builders are written
   'teaching-slab': './builders/teaching-slab.js',
-  'teaching-slab-wide': './builders/teaching-slab.js',
+  'teaching-slab-wide': './builders/slab-wide.js',
   'clock-tower': './builders/clock-tower.js',
   'stair-core': './builders/stair-core.js',
   'stair-tower-oculus': './builders/stair-tower.js',
@@ -41,6 +41,8 @@ export async function buildWorld(campus, only = null, tryBuilders = {}, tryExtra
   const root = new THREE.Group(); root.name = 'campus';
   const colliders = new THREE.Group(); colliders.name = 'colliders';
   const report = { built: [], fallback: [], failed: [] };
+  const details = [];        // { obj, x, z, range }: small things that are only shown when the viewer is within range metres
+  const detail = (obj, x, z, range) => { details.push({ obj, x, z, range }); return obj; };
 
   // ground
   const ground = new THREE.Mesh(new THREE.PlaneGeometry(1400, 1400), mat('earth'));
@@ -66,7 +68,7 @@ export async function buildWorld(campus, only = null, tryBuilders = {}, tryExtra
     if (only && !only.has(item.id)) continue;
     const group = new THREE.Group(); group.name = item.id; root.add(group);
     const ctx = {
-      campus, item,
+      campus, item, detail,
       add: obj => { group.add(obj); return obj; },
       // register a mesh (in world coordinates) that the player cannot walk through
       // Call after ctx.add (the mesh needs its parents to know where it is). For an invisible barrier, add a mesh and set visible = false.
@@ -87,12 +89,12 @@ export async function buildWorld(campus, only = null, tryBuilders = {}, tryExtra
   for (const path of [...EXTRAS, ...tryExtras]) {
     const group = new THREE.Group(); group.name = path; root.add(group);
     const ctx = {
-      campus,
+      campus, detail,
       add: obj => { group.add(obj); return obj; },
       collide: mesh => { mesh.updateWorldMatrix(true, false); const c = new THREE.Mesh(mesh.geometry); c.matrixAutoUpdate = false; c.matrix.copy(mesh.matrixWorld); colliders.add(c); return mesh; },
     };
     try { (await import(path)).build(ctx); report.built.push(path); }
     catch (err) { console.error('extra module failed:', path, err); group.clear(); report.failed.push(path); }
   }
-  return { root, colliders, report };
+  return { root, colliders, report, details };
 }

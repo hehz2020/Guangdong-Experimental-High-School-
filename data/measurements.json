@@ -255,18 +255,18 @@
   },
   {
    "id": "teaching-slab-west-annex-w",
-   "name": "Small block projecting south at the west end of the west slab",
+   "name": "Glass stair tower at the west end of the west slab, south side",
    "kind": "building",
    "surface": "roof",
-   "style": "plain",
+   "style": "stair-core",
    "height": {
-    "metres": 7.8,
-    "basis": "height not established; 2 storeys assumed"
+    "metres": 22.5,
+    "basis": "full-height glazed stair tower slightly above the slab roof in the 2018 footage (frame 58); estimate"
    },
-   "confidence": "seen in satellite only, single reading",
+   "confidence": "position from one satellite reading; identified as the glass stair tower from the 2018 footage by a modelling agent",
    "accuracyPx": 6,
    "measuredBy": "main session, gridded 2x crops",
-   "notes": "Pale roof. Possibly a stair or entrance block; function not established.",
+   "notes": "Pale roof. Possibly a stair or entrance block; function not established. CORRECTION: this was first recorded as a low two-storey annex and the stair tower was put at the slab's east end. Every 2018 frame of this slab (43, 53, 58, 67-69) is taken from the west or south-west and shows the glazed stair tower with a white fin at the west end on the south side, which is this block.",
    "rectPx": [
     1003,
     1300,
@@ -276,10 +276,10 @@
   },
   {
    "id": "teaching-slab-west-link-e",
-   "name": "Narrow north-south piece at the east end of the west slab",
+   "name": "Narrow north-south piece at the east end of the west slab (function not established)",
    "kind": "building",
    "surface": "roof",
-   "style": "stair-core",
+   "style": "plain",
    "height": {
     "metres": 20.7,
     "basis": "taken as the glass stair tower at the slab's east end; estimate"
@@ -287,7 +287,7 @@
    "confidence": "seen in satellite only, single reading",
    "accuracyPx": 6,
    "measuredBy": "main session, gridded 2x crops",
-   "notes": "Pale, about 3.6 m wide. Possibly a stair core or a covered link toward the plaza; function not established.",
+   "notes": "Pale, about 3.6 m wide. Possibly a stair core or a covered link toward the plaza; function not established. It was modelled as a glass stair core at first; that was a guess with no supporting frame, so it is now a plain block.",
    "rectPx": [
     1197,
     1262,

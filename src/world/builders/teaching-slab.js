@@ -25,6 +25,7 @@ export function build(item, ctx) {
   const corridor = D > 13.5 ? D - 9.5 : CORRIDOR;
   const zN = INSET, zS = D - INSET, zc = zS - corridor;                                    // zc: corridor/classroom boundary
   const v = new Batch().frame(bar.w, bar.n), c = new Batch().frame(bar.w, bar.n);          // visual and collision batches
+  const fu = new Batch().frame(bar.w, bar.n);                                              // furniture: built separately so it can be hidden at a distance
   const both = (m, ...a) => { v.slab(m, ...a); c.slab('generic', ...a); };
 
   for (let k = 0; k < FLOORS; k++) {
@@ -73,16 +74,16 @@ export function build(item, ctx) {
       both('wallWhite', xa - 0.1, y, zN + WALL, 0.2, FH - 0.15, zw - zN - WALL);
       // --- furniture (walk-through, no collision) ---
       const zi0 = zN + WALL, depth = zw - zi0, zmid = zi0 + depth / 2;
-      v.slab('board', xa + 0.1, y + 0.9, zmid - 2.0, 0.04, 1.2, 4.0); v.slab('metalWhite', xa + 0.1, y + 0.86, zmid - 2.05, 0.08, 0.04, 4.1);
-      v.slab('wood', xa + 0.1, y + 0.02, zmid - 2.6, 1.3, 0.18, 5.2); v.slab('woodDark', xa + 0.75, y + 0.2, zmid - 0.35, 0.5, 0.95, 0.7);
-      v.slab('cork', xb - 0.14, y + 1.0, zmid - 1.5, 0.03, 1.1, 3.0);
-      for (const lx of [xa + 2.6, xa + 5.2, xa + 7.6]) for (const lz of [zmid - depth / 4, zmid + depth / 4]) v.slab('lamp', lx - 0.1, y + FH - 0.22, lz - 0.6, 0.2, 0.05, 1.2);
+      fu.slab('board', xa + 0.1, y + 0.9, zmid - 2.0, 0.04, 1.2, 4.0); fu.slab('metalWhite', xa + 0.1, y + 0.86, zmid - 2.05, 0.08, 0.04, 4.1);
+      fu.slab('wood', xa + 0.1, y + 0.02, zmid - 2.6, 1.3, 0.18, 5.2); fu.slab('woodDark', xa + 0.75, y + 0.2, zmid - 0.35, 0.5, 0.95, 0.7);
+      fu.slab('cork', xb - 0.14, y + 1.0, zmid - 1.5, 0.03, 1.1, 3.0);
+      for (const lx of [xa + 2.6, xa + 5.2, xa + 7.6]) for (const lz of [zmid - depth / 4, zmid + depth / 4]) fu.slab('lamp', lx - 0.1, y + FH - 0.22, lz - 0.6, 0.2, 0.05, 1.2);
       const cols = [-2.2, -1.6, -0.3, 0.3, 1.6, 2.2];           // three pairs with two aisles
       for (let row = 0; row < 7; row++) for (const dz of cols) {
         const dx = xa + 2.5 + row * 0.82, z = zmid + dz;
-        v.slab('wood', dx, y + 0.72, z - 0.28, 0.42, 0.03, 0.56); v.slab('steel', dx + 0.02, y + 0.02, z - 0.27, 0.03, 0.7, 0.03); v.slab('steel', dx + 0.02, y + 0.02, z + 0.24, 0.03, 0.7, 0.03);
-        v.slab('steel', dx + 0.37, y + 0.02, z - 0.27, 0.03, 0.7, 0.54);
-        v.slab('wood', dx + 0.5, y + 0.43, z - 0.19, 0.36, 0.03, 0.38); v.slab('wood', dx + 0.84, y + 0.46, z - 0.19, 0.03, 0.4, 0.38); v.slab('steel', dx + 0.52, y + 0.02, z - 0.17, 0.32, 0.41, 0.03); v.slab('steel', dx + 0.52, y + 0.02, z + 0.14, 0.32, 0.41, 0.03);
+        fu.slab('wood', dx, y + 0.72, z - 0.28, 0.42, 0.03, 0.56); fu.slab('steel', dx + 0.02, y + 0.02, z - 0.27, 0.03, 0.7, 0.03); fu.slab('steel', dx + 0.02, y + 0.02, z + 0.24, 0.03, 0.7, 0.03);
+        fu.slab('steel', dx + 0.37, y + 0.02, z - 0.27, 0.03, 0.7, 0.54);
+        fu.slab('wood', dx + 0.5, y + 0.43, z - 0.19, 0.36, 0.03, 0.38); fu.slab('wood', dx + 0.84, y + 0.46, z - 0.19, 0.03, 0.4, 0.38); fu.slab('steel', dx + 0.52, y + 0.02, z - 0.17, 0.32, 0.41, 0.03); fu.slab('steel', dx + 0.52, y + 0.02, z + 0.14, 0.32, 0.41, 0.03);
       }
     }
     both('wallWhite', x0 - 0.1, y, zc - 1.3, 0.2, FH - 0.15, 1.1);   // short return wall at the stair landing (keeps the wall line)
@@ -109,8 +110,9 @@ export function build(item, ctx) {
     for (let k = 0; k < FLOORS; k++) v.slab('glassDark', ax + aw * 0.25, k * FH + 1.6, az + ad - 0.005, aw * 0.5, 0.7, 0.03);
   }
 
-  for (const key of ['board', 'lamp', 'cork']) if (v.parts.has(key)) v.parts.get(key).material = lm(key);
+  for (const key of ['board', 'lamp', 'cork']) if (fu.parts.has(key)) fu.parts.get(key).material = lm(key);
   ctx.add(v.build({ name: item.id + '-visual' }));
+  ctx.detail(ctx.add(fu.build({ name: item.id + '-furniture', castShadow: false })), bar.w + L / 2, bar.n + D / 2, L / 2 + 45);
   const cg = ctx.add(c.build({ name: item.id + '-colliders' })); cg.visible = false;
 
   // stair ramps (collision only): one inclined plate per flight, so the capsule walks up smoothly

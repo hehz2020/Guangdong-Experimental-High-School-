@@ -140,6 +140,7 @@ export function build(item, ctx) {
   v.frame(xW, zN, Math.PI / 2); plain(lenN, pilN);
   v.frame(xE, zS, -Math.PI / 2); plain(lenN, pilN);
   world();
+  for (const [x, dx] of [[xE, PD], [xW, -PD]]) for (const [z, dz] of [[zN, -PD], [zS, PD]]) S3(v, 'wallWhite', x, x + dx, 0, L.ySof, z, z + dz, 'UD');   // corner posts
 
   // roof: thin white slab with bowed ends over a thicker inset layer, pale sheet on top
   const ring = [], n = 12, bow = i => BOW * (1 - (2 * i / n - 1) ** 2);

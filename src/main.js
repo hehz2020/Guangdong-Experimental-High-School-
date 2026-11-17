@@ -24,7 +24,7 @@ const only = params.get('only') ? new Set(params.get('only').split(',')) : null;
 // ?try=style:file.js,style:file.js mounts builders from src/world/builders/ for this page load; ?tryx=file.js,... mounts extras from src/world/extras/
 const tryBuilders = Object.fromEntries((params.get('try') || '').split(',').filter(Boolean).map(s => { const i = s.indexOf(':'); return [s.slice(0, i), './builders/' + s.slice(i + 1)]; }));
 const tryExtras = (params.get('tryx') || '').split(',').filter(Boolean).map(f => './extras/' + f);
-const { root, colliders, report } = await buildWorld(CAMPUS, only, tryBuilders, tryExtras);
+const { root, colliders, report, details } = await buildWorld(CAMPUS, only, tryBuilders, tryExtras);
 scene.add(root);
 
 let lighting = null;
@@ -97,6 +97,7 @@ renderer.setAnimationLoop(timestamp => {
     player.update(dt, ui && ui.input ? ui.input() : undefined);
     if (lighting) { lighting.moveFill(camera.position.x, camera.position.y, camera.position.z); if (frames % 30 === 0) lighting.follow(camera.position.x, camera.position.z); }
   }
+  if (frames % 15 === 0) for (const d of details) d.obj.visible = Math.hypot(camera.position.x - d.x, camera.position.z - d.z) < d.range;
   if (ui && ui.update) ui.update(dt);
   if (lighting && lighting.render) lighting.render(scene, camera); else renderer.render(scene, camera);
   frames++;

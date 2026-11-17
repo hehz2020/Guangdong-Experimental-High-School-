@@ -43,19 +43,21 @@ let plainWhite = null;          // untextured white for raked parts (a tiled tex
 const white = () => plainWhite || (plainWhite = new THREE.MeshStandardMaterial({ color: 0xf1efe8, roughness: 0.8 }));
 
 // Solid with 8 corners: P[0..3] one end face in ring order, P[4..7] the matching corners of the other end. Faces are wound outward.
-function hexa(b, m, P) {
+// omit: indices of faces to leave out (0 and 1 are the two ends, 2-5 the sides in ring order starting with edge 0-1).
+function hexa(b, m, P, omit = []) {
   const cen = [0, 1, 2].map(i => P.reduce((s, p) => s + p[i], 0) / 8);
-  for (const f of [[0, 1, 2, 3], [4, 5, 6, 7], [0, 1, 5, 4], [1, 2, 6, 5], [2, 3, 7, 6], [3, 0, 4, 7]]) {
+  [[0, 1, 2, 3], [4, 5, 6, 7], [0, 1, 5, 4], [1, 2, 6, 5], [2, 3, 7, 6], [3, 0, 4, 7]].forEach((f, fi) => {
+    if (omit.includes(fi)) return;
     const [A, B, C, D] = f.map(i => P[i]);
     const u = [0, 1, 2].map(i => B[i] - A[i]), w = [0, 1, 2].map(i => D[i] - A[i]);
     const n = [u[1] * w[2] - u[2] * w[1], u[2] * w[0] - u[0] * w[2], u[0] * w[1] - u[1] * w[0]];
     const out = [0, 1, 2].map(i => (A[i] + B[i] + C[i] + D[i]) / 4 - cen[i]);
     if (n[0] * out[0] + n[1] * out[1] + n[2] * out[2] >= 0) b.quad(m, A, B, C, D); else b.quad(m, A, D, C, B);
-  }
+  });
 }
 // Prism from z0 to z1 with cross-section q = [[x, y] x 4] / from x0 to x1 with cross-section q = [[z, y] x 4].
-const prismZ = (b, m, q, z0, z1) => hexa(b, m, [...q.map(([x, y]) => [x, y, z0]), ...q.map(([x, y]) => [x, y, z1])]);
-const prismX = (b, m, q, x0, x1) => hexa(b, m, [...q.map(([z, y]) => [x0, y, z]), ...q.map(([z, y]) => [x1, y, z])]);
+const prismZ = (b, m, q, z0, z1, omit) => hexa(b, m, [...q.map(([x, y]) => [x, y, z0]), ...q.map(([x, y]) => [x, y, z1])], omit);
+const prismX = (b, m, q, x0, x1, omit) => hexa(b, m, [...q.map(([z, y]) => [x0, y, z]), ...q.map(([z, y]) => [x1, y, z])], omit);
 const S3 = (b, m, x0, x1, y0, y1, z0, z1, skip) => b.slab(m, Math.min(x0, x1), y0, Math.min(z0, z1), Math.abs(x1 - x0), y1 - y0, Math.abs(z1 - z0), skip);
 
 // Steel railing along z at a fixed x: posts, top rail and a mid rail.
@@ -94,7 +96,7 @@ export function build(item, ctx) {
       if (k > 0) S3(v, 'roofPale', xw + (k < ROWS ? td / 2 : 0), xw + td + 0.02, y - 0.1, y + 0.03, z0, z1, 'DW'); // painted tread and nosing
     }
     // the plate passes through the middle of every half tread, so it meets each row level where the row is walked
-    prismZ(c, 'generic', [[xT + 0.75 * td, yF - 0.25], [xT + 0.75 * td, yF], [xT - (ROWS - 0.25) * td, H], [xT - (ROWS - 0.25) * td, H - 0.25]], z0, z1);
+    prismZ(c, 'generic', [[xT + 0.75 * td, yF - 0.25], [xT + 0.75 * td, yF], [xT - (ROWS - 0.75) * td, H], [xT - (ROWS - 0.75) * td, H - 0.25]], z0, z1);
   }
 
   // --- seats: back and pan on a rail, one colour per block ---
@@ -104,8 +106,11 @@ export function build(item, ctx) {
     const zm = (z0 + z1) / 2, m = BLOCKS.find(b => (zm - N) / L < b[0])[1], zs = zm - (n - 1) * PITCH / 2;
     for (let k = 1; k <= ROWS; k++) {
       const xw = xT - k * td, y = yF + k * rise;
-      v.box('roofGrey', xw + 0.3, y + 0.19, zm, 0.06, 0.38, n * PITCH - 0.1, 'UD');
-      for (let j = 0; j < n; j++) v.box(m, xw + 0.33, y + 0.4, zs + j * PITCH, 0.4, 0.05, 0.42).box(m, xw + 0.12, y + 0.57, zs + j * PITCH, 0.05, 0.4, 0.42, 'D');
+      v.box('roofGrey', xw + 0.3, y + 0.33, zm, 0.06, 0.09, n * PITCH - 0.1);
+      for (let j = 0; j < n; j++) {
+        v.box(m, xw + 0.33, y + 0.4, zs + j * PITCH, 0.4, 0.05, 0.42).box(m, xw + 0.12, y + 0.57, zs + j * PITCH, 0.05, 0.4, 0.42, 'D');
+        if (j % 3 === 0 || j === n - 1) v.box('roofGrey', xw + 0.3, y + 0.145, zs + j * PITCH, 0.05, 0.29, 0.05, 'UD');
+      }
     }
   }
 
@@ -146,9 +151,9 @@ export function build(item, ctx) {
   function balustrade(zTop, d, x0, x1) {
     const far = run + 0.2, zFar = zTop + d * far;
     prismX(v, white(), [[zTop, line(0) - 0.42], [zTop, line(0) + 0.53], [zFar, line(far) + 0.53], [zFar, line(far) - 0.42]], x0, x1 + 0.05);
-    for (let i = 0; i * TREAD < far; i++) {                                     // brick under the band, stepped; the band hides the steps
+    for (let i = 0; i * TREAD < far; i++) {                                     // brick under the band: nested boxes whose stepped tops the band hides
       const top = line(i * TREAD) - 0.32;
-      if (top > 0.05) S3(v, 'brickRed', x0, x1, 0, top, zTop + d * i * TREAD, zTop + d * Math.min(far, (i + 1) * TREAD), 'DU');
+      if (top > 0.05) S3(v, 'brickRed', x0, x1, 0, top, zTop, zTop + d * Math.min(far, (i + 1) * TREAD), 'DUNS');
     }
     S3(v, 'wallWhite', x0 - 0.05, x1 + 0.1, 0, line(far) + 0.75, zFar - d * 0.02, zFar + d * 0.3, 'D');                      // newel pier at the foot
     const xm = (x0 + x1) / 2;
@@ -172,13 +177,13 @@ export function build(item, ctx) {
 
   // --- end walls: brick below, raked white parapet band along the rake ---
   for (const [z0, z1] of [[N, N + PAR], [S - PAR, S]]) {
-    for (let k = 1; k <= ROWS; k++) {
+    for (let k = 1; k <= ROWS; k++) {                                           // nested brick boxes; the raked band hides their stepped tops
       const xw = xT - k * td, y = yF + k * rise;
-      S3(v, 'brickRed', xw, xw + td, 0, y - 0.3, z0, z1, 'DU'); S3(c, 'generic', xw, xw + td, 0, y + 0.9, z0, z1, 'D');
+      S3(v, 'brickRed', W, xw + td, 0, y - 0.3, z0, z1, 'DUEW'); S3(c, 'generic', xw, xw + td, 0, y + 0.9, z0, z1, 'D');
     }
-    S3(v, 'brickRed', xT, E, 0, yF - 0.3, z0, z1, 'DU'); S3(c, 'generic', xT, E, 0, yF + 0.9, z0, z1, 'D');
-    S3(v, white(), xT, E + 0.05, yF - 0.4, yF + 0.9, z0 - 0.03, z1 + 0.03);
-    prismZ(v, white(), [[xT, yF - 0.4], [xT, yF + 0.9], [W, H + 0.9], [W, H - 0.4]], z0 - 0.03, z1 + 0.03);
+    S3(v, 'brickRed', W, E, 0, yF - 0.3, z0, z1, 'DUEW'); S3(c, 'generic', xT, E, 0, yF + 0.9, z0, z1, 'D');
+    S3(v, white(), xT, E + 0.05, yF - 0.4, yF + 0.9, z0 - 0.03, z1 + 0.03, 'W');
+    prismZ(v, white(), [[xT, yF - 0.4], [xT, yF + 0.9], [W, H + 0.9], [W, H - 0.4]], z0 - 0.03, z1 + 0.03, [2]);
   }
 
   ctx.add(v.build({ name: item.id + '-visual' }));

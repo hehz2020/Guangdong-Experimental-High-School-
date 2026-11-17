@@ -407,43 +407,43 @@ export const CAMPUS = {
     },
     {
       "id": "teaching-slab-west-annex-w",
-      "name": "Small block projecting south at the west end of the west slab",
+      "name": "Glass stair tower at the west end of the west slab, south side",
       "kind": "building",
-      "style": "plain",
-      "height": 7.8,
-      "heightBasis": "height not established; 2 storeys assumed",
+      "style": "stair-core",
+      "height": 22.5,
+      "heightBasis": "full-height glazed stair tower slightly above the slab roof in the 2018 footage (frame 58); estimate",
       "solid": true,
       "walkUnder": false,
-      "confidence": "seen in satellite only, single reading",
+      "confidence": "position from one satellite reading; identified as the glass stair tower from the 2018 footage by a modelling agent",
       "measuredBy": "main session, gridded 2x crops",
-      "positionAccuracyM": 1.9,
+      "positionAccuracyM": 3,
       "correctedForObliqueView": true,
-      "notes": "Pale roof. Possibly a stair or entrance block; function not established.",
+      "notes": "Pale roof. Possibly a stair or entrance block; function not established. CORRECTION: this was first recorded as a low two-storey annex and the stair tower was put at the slab's east end. Every 2018 frame of this slab (43, 53, 58, 67-69) is taken from the west or south-west and shows the glazed stair tower with a white fin at the west end on the south side, which is this block.",
       "shape": "polygon",
       "points": [
         [
-          82.9,
-          -68.4
+          84,
+          -77.7
         ],
         [
-          91.7,
-          -68.4
+          92.8,
+          -77.7
         ],
         [
-          91.7,
-          -56.8
+          92.8,
+          -66.1
         ],
         [
-          82.9,
-          -56.8
+          84,
+          -66.1
         ]
       ]
     },
     {
       "id": "teaching-slab-west-link-e",
-      "name": "Narrow north-south piece at the east end of the west slab",
+      "name": "Narrow north-south piece at the east end of the west slab (function not established)",
       "kind": "building",
-      "style": "stair-core",
+      "style": "plain",
       "height": 20.7,
       "heightBasis": "taken as the glass stair tower at the slab's east end; estimate",
       "solid": true,
@@ -452,7 +452,7 @@ export const CAMPUS = {
       "measuredBy": "main session, gridded 2x crops",
       "positionAccuracyM": 2.8,
       "correctedForObliqueView": true,
-      "notes": "Pale, about 3.6 m wide. Possibly a stair core or a covered link toward the plaza; function not established.",
+      "notes": "Pale, about 3.6 m wide. Possibly a stair core or a covered link toward the plaza; function not established. It was modelled as a glass stair core at first; that was a guess with no supporting frame, so it is now a plain block.",
       "shape": "polygon",
       "points": [
         [
