@@ -5,7 +5,7 @@ import { PointerLockControls } from 'three/addons/controls/PointerLockControls.j
 import { Octree } from 'three/addons/math/Octree.js';
 import { Capsule } from 'three/addons/math/Capsule.js';
 
-export const PLAYER = { radius: 0.35, eye: 1.6, walk: 3.2, run: 8.0, gravity: 30, jump: 6.5, response: 10 };
+export const PLAYER = { radius: 0.35, eye: 1.6, walk: 3.2, run: 8.0, gravity: 30, jump: 6.5, response: 10, fly: 14, flyFast: 40 };
 const SUB = 1 / 120;                                   // fixed physics step, seconds
 
 export function createPlayer(camera, domElement, colliders, start = { x: 0, z: 0, yawDeg: 0 }) {
@@ -14,7 +14,8 @@ export function createPlayer(camera, domElement, colliders, start = { x: 0, z: 0
   const octree = new Octree(); octree.fromGraphNode(colliders);
   const capsule = new Capsule(new THREE.Vector3(), new THREE.Vector3(), PLAYER.radius);
   const vel = new THREE.Vector3(), dir = new THREE.Vector3(), push = new THREE.Vector3();
-  const keys = { f: false, b: false, l: false, r: false, run: false, jump: false };
+  const keys = { f: false, b: false, l: false, r: false, run: false, jump: false, down: false };
+  let fly = false;                                       // drone mode: no gravity, no collision, movement follows the view direction
   let onFloor = false, floorTimer = 0, carry = 0;       // floorTimer: seconds of grace after the last floor contact
 
   function place(x, y, z) {
@@ -24,8 +25,10 @@ export function createPlayer(camera, domElement, colliders, start = { x: 0, z: 0
   camera.rotation.set(0, -start.yawDeg * Math.PI / 180, 0, 'YXZ');
   place(start.x, start.y ?? 0, start.z);
 
-  const map = { KeyW: 'f', ArrowUp: 'f', KeyS: 'b', ArrowDown: 'b', KeyA: 'l', ArrowLeft: 'l', KeyD: 'r', ArrowRight: 'r', ShiftLeft: 'run', ShiftRight: 'run', Space: 'jump' };
-  addEventListener('keydown', e => { if (map[e.code]) { keys[map[e.code]] = true; e.preventDefault(); } });
+  const map = { KeyW: 'f', ArrowUp: 'f', KeyS: 'b', ArrowDown: 'b', KeyA: 'l', ArrowLeft: 'l', KeyD: 'r', ArrowRight: 'r', ShiftLeft: 'run', ShiftRight: 'run', Space: 'jump', KeyC: 'down' };
+  const flyListeners = [];
+  function setFly(on) { fly = !!on; vel.set(0, 0, 0); onFloor = false; floorTimer = 0; flyListeners.forEach(f => f(fly)); }
+  addEventListener('keydown', e => { if (map[e.code]) { keys[map[e.code]] = true; e.preventDefault(); } else if (e.code === 'KeyF' && !e.repeat) setFly(!fly); });
   addEventListener('keyup', e => { if (map[e.code]) keys[map[e.code]] = false; });
   addEventListener('blur', () => { for (const k in keys) keys[k] = false; });
 
@@ -38,6 +41,15 @@ export function createPlayer(camera, domElement, colliders, start = { x: 0, z: 0
     const fwd = (input.f ? 1 : 0) - (input.b ? 1 : 0) + (input.moveY || 0), side = (input.r ? 1 : 0) - (input.l ? 1 : 0) + (input.moveX || 0);
     // Standing still on a floor: sleep, so the contact flag is stable and the player does not creep down slopes.
     if (onFloor && !fwd && !side && !input.jump && Math.hypot(vel.x, vel.z) < 0.05) { vel.set(0, 0, 0); floorTimer = 0.1; return; }
+    if (fly) {
+      controls.getDirection(dir);
+      const h = Math.hypot(dir.x, dir.z) || 1, rx = -dir.z / h, rz = dir.x / h, sp = input.run ? PLAYER.flyFast : PLAYER.fly;
+      const wy = dir.y * fwd + (input.jump ? 1 : 0) - (input.down ? 1 : 0), kf = Math.min(1, 6 * dt);
+      vel.x += ((dir.x * fwd + rx * side) * sp - vel.x) * kf; vel.y += (wy * sp - vel.y) * kf; vel.z += ((dir.z * fwd + rz * side) * sp - vel.z) * kf;
+      capsule.translate(push.copy(vel).multiplyScalar(dt));
+      if (capsule.start.y < PLAYER.radius + 0.5) capsule.translate(push.set(0, PLAYER.radius + 0.5 - capsule.start.y, 0));   // stay above the ground
+      onFloor = false; floorTimer = 0; return;
+    }
     controls.getDirection(dir);
     let fx = dir.x, fz = dir.z; const n = Math.hypot(fx, fz) || 1; fx /= n; fz /= n;
     let wx = fx * fwd - fz * side, wz = fz * fwd + fx * side;            // right = forward x up = (-fz, 0, fx)
@@ -61,7 +73,7 @@ export function createPlayer(camera, domElement, colliders, start = { x: 0, z: 0
   function sync() { camera.position.set(capsule.end.x, capsule.end.y + 0.05, capsule.end.z); }
 
   return {
-    controls, canLock, requestLock, keys,
+    controls, canLock, requestLock, keys, setFly, isFly: () => fly, onFly: f => flyListeners.push(f),
     /** Turn the view by angles in radians (for touch look). Positive dYaw turns right, positive dPitch looks up. */
     look(dYaw, dPitch) {
       const e = camera.rotation; e.order = 'YXZ';
@@ -79,7 +91,7 @@ export function createPlayer(camera, domElement, colliders, start = { x: 0, z: 0
     // yawDeg: 0 = facing north, positive = turned toward east
     pose() {
       return { x: +capsule.start.x.toFixed(2), y: +(capsule.start.y - PLAYER.radius).toFixed(2), z: +capsule.start.z.toFixed(2),
-        yawDeg: +(-camera.rotation.y * 180 / Math.PI).toFixed(2) || 0, onFloor };
+        yawDeg: +(-camera.rotation.y * 180 / Math.PI).toFixed(2) || 0, onFloor, fly };
     },
   };
 }

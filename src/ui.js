@@ -10,10 +10,16 @@ const CSS = `
 #hud-time input{width:150px}
 #hud-help-btn{top:calc(10px + env(safe-area-inset-top,0px));left:calc(10px + env(safe-area-inset-left,0px));width:34px;height:34px;border-radius:17px;border:0;background:rgba(12,16,22,.6);color:#eef2f6;font-size:18px}
 #hud-help{top:calc(52px + env(safe-area-inset-top,0px));left:calc(10px + env(safe-area-inset-left,0px));max-width:260px;background:rgba(12,16,22,.8);border-radius:8px;padding:10px 12px;font-size:13px;line-height:1.7}
-#stick{left:calc(24px + env(safe-area-inset-left,0px));bottom:calc(24px + env(safe-area-inset-bottom,0px));width:130px;height:130px;border-radius:65px;background:rgba(255,255,255,.12);border:2px solid rgba(255,255,255,.35);touch-action:none}
+#stick{left:calc(24px + env(safe-area-inset-left,0px));bottom:calc(64px + env(safe-area-inset-bottom,0px));width:130px;height:130px;border-radius:65px;background:rgba(255,255,255,.12);border:2px solid rgba(255,255,255,.35);touch-action:none}
 #stick i{position:absolute;left:40px;top:40px;width:50px;height:50px;border-radius:25px;background:rgba(255,255,255,.55)}
 .tbtn{right:calc(24px + env(safe-area-inset-right,0px));width:64px;height:64px;border-radius:32px;border:2px solid rgba(255,255,255,.4);background:rgba(255,255,255,.14);color:#fff;font-size:15px;touch-action:none}
-#btn-jump{bottom:calc(28px + env(safe-area-inset-bottom,0px))}#btn-run{bottom:calc(104px + env(safe-area-inset-bottom,0px))}#btn-run.on{background:rgba(255,200,90,.5)}
+#btn-jump{bottom:calc(64px + env(safe-area-inset-bottom,0px))}#btn-run{bottom:calc(140px + env(safe-area-inset-bottom,0px))}#btn-run.on{background:rgba(255,200,90,.5)}
+#hud-bar{left:50%;transform:translateX(-50%);bottom:calc(20px + env(safe-area-inset-bottom,0px));display:flex;gap:8px}
+#hud-bar button{border:0;border-radius:16px;padding:7px 14px;font-size:14px;background:rgba(12,16,22,.62);color:#eef2f6}
+#hud-bar button.on{background:rgba(255,200,90,.6);color:#201a08}
+#hud-places{left:50%;transform:translateX(-50%);bottom:calc(62px + env(safe-area-inset-bottom,0px));background:rgba(12,16,22,.86);border-radius:10px;padding:6px;display:grid;grid-template-columns:1fr 1fr;gap:4px;width:min(300px,calc(100% - 32px))}
+#hud-places button{border:0;border-radius:6px;padding:9px 6px;font-size:13px;background:rgba(255,255,255,.1);color:#eef2f6;text-align:center}
+#notice{max-width:calc(50% - 110px)!important}
 @media (max-width:640px){
   #hud-map canvas{width:104px;height:auto}
   #hud-time{left:calc(52px + env(safe-area-inset-left,0px));transform:none;padding:4px 8px;font-size:12px}
@@ -41,9 +47,41 @@ export function initUI({ player, lighting, campus, camera, renderer, view }) {
   // --- help ---
   const helpBtn = el('button', 'hud-help-btn', 'hud', '?'), help = el('div', 'hud-help', 'hud');
   help.hidden = true;
-  help.innerHTML = touch ? '左下摇杆：移动<br>右半屏滑动：转动视角<br>“跑”：切换奔跑　“跳”：跳跃<br>上方滑块：调整时间<br>右上：小地图（北在上）'
-    : 'W A S D / 方向键：移动<br>鼠标：转动视角（先点击画面）<br>Shift：跑　空格：跳　Esc：释放鼠标<br>上方滑块：调整时间<br>右上：小地图（北在上）';
+  help.innerHTML = touch ? '左下摇杆：移动<br>右半屏滑动：转动视角<br>“跑”：切换奔跑　“跳”：跳跃<br>“地点”：直接前往某处<br>“航拍”：飞行模式，朝视线方向飞，“跳”为上升<br>上方滑块：调整时间<br>右上：小地图（北在上）'
+    : 'W A S D / 方向键：移动<br>鼠标：转动视角（先点击画面）<br>Shift：跑　空格：跳　Esc：释放鼠标<br>F：航拍模式（空格上升，C 下降）<br>下方“地点”：直接前往某处（先按 Esc）<br>上方滑块：调整时间<br>右上：小地图（北在上）';
   helpBtn.addEventListener('click', e => { e.stopPropagation(); help.hidden = !help.hidden; });
+
+  // --- places menu and drone mode ---
+  if (player) {
+    const boxOf = id => { const it = campus.items.find(i => i.id === id); if (!it) return null; const q = itemPolygon(it), xs = q.map(v => v[0]), zs = q.map(v => v[1]);
+      const w = Math.min(...xs), e = Math.max(...xs), n = Math.min(...zs), s = Math.max(...zs); return { w, e, n, s, cx: (w + e) / 2, cz: (n + s) / 2, it }; };
+    const toward = (x, z, tx, tz) => Math.atan2(tx - x, -(tz - z)) * 180 / Math.PI;      // heading in degrees: 0 north, 90 east
+    const places = [], add = (name, x, z, yaw, y = 0, fly = false, pitch = 0) => places.push({ name, x, z, yaw, y, fly, pitch });
+    add('操场中央', campus.track.cx, campus.track.cz, 0);
+    const seat = boxOf('grandstand-seating'); if (seat) add('看台前', seat.e + 7, seat.cz, 270);
+    const gym = boxOf('gym-main'); if (gym) { add('体育馆西门外', gym.w - 14, gym.cz, 90); add('体育馆内', gym.w + 26, gym.cz, 90, 0.8); }
+    if (campus.courts) { const k = campus.courts.block; add('篮球场', (k.w + k.e) / 2, (k.n + k.s) / 2, 0); }
+    const can = boxOf('plaza-canopy'), tw = boxOf('clock-tower');
+    if (can) add('网架广场', can.cx, can.s - 8, tw ? toward(can.cx, can.s - 8, tw.cx, tw.cz) : 90);
+    if (tw) add('钟楼下', tw.cx - 4, tw.cz + 18, toward(tw.cx - 4, tw.cz + 18, tw.cx, tw.cz));
+    const sn = campus.items.find(i => i.id === 'slab-north');
+    if (sn && sn.mainBar) { const b = sn.mainBar; add('教学楼二层外廊', b.w + 14, b.s - 1.7, 90, 3.9); add('二层教室', b.w + 6.2, b.n + 4.8, 90, 3.9); }
+    const arc = boxOf('arc-building'); if (arc && can) add('弧形楼前', can.cx - 5, can.n - 8, 0);
+    const nb = boxOf('new-teaching-building'), gd = boxOf('north-garden'); if (nb && gd) add('新综合楼前', gd.cx, gd.cz, toward(gd.cx, gd.cz, nb.cx, nb.cz));
+    add('航拍：校园全景', -80, 220, toward(-80, 220, 110, -50), 120, true, -0.42);
+    const sw = boxOf('sign-wing-between-slabs'); if (sw) add('航拍：校名墙', sw.cx + 10, sw.n - 44, toward(sw.cx + 10, sw.n - 44, sw.cx, sw.n), 31, true, -0.3);
+
+    const bar = el('div', 'hud-bar'), list = el('div', 'hud-places'); list.hidden = true;
+    const bPlaces = document.createElement('button'); bPlaces.textContent = '地点'; bar.appendChild(bPlaces);
+    const bFly = document.createElement('button'); bFly.textContent = '航拍'; bFly.id = 'btn-fly'; bar.appendChild(bFly);
+    const go = pl => { player.setFly(pl.fly); player.setPose(pl.x, pl.z, pl.yaw, pl.y); if (pl.pitch) player.look(0, pl.pitch); list.hidden = true; };
+    for (const pl of places) { const b = document.createElement('button'); b.textContent = pl.name; b.addEventListener('click', e => { e.stopPropagation(); go(pl); }); list.appendChild(b); }
+    bPlaces.addEventListener('click', e => { e.stopPropagation(); list.hidden = !list.hidden; });
+    bFly.addEventListener('click', e => { e.stopPropagation(); player.setFly(!player.isFly()); });
+    player.onFly(on => bFly.classList.toggle('on', on));
+    for (const box of [bar, list]) for (const ev of ['pointerdown', 'touchstart']) box.addEventListener(ev, e => e.stopPropagation());
+    window.__places = { list: places.map(pl => pl.name), go: name => { const pl = places.find(q => q.name === name); if (pl) go(pl); return !!pl; } };
+  }
 
   // --- minimap ---
   const mapBox = el('div', 'hud-map'), cv = document.createElement('canvas'); mapBox.appendChild(cv);

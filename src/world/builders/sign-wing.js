@@ -2,12 +2,16 @@
 // a white screen wall about one storey tall with large individual red characters 广东实验中学, read left to right and
 // facing north / north-north-east, with a flat grey slab projecting in front of and below it.
 // ASSUMED: the wing's own facades (plain white with window bands); the sign wall stands on the wing's north edge.
+// The lettering is placed above the roof level of the neighbouring five-storey slabs (the reference describes the wall
+// as standing at roof level, above the five storeys, and frame 5 shows the characters over the north slab's roof); the
+// wing itself was measured as lower than the slabs, so the screen wall is drawn rising from the wing roof to that level.
+// How the real wall is carried (on the wing, or on the slab's parapet) is not established.
 import { bbox } from '../../kit.js';
 import { Batch } from '../../batch.js';
 import { signPlane } from '../../signs.js';
 
 export function build(item, ctx) {
-  const b = bbox(item.points), H = item.height, wallH = 5.4;   // tall enough for the lettering to show over the north slab from the north-east, as in frame 5
+  const b = bbox(item.points), H = item.height, top = 26.4, wallH = top - H - 0.2;   // top: about 4.5 m above the slabs' parapets (20.7 m roof + 1.2 m)
   const v = new Batch().frame(b.w, b.n);
   v.slab('wallWhite', 0, 0, 0, b.sx, H, b.sz);
   for (let k = 0; k < Math.floor(H / 3.9); k++) {
@@ -18,7 +22,7 @@ export function build(item, ctx) {
   v.slab('wallWhite', 0, H + 0.2, 0, b.sx, wallH, 0.3);                                            // sign wall along the north edge
   v.slab('red', 0, H + 0.25, -0.08, b.sx, 0.12, 0.08);
   ctx.add(v.build({ name: item.id }));
-  ctx.add(signPlane('广东实验中学', b.cx, H + 0.2 + wallH * 0.55, b.n - 0.03, b.sx * 0.94, Math.PI));   // faces north
+  ctx.add(signPlane('广东实验中学', b.cx, top - 2.3, b.n - 0.03, b.sx * 0.94, Math.PI));   // faces north, in the top band of the wall
   const c = new Batch().frame(b.w, b.n).slab('generic', 0, 0, 0, b.sx, H, b.sz).build();
   ctx.add(c).visible = false; c.children.forEach(m => ctx.collide(m));
 }
