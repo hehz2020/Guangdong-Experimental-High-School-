@@ -1,0 +1,978 @@
+{
+ "about": "Raw measurements in image space. src/campus-data.js is generated from this file by scripts/build-campus-data.mjs; edit this file, not the generated one.",
+ "image": {
+  "name": "zoom-19 satellite mosaic (Esri World Imagery), 2304 x 2816 px, north up; not included in the repository",
+  "metresPerPixel": 0.2746907923511547,
+  "west": 113.2196044921875,
+  "north": 23.079731762449878,
+  "east": 113.22578430175781,
+  "south": 23.072783030784453,
+  "size": [
+   2304,
+   2816
+  ],
+  "lean": {
+   "pxPerMetreOfHeight": [
+    -0.28,
+    2.3
+   ],
+   "range": "2.1 to 3.1 px per metre along the south component",
+   "basis": "The image is oblique, viewed from the north-north-east: roofs appear displaced toward the south-south-west of their bases and north facades are visible. Magnitude calibrated on the teaching slabs' visible north facade band (about 47 px) against an estimated 20.7 m height, so it inherits that height's uncertainty. Found by the east-slabs measurement agent; not independently calibrated."
+  }
+ },
+ "assumptions": {
+  "storeyHeightMetres": 3.9,
+  "note": "No building height has been measured. Every height is an estimate from storey counts or proportions in video footage."
+ },
+ "track": {
+  "standard": "400 m, 8 lanes: straights 84.39 m, inner bend radius 36.50 m, lane width 1.22 m; outer extent 176.91 x 92.52 m",
+  "straight": 84.39,
+  "innerRadius": 36.5,
+  "lanes": 8,
+  "laneWidth": 1.22,
+  "longAxis": "north-south",
+  "infieldPx": [
+   572,
+   1328,
+   832,
+   1726
+  ],
+  "centreOffsetFromInfieldCentreMetres": [
+   0.4,
+   1.1
+  ],
+  "basis": "Infield grass measured on the satellite image (crisp edges): 71.4 x 109.3 m. Outer extent measured on near-vertical frames 79-81 of the 2022 sports-day video using the infield as scale: 177.2 x 92.2 m, within 0.3 m of a standard 400 m track, so standard geometry is used. Track centre is 1.1 m south and 0.4 m east of the infield centre in those frames. An earlier satellite-only reading (160 m long) was wrong: the south bend is under tree shadow and was also cut by the crop boundary.",
+  "features": [
+   "retired fighter jet on display outside the south-west bend (2022 video frames 79-81)",
+   "long-jump runway with sand pits between the west straight and the stand",
+   "high-jump area in the south D"
+  ]
+ },
+ "items": [
+  {
+   "id": "grandstand-roof",
+   "name": "West grandstand roof canopy",
+   "kind": "building",
+   "surface": "roof",
+   "style": "grandstand",
+   "height": {
+    "metres": 15.0,
+    "basis": "one tall window level plus clerestory above the stand in the videos; estimate, +/- 3 m"
+   },
+   "confidence": "confirmed in video",
+   "accuracyPx": 6,
+   "measuredBy": "main session, gridded 2x crops",
+   "notes": "White roof, long axis north-south, slightly bowed end eaves. Covers the stand building west of the track.",
+   "rectPx": [
+    329,
+    1370,
+    459,
+    1596
+   ]
+  },
+  {
+   "id": "grandstand-seating",
+   "name": "West grandstand open seating strip",
+   "kind": "stand",
+   "surface": "roof",
+   "style": "seating",
+   "height": {
+    "metres": 5.0,
+    "basis": "top of the upper seating tier above the track apron; estimate"
+   },
+   "confidence": "confirmed in video",
+   "accuracyPx": 6,
+   "measuredBy": "main session, gridded 2x crops",
+   "notes": "Three colour blocks north to south: blue, red, teal. Longer than the roof at both ends.",
+   "rectPx": [
+    463,
+    1325,
+    499,
+    1720
+   ]
+  },
+  {
+   "id": "gym-main",
+   "name": "Gymnasium east of the track (slogan wall faces the field)",
+   "kind": "building",
+   "surface": "roof",
+   "style": "gym",
+   "height": {
+    "metres": 15.0,
+    "basis": "tall single hall, eave below the 5-storey roofs in the videos; estimate, +/- 3 m"
+   },
+   "confidence": "confirmed in video",
+   "accuracyPx": 6,
+   "measuredBy": "main session, gridded 2x crops",
+   "notes": "Dark main roof, south eave slightly bowed. A further dark band about 13 m deep lies north of pixel row 1400; unresolved whether it is an annex or shadow, so it is excluded here. Three pale roof strips about 32 m long near the centre.",
+   "rectPx": [
+    901,
+    1400,
+    1200,
+    1615
+   ]
+  },
+  {
+   "id": "gym-roof-east-edge-feature",
+   "name": "White strip on the east edge of the gym roof",
+   "kind": "roof-feature",
+   "surface": "roof",
+   "style": "none",
+   "height": {
+    "metres": 15.0,
+    "basis": "on the gym roof edge; same height as the gym estimate"
+   },
+   "confidence": "seen in satellite only",
+   "accuracyPx": 6,
+   "measuredBy": "main session, gridded 2x crops",
+   "notes": "Overlaps the gym main roof by about 4 m and projects about 2 m beyond its east edge, so it is a feature on the roof edge, not a separate building beside the gym. Ladder-like texture in the southern half. Function unknown from plan view.",
+   "rectPx": [
+    1185,
+    1432,
+    1208,
+    1594
+   ],
+   "solid": false
+  },
+  {
+   "id": "plaza-canopy",
+   "name": "Space-frame canopy over the central plaza",
+   "kind": "canopy",
+   "surface": "roof",
+   "style": "space-frame",
+   "height": {
+    "metres": 21.0,
+    "basis": "roof plane at about the roof level of the adjoining 5-storey blocks in the 2018 video; estimate"
+   },
+   "confidence": "confirmed in video",
+   "accuracyPx": 6,
+   "measuredBy": "main session, gridded 2x crops",
+   "notes": "Pale ribbed roof, ribs run north-south. Irregular notch at the south-east corner, roughly pixels 1370-1391 x 1270-1299, not modelled in this rectangle.",
+   "rectPx": [
+    1244,
+    1162,
+    1391,
+    1299
+   ],
+   "walkUnder": true
+  },
+  {
+   "id": "teaching-slab-west",
+   "name": "East-west teaching slab west of the plaza",
+   "kind": "building",
+   "surface": "roof",
+   "style": "teaching-slab",
+   "height": {
+    "metres": 20.7,
+    "basis": "5 to 6 open-corridor levels seen in the 2018 video; 5 used; estimate"
+   },
+   "confidence": "inside presumed campus, building use not confirmed",
+   "accuracyPx": 6,
+   "measuredBy": "main session, gridded 2x crops",
+   "notes": "Re-measured from a crop that contains the whole building; the first reading came from a crop whose south boundary cut through it and was about 2 m too deep. Two roof zones: a darker pitched or tiled strip along the north (pixel rows 1243-1272) and a pale flat strip with small square openings along the south (rows 1272-1302), with a narrow ledge to about row 1308. Relative heights of the two zones cannot be read from plan view. Called a teaching slab by resemblance to the confirmed ones; actual use not established.",
+   "rectPx": [
+    1010,
+    1243,
+    1195,
+    1305
+   ]
+  },
+  {
+   "id": "dome",
+   "name": "Circular drum with dome north of the arc building",
+   "kind": "building",
+   "surface": "roof",
+   "style": "dome",
+   "height": {
+    "metres": 21.0,
+    "basis": "drum with at least 3 window rows visible above trees, dome on top; estimate, +/- 4 m"
+   },
+   "confidence": "seen in satellite only",
+   "accuracyPx": 6,
+   "measuredBy": "main session, gridded 2x crops",
+   "notes": "Outer ring about 24.7 m across, inner dome about 13 m across. Not seen in the reference video; use unknown.",
+   "circlePx": [
+    1487,
+    930,
+    45
+   ]
+  },
+  {
+   "id": "arc-building",
+   "name": "Long curved building north of the teaching core",
+   "kind": "building",
+   "surface": "roof",
+   "style": "arc",
+   "height": {
+    "metres": 18.6,
+    "basis": "4 window rows on the concave face in the 2022 video plus a rooftop pergola level; estimate"
+   },
+   "confidence": "seen in satellite only",
+   "accuracyPx": 6,
+   "measuredBy": "main session, gridded 2x crops",
+   "notes": "Concave side faces south. Row of dark rectangular openings along the roof. Chord about 188 m. Recorded as a hand-traced centreline because the two ends are not symmetric and no circle fit was made. Whether it belongs to the school is not confirmed.",
+   "bandPx": {
+    "centreline": [
+     [
+      985,
+      1195
+     ],
+     [
+      1035,
+      1130
+     ],
+     [
+      1090,
+      1075
+     ],
+     [
+      1155,
+      1032
+     ],
+     [
+      1230,
+      1007
+     ],
+     [
+      1325,
+      984
+     ],
+     [
+      1425,
+      979
+     ],
+     [
+      1525,
+      990
+     ],
+     [
+      1595,
+      1022
+     ]
+    ],
+    "depth": 50
+   }
+  },
+  {
+   "id": "teaching-slab-west-annex-w",
+   "name": "Small block projecting south at the west end of the west slab",
+   "kind": "building",
+   "surface": "roof",
+   "style": "plain",
+   "height": {
+    "metres": 7.8,
+    "basis": "height not established; 2 storeys assumed"
+   },
+   "confidence": "seen in satellite only, single reading",
+   "accuracyPx": 6,
+   "measuredBy": "main session, gridded 2x crops",
+   "notes": "Pale roof. Possibly a stair or entrance block; function not established.",
+   "rectPx": [
+    1003,
+    1300,
+    1035,
+    1342
+   ]
+  },
+  {
+   "id": "teaching-slab-west-link-e",
+   "name": "Narrow north-south piece at the east end of the west slab",
+   "kind": "building",
+   "surface": "roof",
+   "style": "stair-core",
+   "height": {
+    "metres": 20.7,
+    "basis": "taken as the glass stair tower at the slab's east end; estimate"
+   },
+   "confidence": "seen in satellite only, single reading",
+   "accuracyPx": 6,
+   "measuredBy": "main session, gridded 2x crops",
+   "notes": "Pale, about 3.6 m wide. Possibly a stair core or a covered link toward the plaza; function not established.",
+   "rectPx": [
+    1197,
+    1262,
+    1210,
+    1335
+   ]
+  },
+  {
+   "id": "slab-north",
+   "name": "North teaching slab (east of plaza canopy)",
+   "kind": "building",
+   "surface": "roof",
+   "style": "teaching-slab",
+   "height": {
+    "metres": 20.7,
+    "basis": "5 storeys counted in the 2018 video x assumed 3.9 m floor height + 1.2 m parapet; estimate"
+   },
+   "confidence": "confirmed in video",
+   "accuracyPx": 4,
+   "measuredBy": "measurement agent (east-slabs), single reading, recheck pending",
+   "notes": "ROOF outline as it appears in the image, NOT a ground footprint: the image is oblique (taken from the NNE), the blue-grey gridded band at y 1098-1136/1146 is the north facade, not shadow and not roof. Ground footprint is roughly this outline moved about 47 px north and 5 px east (uncertain 40-60 px). Dark grey flat roof with white parapets and rooftop units; long white pipe/parapet lines at y 1157/1167 and 1176; lighter 9 px strip y 1176-1185 along the south side (corridor roof). North edge steps 10 px at x 1529 (west 68 px at y 1146, east part at y 1136); video suggests the west part is taller, so the step may be height rather than plan. Small block at SW corner x 1460-1489, y 1181-1203 included. South edge east of x 1575 is in shadow (inferred). Main bar 176 px long (48 m), 39-49 px deep. Video frame 5 shows about 5 window rows on the north facade (count +/-1). One of TWO slabs in this zone.",
+   "polygonPx": [
+    [
+     1461,
+     1146
+    ],
+    [
+     1529,
+     1146
+    ],
+    [
+     1529,
+     1136
+    ],
+    [
+     1638,
+     1136
+    ],
+    [
+     1638,
+     1176
+    ],
+    [
+     1621,
+     1176
+    ],
+    [
+     1621,
+     1185
+    ],
+    [
+     1489,
+     1185
+    ],
+    [
+     1489,
+     1203
+    ],
+    [
+     1460,
+     1203
+    ]
+   ]
+  },
+  {
+   "id": "slab-north-east-stair",
+   "name": "North slab east-end stair/lobby block",
+   "kind": "building",
+   "surface": "roof",
+   "style": "stair-tower-oculus",
+   "height": {
+    "metres": 23.5,
+    "basis": "stair tower slightly taller than the slab with an open top loggia (2018 video); estimate"
+   },
+   "confidence": "confirmed in video",
+   "accuracyPx": 5,
+   "measuredBy": "measurement agent (east-slabs), single reading, recheck pending",
+   "notes": "Roof slab as seen; dark circular spot at about (1651,1153) matches the roof slab with a round opening in frames 5-6. Rises above the main roof (a dark vertical facade strip at x 1640-1644 runs y 1105-1164, i.e. taller than the slab facade). East limit of the north slab as seen is x 1661 (ground about 1667). Total slab length incl. this block 200 px = 55 m.",
+   "rectPx": [
+    1640,
+    1137,
+    1661,
+    1172
+   ]
+  },
+  {
+   "id": "slab-north-se-block",
+   "name": "North slab south-east corner block",
+   "kind": "building",
+   "surface": "roof",
+   "style": "plain",
+   "height": {
+    "metres": 11.7,
+    "basis": "height not established; 3 storeys assumed"
+   },
+   "confidence": "seen in satellite only",
+   "accuracyPx": 5,
+   "measuredBy": "measurement agent (east-slabs), single reading, recheck pending",
+   "notes": "Small roof with white parapets south of the east stair block; inner parapet line at y 1182. Height relative to the slab not established.",
+   "rectPx": [
+    1622,
+    1176,
+    1653,
+    1198
+   ]
+  },
+  {
+   "id": "slab-north-ne-wing",
+   "name": "Lower wing north of the north slab's east end",
+   "kind": "building",
+   "surface": "roof",
+   "style": "plain",
+   "height": {
+    "metres": 11.7,
+    "basis": "about 3 storeys in frames 2-4 of the 2018 video; estimate"
+   },
+   "confidence": "confirmed in video",
+   "accuracyPx": 5,
+   "measuredBy": "measurement agent (east-slabs), single reading, recheck pending",
+   "notes": "Roof as seen, white parapets, beige roof; southern part (x 1624-1659, y 1078-1103) is dark, probably shadow of the taller east stair block. Stepped L-shape. Frames 2-4 show a lower (about 3 storey) block in front of the north slab's east end. Its north edge (y 1040-1044) meets the east end of the arc building; that junction is outside my zone and partly cut by my crops.",
+   "polygonPx": [
+    [
+     1609,
+     1044
+    ],
+    [
+     1645,
+     1040
+    ],
+    [
+     1645,
+     1075
+    ],
+    [
+     1660,
+     1075
+    ],
+    [
+     1660,
+     1104
+    ],
+    [
+     1624,
+     1104
+    ],
+    [
+     1624,
+     1084
+    ],
+    [
+     1609,
+     1084
+    ]
+   ]
+  },
+  {
+   "id": "slab-south",
+   "name": "South teaching slab (clock tower at its west end)",
+   "kind": "building",
+   "surface": "roof",
+   "style": "teaching-slab",
+   "height": {
+    "metres": 20.7,
+    "basis": "5 storeys counted in the 2018 video x assumed 3.9 m floor height + 1.2 m parapet; estimate"
+   },
+   "confidence": "confirmed in video",
+   "accuracyPx": 5,
+   "measuredBy": "measurement agent (east-slabs), single reading, recheck pending",
+   "notes": "ROOF outline as seen (oblique image; facade band y 1238-1277/1287 north of it is the north facade). Ground footprint roughly 47 px further north, 5 px east. Same plan as the north slab, offset (-24,+141) px: north edge steps 10 px at x 1508, inner lines at y 1307 and 1317, SW corner block x 1437-1466 y 1316-1343 included. South edge (1324) is the least certain edge (+/-5): it blends with trees and a sunlit paved yard, and the south facade is not visible at all. Frames 6-7 show 5 window rows on the north facade (+/-1) and the west part standing slightly higher than the east part.",
+   "polygonPx": [
+    [
+     1437,
+     1287
+    ],
+    [
+     1508,
+     1287
+    ],
+    [
+     1508,
+     1277
+    ],
+    [
+     1613,
+     1277
+    ],
+    [
+     1613,
+     1317
+    ],
+    [
+     1597,
+     1317
+    ],
+    [
+     1597,
+     1324
+    ],
+    [
+     1466,
+     1324
+    ],
+    [
+     1466,
+     1343
+    ],
+    [
+     1437,
+     1343
+    ]
+   ]
+  },
+  {
+   "id": "slab-south-east-stair",
+   "name": "South slab east-end stair/lobby block",
+   "kind": "building",
+   "surface": "roof",
+   "style": "stair-tower-oculus",
+   "height": {
+    "metres": 23.5,
+    "basis": "as the north slab's east stair tower; estimate"
+   },
+   "confidence": "confirmed in video",
+   "accuracyPx": 6,
+   "measuredBy": "measurement agent (east-slabs), single reading, recheck pending",
+   "notes": "Roof as seen: two short white beams at x 1617-1621 and a dark round spot near (1627,1295); frame 7 shows a roof slab with round opening and a pergola frame on this end. East limit of the south slab as seen x 1638 (ground about 1644). Edges less crisp than on the north slab.",
+   "rectPx": [
+    1614,
+    1278,
+    1638,
+    1316
+   ]
+  },
+  {
+   "id": "slab-south-se-block",
+   "name": "South slab south-east corner block",
+   "kind": "building",
+   "surface": "roof",
+   "style": "plain",
+   "height": {
+    "metres": 11.7,
+    "basis": "height not established; 3 storeys assumed"
+   },
+   "confidence": "seen in satellite only",
+   "accuracyPx": 4,
+   "measuredBy": "measurement agent (east-slabs), single reading, recheck pending",
+   "notes": "White parapet on west, south and east sides clearly visible; mottled beige roof. Same element as the north slab's SE block. Height not established.",
+   "rectPx": [
+    1598,
+    1318,
+    1628,
+    1342
+   ]
+  },
+  {
+   "id": "sign-wing-between-slabs",
+   "name": "East wing between the two slabs (carries the school-name sign)",
+   "kind": "building",
+   "surface": "roof",
+   "style": "sign-wing",
+   "height": {
+    "metres": 15.6,
+    "basis": "lower than the slabs by about one storey in the satellite image; carries the rooftop name sign; estimate"
+   },
+   "confidence": "confirmed in video",
+   "accuracyPx": 4,
+   "measuredBy": "measurement agent (east-slabs), single reading, recheck pending",
+   "notes": "Roof as seen, beige with white parapets on all four sides, 44 x 71 px (12 x 19.5 m). Lower than the slabs: about 19 px of the south slab's facade shows between its south edge (1258) and the south slab's parapet (1277). Frames 5-6 show the red school-name lettering on a white parapet wall on this block. It appears to abut the south slab; whether it also touches the north slab at ground level could not be established.",
+   "rectPx": [
+    1594,
+    1187,
+    1638,
+    1258
+   ]
+  },
+  {
+   "id": "link-corridor-west",
+   "name": "North-south link walkway along the west ends of both slabs",
+   "kind": "link-corridor",
+   "surface": "roof",
+   "style": "walkway",
+   "height": {
+    "metres": 4.0,
+    "basis": "height and construction not established; single-storey covered walkway assumed"
+   },
+   "confidence": "confirmed in video",
+   "accuracyPx": 5,
+   "measuredBy": "measurement agent (east-slabs), single reading, recheck pending",
+   "notes": "Long narrow strip about 12 px (3.3 m) wide and 205 px (56 m) long. NOT exactly north-south: it runs NNE-SSW (about 10 degrees off, parallel to the canal road), passing between the block north-east of the canopy (east edge x 1444) and the north slab (west edge 1461), then between the tower/glass block and the south slab's west end. Bright white where sunlit (y 1145-1230), grey where shaded by the slabs (y 1088-1145 and 1230-1292). Low structure; frames 7-8 show a white elevated walkway with parapets leaving the south slab's north-west corner toward the north, which I take to be this. Height, and whether it is roofed or an open deck, not established.",
+   "polygonPx": [
+    [
+     1457,
+     1088
+    ],
+    [
+     1453,
+     1113
+    ],
+    [
+     1446,
+     1141
+    ],
+    [
+     1443,
+     1170
+    ],
+    [
+     1439,
+     1200
+    ],
+    [
+     1436,
+     1225
+    ],
+    [
+     1432,
+     1250
+    ],
+    [
+     1426,
+     1270
+    ],
+    [
+     1425,
+     1292
+    ],
+    [
+     1437,
+     1292
+    ],
+    [
+     1438,
+     1270
+    ],
+    [
+     1444,
+     1250
+    ],
+    [
+     1448,
+     1225
+    ],
+    [
+     1451,
+     1200
+    ],
+    [
+     1454,
+     1170
+    ],
+    [
+     1458,
+     1141
+    ],
+    [
+     1466,
+     1113
+    ],
+    [
+     1470,
+     1088
+    ]
+   ],
+   "walkUnder": true
+  },
+  {
+   "id": "link-corridor-north-pavilion",
+   "name": "Small white roof at the north end of the link walkway",
+   "kind": "link-corridor",
+   "surface": "roof",
+   "style": "walkway",
+   "height": {
+    "metres": 4.0,
+    "basis": "not established; assumed as the walkway"
+   },
+   "confidence": "seen in satellite only",
+   "accuracyPx": 3,
+   "measuredBy": "measurement agent (east-slabs), single reading, recheck pending",
+   "notes": "White rectangular roof with parapet outline, about 13 x 18 px. North of it (y 1035-1070) tree crowns hide whether the walkway continues to the arc building.",
+   "polygonPx": [
+    [
+     1461,
+     1070
+    ],
+    [
+     1474,
+     1070
+    ],
+    [
+     1470,
+     1088
+    ],
+    [
+     1457,
+     1088
+    ]
+   ],
+   "walkUnder": true
+  },
+  {
+   "id": "clock-tower",
+   "name": "Clock tower (plan position, in the same roof-level frame as the south slab outline)",
+   "kind": "building",
+   "surface": "roof",
+   "style": "clock-tower",
+   "height": {
+    "metres": 40.0,
+    "basis": "top about twice the 5-storey slab height in frame 8 of the 2018 video; rough estimate, +/- 5 m"
+   },
+   "confidence": "confirmed in video",
+   "accuracyPx": 10,
+   "measuredBy": "measurement agent (east-slabs), single reading, recheck pending",
+   "notes": "Identified with moderate-to-good confidence, but NOT as a clean square in plan: because the image is oblique the tower shows as a leaning strip (see clock-tower-leaning-image) with its top displaced about 100 px SSW of its base. This rect is where the shaft sits relative to the south slab's roof outline as drawn (about 20 px = 5.5 m square, 19-39 px west of the slab's west end, level with the northern/central part of the slab's width), so it can be used directly next to the slab entries. True ground position is roughly centre (1413,1255) +/-12. The base is hidden behind the glass stair block. Rough height from video proportions (top is about 6 storey-heights above the slab roof): about 45 m, +/-5, an estimate not a measurement. Evidence: strip follows the lean direction of other vertical edges; sunlit white east-face sliver; teal shadow patch on the canopy's SE corner (x 1355-1390, y 1278-1310) pointing back to it; position matches frames 7-10 (west end of the south slab, glass block on its north side, canopy beyond).",
+   "rectPx": [
+    1398,
+    1292,
+    1418,
+    1312
+   ],
+   "leanReferenceHeightMetres": 20.7,
+   "leanNote": "The measured square is the shaft's position expressed in the frame of the adjoining slab roof outline, so it is shifted by the slab roof height, not by the tower's own height."
+  },
+  {
+   "id": "glass-stair-block",
+   "name": "Glass stair block beside the clock tower (roof element as seen)",
+   "kind": "building",
+   "surface": "roof",
+   "style": "stair-core",
+   "height": {
+    "metres": 22.5,
+    "basis": "about 1.5 storeys above the slab roof per the measurement agent; estimate"
+   },
+   "confidence": "confirmed in video",
+   "accuracyPx": 6,
+   "measuredBy": "measurement agent (east-slabs), single reading, recheck pending",
+   "notes": "Small beige/white roof with parapet lines directly north of the tower strip; taken to be the white roof slab on top of the blue-green glass block in frames 8-10 (about 1.5 storeys above the slab roof). In the slab-roof frame it sits about 14 px further north (y 1279-1292), i.e. at and slightly north of the south slab's north-west corner. Full extent of the glass block not resolvable; only this roof element is seen.",
+   "rectPx": [
+    1397,
+    1293,
+    1419,
+    1306
+   ]
+  },
+  {
+   "id": "block-north-of-canopy-east-end",
+   "name": "East end of the block on the north side of the plaza canopy",
+   "kind": "building",
+   "surface": "roof",
+   "style": "teaching-slab",
+   "height": {
+    "metres": 20.7,
+    "basis": "5 storeys counted in the 2018 video x assumed 3.9 m floor height + 1.2 m parapet; estimate"
+   },
+   "confidence": "seen in satellite only",
+   "accuracyPx": 6,
+   "measuredBy": "measurement agent (east-slabs), single reading, recheck pending",
+   "notes": "Only the part inside my zone. White north parapet line at y 1131-1134 continues west to at least x 1354 (and probably further, outside my zone); east edge is a beige band at x 1439-1444, y 1117-1191; south limit about y 1191. Dark roof with several white boxes. Sits immediately west of the north slab's west end with the link walkway in the 17 px gap. Internal layout and height not established.",
+   "polygonPx": [
+    [
+     1389,
+     1131
+    ],
+    [
+     1444,
+     1131
+    ],
+    [
+     1444,
+     1191
+    ],
+    [
+     1389,
+     1191
+    ]
+   ]
+  },
+  {
+   "id": "plaza-east-of-canopy",
+   "name": "Open paved area between canopy east edge and the link walkway",
+   "kind": "court",
+   "surface": "ground",
+   "style": "plaza",
+   "height": {
+    "metres": 0,
+    "basis": "ground surface"
+   },
+   "confidence": "confirmed in video",
+   "accuracyPx": 10,
+   "measuredBy": "measurement agent (east-slabs), single reading, recheck pending",
+   "notes": "Appears as a uniform dark rectangle (in shadow) in the satellite image; frames 8-9 show an open paved plaza with palm planters north of the glass block and east of the canopy, which I take to be this. Southern part of the rectangle may be shaded facade of the glass block/tower base rather than ground.",
+   "rectPx": [
+    1392,
+    1193,
+    1436,
+    1290
+   ],
+   "solid": false
+  },
+  {
+   "id": "courtyard-between-slabs",
+   "name": "Courtyard between the north and south slabs",
+   "kind": "garden",
+   "surface": "ground",
+   "style": "garden",
+   "height": {
+    "metres": 0,
+    "basis": "ground surface"
+   },
+   "confidence": "confirmed in video",
+   "accuracyPx": 8,
+   "measuredBy": "measurement agent (east-slabs), single reading, recheck pending",
+   "notes": "Visible ground strip only; mostly in shadow, with sunlit tree crowns at x 1450-1500, y 1195-1240. Because the north slab's roof leans over it, the real courtyard extends further north: gap between the two slabs is 92 px (east parts) to 102 px (west parts) = 25-28 m; row pitch 141 px = 38.7 m. Bounded on the east by the sign wing (x 1594) and on the west by the link walkway.",
+   "rectPx": [
+    1466,
+    1186,
+    1593,
+    1238
+   ],
+   "solid": false
+  },
+  {
+   "id": "canal-road",
+   "name": "Road between the slabs and the canal",
+   "kind": "road",
+   "surface": "ground",
+   "style": "road",
+   "height": {
+    "metres": 0,
+    "basis": "ground surface"
+   },
+   "confidence": "confirmed in video",
+   "accuracyPx": 10,
+   "measuredBy": "measurement agent (east-slabs), single reading, recheck pending",
+   "notes": "Grey asphalt about 25 px (7 m) wide, largely under tree crowns and tree shadow, so edges are approximate. It is NOT due north-south: it trends NNE-SSW (about 13 px west per 100 px south). White car on it at (1679,1360).",
+   "polygonPx": [
+    [
+     1715,
+     1040
+    ],
+    [
+     1700,
+     1140
+    ],
+    [
+     1694,
+     1200
+    ],
+    [
+     1686,
+     1260
+    ],
+    [
+     1674,
+     1360
+    ],
+    [
+     1669,
+     1420
+    ],
+    [
+     1693,
+     1420
+    ],
+    [
+     1699,
+     1360
+    ],
+    [
+     1713,
+     1260
+    ],
+    [
+     1722,
+     1200
+    ],
+    [
+     1727,
+     1140
+    ],
+    [
+     1745,
+     1040
+    ]
+   ],
+   "solid": false
+  },
+  {
+   "id": "canal-side-pavement",
+   "name": "Paved strip along the east facades of the slabs",
+   "kind": "other",
+   "surface": "ground",
+   "style": "pavement",
+   "height": {
+    "metres": 0,
+    "basis": "ground surface"
+   },
+   "confidence": "confirmed in video",
+   "accuracyPx": 8,
+   "measuredBy": "measurement agent (east-slabs), single reading, recheck pending",
+   "notes": "Light beige ground strip between the buildings' east ends and a thin dark line (hedge or kerb) that runs from about (1690,1087) to (1653,1330). West edge is partly hidden by the leaning east-end blocks.",
+   "polygonPx": [
+    [
+     1664,
+     1075
+    ],
+    [
+     1650,
+     1190
+    ],
+    [
+     1642,
+     1240
+    ],
+    [
+     1632,
+     1330
+    ],
+    [
+     1652,
+     1330
+    ],
+    [
+     1667,
+     1240
+    ],
+    [
+     1676,
+     1190
+    ],
+    [
+     1690,
+     1075
+    ]
+   ],
+   "solid": false
+  },
+  {
+   "id": "canal-west-bank",
+   "name": "Canal west bank line",
+   "kind": "water",
+   "surface": "ground",
+   "style": "water",
+   "height": {
+    "metres": 0,
+    "basis": "ground surface"
+   },
+   "confidence": "confirmed in video",
+   "accuracyPx": 6,
+   "measuredBy": "measurement agent (east-slabs), single reading, recheck pending",
+   "notes": "West edge of the water (pale stone revetment about 8 px wide just west of it); polygon closes eastward only to x 1840, the east bank is outside my crops. At this latitude the canal is at x greater than about 1750-1800 and tilted, not at x 1700-1800: the band x 1725-1775 is a tree belt between road and canal.",
+   "polygonPx": [
+    [
+     1802,
+     1037
+    ],
+    [
+     1790,
+     1100
+    ],
+    [
+     1778,
+     1200
+    ],
+    [
+     1762,
+     1300
+    ],
+    [
+     1750,
+     1400
+    ],
+    [
+     1747,
+     1420
+    ],
+    [
+     1840,
+     1420
+    ],
+    [
+     1840,
+     1037
+    ]
+   ],
+   "solid": false
+  }
+ ]
+}

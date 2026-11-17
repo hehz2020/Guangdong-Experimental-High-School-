@@ -4,7 +4,8 @@
   "description": "3D walkthrough of the Guangdong Experimental High School senior campus",
   "scripts": {
     "start": "python3 -m http.server 8080",
-    "vendor": "node scripts/vendor.mjs"
+    "vendor": "node scripts/vendor.mjs",
+    "data": "node scripts/build-campus-data.mjs"
   },
   "repository": {
     "type": "git",

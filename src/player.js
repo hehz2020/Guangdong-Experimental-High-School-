@@ -1,78 +1,80 @@
+// First-person player: pointer-lock look, keyboard movement, capsule-versus-octree collision in 3D
+// (so floors, stairs and upper storeys work), gravity and a small jump.
 import * as THREE from 'three';
 import { PointerLockControls } from 'three/addons/controls/PointerLockControls.js';
+import { Octree } from 'three/addons/math/Octree.js';
+import { Capsule } from 'three/addons/math/Capsule.js';
 
-const EYE_HEIGHT = 1.6;      // metres
-const RADIUS = 0.4;          // player collision radius, metres
-const WALK = 1.5, RUN = 4.5; // metres per second
+export const PLAYER = { radius: 0.35, eye: 1.6, walk: 3.2, run: 8.0, gravity: 30, jump: 6.5, response: 10 };
+const SUB = 1 / 120;                                   // fixed physics step, seconds
 
-// Footprints that do not block walking. This is a modelling judgement taken from the
-// reference footage, not a measurement: the plaza canopy is an open space-frame roof
-// on columns with people walking underneath it.
-const WALK_UNDER = new Set(['plaza-canopy']);
-
-function distToSegment(px, pz, ax, az, bx, bz) {
-  const dx = bx - ax, dz = bz - az, len2 = dx * dx + dz * dz;
-  const t = len2 ? Math.max(0, Math.min(1, ((px - ax) * dx + (pz - az) * dz) / len2)) : 0;
-  return Math.hypot(px - (ax + t * dx), pz - (az + t * dz));
-}
-
-function makeBlockers(campus) {
-  return campus.buildings.filter(b => !WALK_UNDER.has(b.id)).map(b => {
-    const f = b.footprint;
-    if (b.shape === 'rect') return (x, z) => Math.abs(x - f.cx) < f.sizeX / 2 + RADIUS && Math.abs(z - f.cz) < f.sizeZ / 2 + RADIUS;
-    if (b.shape === 'circle') return (x, z) => Math.hypot(x - f.cx, z - f.cz) < f.radius + RADIUS;
-    if (b.shape === 'polyline-band') return (x, z) => {
-      const p = f.centreline;
-      for (let i = 0; i < p.length - 1; i++) if (distToSegment(x, z, p[i][0], p[i][1], p[i + 1][0], p[i + 1][1]) < f.depth / 2 + RADIUS) return true;
-      return false;
-    };
-    return () => false;
-  });
-}
-
-export function createPlayer(camera, domElement, campus) {
+export function createPlayer(camera, domElement, colliders, start = { x: 0, z: 0, yawDeg: 0 }) {
   const controls = new PointerLockControls(camera, domElement);
-  const blockers = makeBlockers(campus);
-  const blocked = (x, z) => blockers.some(hit => hit(x, z));
-  const keys = { f: false, b: false, l: false, r: false, run: false };
-  const dir = new THREE.Vector3();
+  colliders.updateWorldMatrix(true, true);
+  const octree = new Octree(); octree.fromGraphNode(colliders);
+  const capsule = new Capsule(new THREE.Vector3(), new THREE.Vector3(), PLAYER.radius);
+  const vel = new THREE.Vector3(), dir = new THREE.Vector3(), push = new THREE.Vector3();
+  const keys = { f: false, b: false, l: false, r: false, run: false, jump: false };
+  let onFloor = false, floorTimer = 0, carry = 0;       // floorTimer: seconds of grace after the last floor contact
 
-  // start at the south end of the infield, facing north
-  const start = campus.track.infield;
-  camera.position.set(start.cx, EYE_HEIGHT, start.cz + start.sizeZ / 2 - 5);
-  camera.rotation.set(0, 0, 0, 'YXZ');
+  function place(x, y, z) {
+    capsule.start.set(x, y + PLAYER.radius, z); capsule.end.set(x, y + PLAYER.eye - 0.05, z); vel.set(0, 0, 0);
+    camera.position.set(x, y + PLAYER.eye, z);
+  }
+  camera.rotation.set(0, -start.yawDeg * Math.PI / 180, 0, 'YXZ');
+  place(start.x, start.y ?? 0, start.z);
 
-  const map = { KeyW: 'f', ArrowUp: 'f', KeyS: 'b', ArrowDown: 'b', KeyA: 'l', ArrowLeft: 'l', KeyD: 'r', ArrowRight: 'r', ShiftLeft: 'run', ShiftRight: 'run' };
+  const map = { KeyW: 'f', ArrowUp: 'f', KeyS: 'b', ArrowDown: 'b', KeyA: 'l', ArrowLeft: 'l', KeyD: 'r', ArrowRight: 'r', ShiftLeft: 'run', ShiftRight: 'run', Space: 'jump' };
   addEventListener('keydown', e => { if (map[e.code]) { keys[map[e.code]] = true; e.preventDefault(); } });
   addEventListener('keyup', e => { if (map[e.code]) keys[map[e.code]] = false; });
-  // Pointer lock exists only on mouse-driven browsers. Asking for it elsewhere makes the
-  // controls log an error, so check first and report whether the request was made.
+  addEventListener('blur', () => { for (const k in keys) keys[k] = false; });
+
+  // Pointer lock exists only on mouse-driven browsers; asking for it elsewhere makes the controls log an error.
   const canLock = 'pointerLockElement' in document && matchMedia('(pointer: fine)').matches;
   function requestLock() { if (canLock && !controls.isLocked) controls.lock(); return canLock; }
   domElement.addEventListener('click', requestLock);
 
-  function advance(input, dt) {
-    const fwd = (input.f ? 1 : 0) - (input.b ? 1 : 0), side = (input.r ? 1 : 0) - (input.l ? 1 : 0);
-    if (!fwd && !side) return;
+  function sub(input, dt) {
+    const fwd = (input.f ? 1 : 0) - (input.b ? 1 : 0) + (input.moveY || 0), side = (input.r ? 1 : 0) - (input.l ? 1 : 0) + (input.moveX || 0);
+    // Standing still on a floor: sleep, so the contact flag is stable and the player does not creep down slopes.
+    if (onFloor && !fwd && !side && !input.jump && Math.hypot(vel.x, vel.z) < 0.05) { vel.set(0, 0, 0); floorTimer = 0.1; return; }
     controls.getDirection(dir);
     let fx = dir.x, fz = dir.z; const n = Math.hypot(fx, fz) || 1; fx /= n; fz /= n;
-    const rx = -fz, rz = fx;                               // right = forward x up
-    let mx = fx * fwd + rx * side, mz = fz * fwd + rz * side;
-    const m = Math.hypot(mx, mz) || 1, d = (input.run ? RUN : WALK) * dt;
-    mx = mx / m * d; mz = mz / m * d;
-    const p = camera.position;
-    if (blocked(p.x, p.z)) { p.x += mx; p.z += mz; return; } // already inside a footprint: let the player walk out
-    if (!blocked(p.x + mx, p.z + mz)) { p.x += mx; p.z += mz; }
-    else if (!blocked(p.x + mx, p.z)) p.x += mx;           // slide along the wall
-    else if (!blocked(p.x, p.z + mz)) p.z += mz;
+    let wx = fx * fwd - fz * side, wz = fz * fwd + fx * side;            // right = forward x up = (-fz, 0, fx)
+    const m = Math.hypot(wx, wz), speed = input.run ? PLAYER.run : PLAYER.walk;
+    if (m > 1) { wx /= m; wz /= m; }
+    const k = Math.min(1, (onFloor ? PLAYER.response : PLAYER.response * 0.25) * dt);
+    vel.x += (wx * speed - vel.x) * k; vel.z += (wz * speed - vel.z) * k;
+    if (onFloor && input.jump && vel.y <= 0.01) { vel.y = PLAYER.jump; floorTimer = 0; }
+    vel.y -= PLAYER.gravity * dt;                                        // always, so a resting player keeps touching the floor
+    capsule.translate(push.copy(vel).multiplyScalar(dt));
+    const hit = octree.capsuleIntersect(capsule);
+    floorTimer -= dt;
+    if (hit) {
+      if (hit.normal.y > 0.35) { floorTimer = 0.1; if (vel.y < 0) vel.y = 0; }
+      else vel.addScaledVector(hit.normal, -hit.normal.dot(vel));
+      if (hit.depth >= 1e-10) capsule.translate(hit.normal.multiplyScalar(hit.depth));
+    }
+    onFloor = floorTimer > 0;
+    if (capsule.start.y < -30) place(start.x, start.y ?? 0, start.z);       // fell out of the world
   }
+  function sync() { camera.position.set(capsule.end.x, capsule.end.y + 0.05, capsule.end.z); }
 
   return {
-    controls, canLock, requestLock,
-    update(dt) { advance(keys, dt); camera.position.y = EYE_HEIGHT; },
-    setPose(x, z, yawDeg) { camera.position.set(x, EYE_HEIGHT, z); camera.rotation.set(0, -yawDeg * Math.PI / 180, 0, 'YXZ'); return this.pose(); },
-    step(input, seconds) { const h = 1 / 60; for (let t = 0; t < seconds - 1e-9; t += h) advance(input, h); return this.pose(); },
-    // yawDeg: 0 = facing north, positive = turned toward east (clockwise seen from above)
-    pose() { const p = camera.position; return { x: +p.x.toFixed(2), z: +p.z.toFixed(2), yawDeg: +(-camera.rotation.y * 180 / Math.PI).toFixed(2) || 0, blocked: blocked(p.x, p.z) }; },
+    controls, canLock, requestLock, keys,
+    update(dt, extra) {
+      carry = Math.min(carry + dt, 0.25);
+      const input = extra ? { ...keys, ...extra } : keys;
+      while (carry >= SUB) { sub(input, SUB); carry -= SUB; }
+      sync();
+    },
+    // deterministic hooks for automated checks
+    setPose(x, z, yawDeg, y = 0) { camera.rotation.set(0, -yawDeg * Math.PI / 180, 0, 'YXZ'); place(x, y, z); onFloor = false; floorTimer = 0; return this.pose(); },
+    step(input, seconds) { for (let t = 0; t < seconds - 1e-9; t += SUB) sub(input, SUB); sync(); return this.pose(); },
+    // yawDeg: 0 = facing north, positive = turned toward east
+    pose() {
+      return { x: +capsule.start.x.toFixed(2), y: +(capsule.start.y - PLAYER.radius).toFixed(2), z: +capsule.start.z.toFixed(2),
+        yawDeg: +(-camera.rotation.y * 180 / Math.PI).toFixed(2) || 0, onFloor };
+    },
   };
 }
