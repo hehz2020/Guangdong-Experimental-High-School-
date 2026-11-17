@@ -21,6 +21,16 @@ export class Batch {
   frame(x = 0, z = 0, angle = 0, y = 0) {
     this.m.makeRotationY(angle).setPosition(x, y, z); this.nm.getNormalMatrix(this.m); return this;
   }
+  /** Use an arbitrary local frame (THREE.Matrix4). */
+  setMatrix(m) { this.m.copy(m); this.nm.getNormalMatrix(this.m); return this; }
+  /** Thin square bar from a to b, both [x, y, z] in world coordinates. Changes the current frame: call frame() again afterwards. */
+  strut(material, a, b, t = 0.1) {
+    const A = new THREE.Vector3(...a), B = new THREE.Vector3(...b), d = new THREE.Vector3().subVectors(B, A), len = d.length();
+    if (len < 1e-6) return this;
+    const q = new THREE.Quaternion().setFromUnitVectors(new THREE.Vector3(1, 0, 0), d.normalize());
+    this.setMatrix(new THREE.Matrix4().compose(A.add(B).multiplyScalar(0.5), q, new THREE.Vector3(1, 1, 1)));
+    return this.box(material, 0, 0, 0, len, t, t);
+  }
   _part(material) {
     const key = typeof material === 'string' ? material : material.uuid;
     if (!this.parts.has(key)) this.parts.set(key, { material: typeof material === 'string' ? mat(material) : material, pos: [], nor: [], uv: [], idx: [] });

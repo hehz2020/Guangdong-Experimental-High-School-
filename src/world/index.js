@@ -6,6 +6,13 @@ import { build as generic } from './builders/generic.js';
 export const BUILDERS = {
   // style -> module path, filled in as dedicated builders are written
   'teaching-slab': './builders/teaching-slab.js',
+  'clock-tower': './builders/clock-tower.js',
+  'stair-core': './builders/stair-core.js',
+  'stair-tower-oculus': './builders/stair-tower.js',
+  'sign-wing': './builders/sign-wing.js',
+  'walkway': './builders/walkway.js',
+  'space-frame': './builders/canopy.js',
+  'plaza': './builders/plaza.js',
 };
 
 // Modules that add things not tied to one data item (track furniture, courts, landscape...). Each exports build(ctx).

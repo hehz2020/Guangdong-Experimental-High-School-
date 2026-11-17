@@ -11,7 +11,6 @@ const FILES = [
   ['three/examples/jsm/controls/PointerLockControls.js', 'three/addons/controls/PointerLockControls.js'],
   ['three/examples/jsm/math/Octree.js', 'three/addons/math/Octree.js'],                 // 3D collision
   ['three/examples/jsm/math/Capsule.js', 'three/addons/math/Capsule.js'],               // imported by Octree.js
-  ['three/examples/jsm/objects/Sky.js', 'three/addons/objects/Sky.js'],                 // atmospheric sky
 ];
 
 if (!existsSync('node_modules/three')) { console.error('node_modules/three missing: run npm install first'); process.exit(1); }
