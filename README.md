@@ -85,7 +85,7 @@ npm start          # 等价于 python3 -m http.server 8080
 - `?view=top` 正上方俯视（北在上）；可加 `&w=&e=&n=&s=` 指定范围（米）
 - `?view=overview` 斜俯视；可加 `&cx=&cy=&cz=&tx=&ty=&tz=` 指定相机位置与目标
 - `?flat=1` 实体轮廓以纯色无阴影绘制
-- `?time=15` 时刻（小时）；`?aa=0`、`?shadows=0` 关闭抗锯齿、阴影；`?quality=low|high` 画质；`?ui=0` 隐藏界面；`?only=编号,编号` 只生成指定建筑
+- `?time=15` 时刻（小时）；`?aa=0`、`?shadows=0` 关闭抗锯齿、阴影；`?quality=low|high` 画质；`?ui=0` 隐藏界面；`?only=编号,编号` 只生成指定建筑（同时略去绿化、球场等附加模块，加 `&extras=1` 保留）
 
 ## 资料来源
 

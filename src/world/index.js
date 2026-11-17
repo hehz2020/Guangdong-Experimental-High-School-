@@ -89,7 +89,8 @@ export async function buildWorld(campus, only = null, tryBuilders = {}, tryExtra
       group.clear(); generic(item, ctx); report.failed.push(item.id);
     }
   }
-  for (const path of [...EXTRAS, ...tryExtras]) {
+  // With ?only= (a close-up of chosen items) the standing extras are left out unless ?extras=1 asks for them.
+  for (const path of [...(only && !env.extras ? [] : EXTRAS), ...tryExtras]) {
     const group = new THREE.Group(); group.name = path; root.add(group);
     const ctx = {
       campus, detail, lowPower: !!env.lowPower,
