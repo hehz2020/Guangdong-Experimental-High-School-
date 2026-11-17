@@ -1,5 +1,101 @@
-// Interface layer: on-screen controls and HUD. Placeholder until the real one is written.
-// initUI receives { player, lighting, campus, camera, renderer, scene, view } and may return
-// { update(dt), input() } where input() returns extra movement for the player, for example
-// { moveX: -1..1 (right positive), moveY: -1..1 (forward positive), run: bool, jump: bool }.
-export function initUI() { return null; }
+// Interface layer: touch controls for phones, a minimap, a time-of-day slider and a help panel.
+// Everything is created here (DOM and CSS); index.html only provides the start panel (#start) and the notice (#notice).
+import { itemPolygon, stadium } from './kit.js';
+
+const CSS = `
+.hud{position:fixed;z-index:5;font-family:system-ui,"PingFang SC","Microsoft YaHei",sans-serif;color:#eef2f6;user-select:none;-webkit-user-select:none}
+#hud-map{top:10px;right:10px;background:rgba(12,16,22,.55);border-radius:8px;padding:4px}
+#hud-map canvas{display:block;border-radius:5px}
+#hud-time{top:10px;left:50%;transform:translateX(-50%);background:rgba(12,16,22,.55);border-radius:8px;padding:5px 10px;font-size:13px;display:flex;gap:8px;align-items:center}
+#hud-time input{width:150px}
+#hud-help-btn{top:10px;left:10px;width:34px;height:34px;border-radius:17px;border:0;background:rgba(12,16,22,.6);color:#eef2f6;font-size:18px}
+#hud-help{top:52px;left:10px;max-width:260px;background:rgba(12,16,22,.8);border-radius:8px;padding:10px 12px;font-size:13px;line-height:1.7}
+#stick{left:24px;bottom:24px;width:130px;height:130px;border-radius:65px;background:rgba(255,255,255,.12);border:2px solid rgba(255,255,255,.35);touch-action:none}
+#stick i{position:absolute;left:40px;top:40px;width:50px;height:50px;border-radius:25px;background:rgba(255,255,255,.55)}
+.tbtn{right:24px;width:64px;height:64px;border-radius:32px;border:2px solid rgba(255,255,255,.4);background:rgba(255,255,255,.14);color:#fff;font-size:15px;touch-action:none}
+#btn-jump{bottom:28px}#btn-run{bottom:104px}#btn-run.on{background:rgba(255,200,90,.5)}
+`;
+
+export function initUI({ player, lighting, campus, camera, renderer, view }) {
+  const style = document.createElement('style'); style.textContent = CSS; document.head.appendChild(style);
+  const el = (tag, id, cls = 'hud', html = '') => { const e = document.createElement(tag); if (id) e.id = id; e.className = cls; e.innerHTML = html; document.body.appendChild(e); return e; };
+  const touch = matchMedia('(pointer: coarse)').matches || 'ontouchstart' in window;
+  const state = { moveX: 0, moveY: 0, run: false, jump: false };
+
+  // --- time of day ---
+  if (lighting) {
+    const box = el('div', 'hud-time', 'hud', '<span id="hud-clock"></span><input type="range" min="5" max="22" step="0.25">');
+    const input = box.querySelector('input'), clock = box.querySelector('#hud-clock');
+    const show = h => { clock.textContent = '时间 ' + String(Math.floor(h)).padStart(2, '0') + ':' + String(Math.round((h % 1) * 60)).padStart(2, '0'); };
+    input.value = lighting.getTime(); show(lighting.getTime());
+    input.addEventListener('input', () => { const h = Number(input.value); lighting.setTime(h); show(h); });
+    for (const t of ['pointerdown', 'touchstart', 'click']) box.addEventListener(t, e => e.stopPropagation());
+  }
+
+  // --- help ---
+  const helpBtn = el('button', 'hud-help-btn', 'hud', '?'), help = el('div', 'hud-help', 'hud');
+  help.hidden = true;
+  help.innerHTML = touch ? '左下摇杆：移动<br>右半屏滑动：转动视角<br>“跑”：切换奔跑　“跳”：跳跃<br>上方滑块：调整时间<br>右上：小地图（北在上）'
+    : 'W A S D / 方向键：移动<br>鼠标：转动视角（先点击画面）<br>Shift：跑　空格：跳　Esc：释放鼠标<br>上方滑块：调整时间<br>右上：小地图（北在上）';
+  helpBtn.addEventListener('click', e => { e.stopPropagation(); help.hidden = !help.hidden; });
+
+  // --- minimap ---
+  const mapBox = el('div', 'hud-map'), cv = document.createElement('canvas'); mapBox.appendChild(cv);
+  const B = { w: -115, e: 320, n: -200, s: 145 }, S = 150 / (B.e - B.w); cv.width = 150; cv.height = Math.round((B.s - B.n) * S);
+  const g = cv.getContext('2d'), X = x => (x - B.w) * S, Z = z => (z - B.n) * S;
+  const base = document.createElement('canvas'); base.width = cv.width; base.height = cv.height;
+  (() => {
+    const b = base.getContext('2d'); b.fillStyle = 'rgba(40,52,44,.9)'; b.fillRect(0, 0, base.width, base.height);
+    const poly = (pts, fill) => { b.beginPath(); pts.forEach(([x, z], i) => (i ? b.lineTo(X(x), Z(z)) : b.moveTo(X(x), Z(z)))); b.closePath(); b.fillStyle = fill; b.fill(); };
+    const t = campus.track; poly(stadium(t.cx, t.cz, t.straight, t.outerRadius), '#a5483a'); poly(stadium(t.cx, t.cz, t.straight, t.innerRadius), '#5a9a4c');
+    if (campus.courts) { const k = campus.courts.block; poly([[k.w, k.n], [k.e, k.n], [k.e, k.s], [k.w, k.s]], '#3d7f5c'); }
+    for (const it of campus.items) poly(itemPolygon(it), it.height <= 0 ? (it.style === 'water' ? '#3f6a78' : '#77786f') : '#d8d5cc');
+  })();
+  let tick = 0;
+  function drawMap() {
+    g.drawImage(base, 0, 0);
+    const p = player ? player.pose() : { x: camera.position.x, z: camera.position.z, yawDeg: 0 };
+    const a = p.yawDeg * Math.PI / 180;
+    g.save(); g.translate(X(p.x), Z(p.z)); g.rotate(a);
+    g.fillStyle = '#ffd24a'; g.beginPath(); g.moveTo(0, -7); g.lineTo(4.5, 5); g.lineTo(0, 2.5); g.lineTo(-4.5, 5); g.closePath(); g.fill(); g.restore();
+    g.fillStyle = '#fff'; g.font = '10px sans-serif'; g.fillText('北', cv.width - 14, 12);
+  }
+  drawMap();
+
+  // --- touch controls ---
+  if (touch && player) {
+    const stick = el('div', 'stick', 'hud', '<i></i>'), knob = stick.firstChild;
+    const jump = el('button', 'btn-jump', 'hud tbtn', '跳'), run = el('button', 'btn-run', 'hud tbtn', '跑');
+    const notice = document.getElementById('notice'); if (notice) { notice.style.bottom = 'auto'; notice.style.top = '52px'; notice.style.left = '52px'; }
+    const start = document.getElementById('start');
+    if (start) {
+      const how = document.getElementById('start-how'); if (how) how.textContent = '点一下开始：左下摇杆移动，右半屏滑动转向';
+      const go = e => { start.hidden = true; e.preventDefault(); };
+      start.addEventListener('touchend', go); start.addEventListener('click', go);
+    }
+    let stickId = null, lookId = null, lx = 0, ly = 0;
+    const setStick = (cx, cy) => {
+      const r = stick.getBoundingClientRect(), dx = cx - (r.left + r.width / 2), dy = cy - (r.top + r.height / 2), m = Math.hypot(dx, dy), lim = 45, k = m > lim ? lim / m : 1;
+      knob.style.transform = `translate(${dx * k}px,${dy * k}px)`; state.moveX = dx * k / lim; state.moveY = -dy * k / lim;
+    };
+    stick.addEventListener('touchstart', e => { const t = e.changedTouches[0]; stickId = t.identifier; setStick(t.clientX, t.clientY); e.preventDefault(); e.stopPropagation(); }, { passive: false });
+    jump.addEventListener('touchstart', e => { state.jump = true; e.preventDefault(); e.stopPropagation(); }, { passive: false });
+    jump.addEventListener('touchend', e => { state.jump = false; e.preventDefault(); }, { passive: false });
+    run.addEventListener('touchstart', e => { state.run = !state.run; run.classList.toggle('on', state.run); e.preventDefault(); e.stopPropagation(); }, { passive: false });
+    const canvas = renderer.domElement; canvas.style.touchAction = 'none';
+    canvas.addEventListener('touchstart', e => { for (const t of e.changedTouches) if (lookId === null) { lookId = t.identifier; lx = t.clientX; ly = t.clientY; } e.preventDefault(); }, { passive: false });
+    addEventListener('touchmove', e => {
+      for (const t of e.changedTouches) {
+        if (t.identifier === stickId) setStick(t.clientX, t.clientY);
+        else if (t.identifier === lookId) { player.look((t.clientX - lx) * 0.005, -(t.clientY - ly) * 0.005); lx = t.clientX; ly = t.clientY; }
+      }
+      if (stickId !== null || lookId !== null) e.preventDefault();
+    }, { passive: false });
+    const end = e => { for (const t of e.changedTouches) {
+      if (t.identifier === stickId) { stickId = null; state.moveX = state.moveY = 0; knob.style.transform = ''; }
+      if (t.identifier === lookId) lookId = null; } };
+    addEventListener('touchend', end); addEventListener('touchcancel', end);
+  }
+  void view;
+  return { update() { if (++tick % 6 === 0) drawMap(); }, input: () => state, touch };
+}

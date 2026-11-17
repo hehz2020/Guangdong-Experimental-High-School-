@@ -12,7 +12,9 @@ const num = (k, d = null) => (params.has(k) && !Number.isNaN(Number(params.get(k
 
 // Diagnostic switches: ?aa=0 antialiasing off, ?shadows=0 shadow maps off, ?time=17.5 hour of day.
 const renderer = new THREE.WebGLRenderer({ antialias: params.get('aa') !== '0' });
-renderer.setPixelRatio(Math.min(devicePixelRatio, 2));
+// Phones and tablets get a lower pixel density and a smaller shadow map by default; ?quality=high or ?quality=low overrides.
+const lowPower = params.get('quality') ? params.get('quality') === 'low' : matchMedia('(pointer: coarse)').matches;
+renderer.setPixelRatio(Math.min(devicePixelRatio, lowPower ? 1.5 : 2));
 renderer.setSize(innerWidth, innerHeight);
 document.body.appendChild(renderer.domElement);
 
@@ -35,7 +37,7 @@ if (flatCheck) {
     else child.visible = false;
   }
 } else {
-  lighting = createLighting(scene, renderer, { shadows: params.get('shadows') !== '0', shadowRes: num('shadowres', 2048) });
+  lighting = createLighting(scene, renderer, { shadows: params.get('shadows') !== '0', shadowRes: num('shadowres', lowPower ? 1024 : 2048) });
   lighting.setTime(num('time', 15));
 }
 
