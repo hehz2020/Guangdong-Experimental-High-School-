@@ -1,0 +1,24 @@
+{
+  "name": "guangdong-experimental-high-school-",
+  "version": "1.0.0",
+  "description": "3D walkthrough of the Guangdong Experimental High School senior campus",
+  "scripts": {
+    "start": "python3 -m http.server 8080",
+    "vendor": "node scripts/vendor.mjs"
+  },
+  "repository": {
+    "type": "git",
+    "url": "git+https://github.com/hehz2020/Guangdong-Experimental-High-School-.git"
+  },
+  "keywords": [],
+  "author": "",
+  "bugs": {
+    "url": "https://github.com/hehz2020/Guangdong-Experimental-High-School-/issues"
+  },
+  "homepage": "https://github.com/hehz2020/Guangdong-Experimental-High-School-#readme",
+  "dependencies": {
+    "three": "^0.187.0"
+  },
+  "type": "module",
+  "private": true
+}
