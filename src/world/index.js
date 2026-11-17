@@ -13,10 +13,16 @@ export const BUILDERS = {
   'walkway': './builders/walkway.js',
   'space-frame': './builders/canopy.js',
   'plaza': './builders/plaza.js',
+  'gym': './builders/gym.js',
+  'grandstand': './builders/grandstand.js',
+  'seating': './builders/seating.js',
+  'none': './builders/none.js',
 };
 
 // Modules that add things not tied to one data item (track furniture, courts, landscape...). Each exports build(ctx).
 export const EXTRAS = [
+  './extras/track-field.js',
+  './extras/courts.js',
 ];
 
 /**
