@@ -21,7 +21,9 @@ export function build(item, ctx) {
   const bar = item.mainBar || (b => ({ w: b.w, e: b.e, n: b.n, s: b.s }))(bbox(item.points));
   const L = bar.e - bar.w, D = bar.s - bar.n, roofY = FLOORS * FH;
   const nRooms = Math.max(1, Math.floor((L - 4.0) / ROOM)), x0 = L - nRooms * ROOM;       // stair zone is x 0..x0 at the west end
-  const zN = INSET, zS = D - INSET, zc = zS - CORRIDOR;                                    // zc: corridor/classroom boundary
+  // A deeper outline (the west slab is about 17 m) keeps the classroom depth and gets a wider open gallery on the south side.
+  const corridor = D > 13.5 ? D - 9.5 : CORRIDOR;
+  const zN = INSET, zS = D - INSET, zc = zS - corridor;                                    // zc: corridor/classroom boundary
   const v = new Batch().frame(bar.w, bar.n), c = new Batch().frame(bar.w, bar.n);          // visual and collision batches
   const both = (m, ...a) => { v.slab(m, ...a); c.slab('generic', ...a); };
 
