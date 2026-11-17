@@ -1207,6 +1207,97 @@
      2027
     ]
    ]
+  },
+  {
+   "id": "new-teaching-building",
+   "name": "New comprehensive teaching building north of the dome (2022 footage; library on a lower floor)",
+   "kind": "building",
+   "surface": "roof",
+   "style": "new-building",
+   "height": {
+    "metres": 25.2,
+    "basis": "6 storeys above ground per the city planning record for the 高中综合教学大楼 (the only storey count in this project with an official source); 4.2 m floor height assumed"
+   },
+   "confidence": "low: outline read once by the main session; podium and main bar could not be told apart",
+   "accuracyPx": 12,
+   "measuredBy": "main session, one gridded crop",
+   "polygonPx": [
+    [
+     1250,
+     795
+    ],
+    [
+     1335,
+     755
+    ],
+    [
+     1415,
+     705
+    ],
+    [
+     1483,
+     800
+    ],
+    [
+     1485,
+     870
+    ],
+    [
+     1380,
+     880
+    ],
+    [
+     1255,
+     892
+    ]
+   ],
+   "notes": "Roof outline as seen: a wedge with a curved south edge following the arc building, grey roof with a terracotta-red rectangular patch and a white rooftop unit. The outline's area is about twice the per-floor area implied by the planning record (7775 m2 above ground over 6 storeys), so it probably includes a wider podium; the upper storeys are likely a narrower bar. The satellite image may predate the building's completion. Identified as the new building because the garden with curved paths lies to its west/north-west and the dome and arc building lie beyond its roof to the south-east, as in the 2022 footage."
+  },
+  {
+   "id": "north-garden",
+   "name": "Lawn with curved paths west of the new building",
+   "kind": "garden",
+   "surface": "ground",
+   "style": "garden",
+   "height": {
+    "metres": 0,
+    "basis": "ground surface"
+   },
+   "solid": false,
+   "confidence": "seen in satellite and in the 2022 footage (frames 21, 55)",
+   "accuracyPx": 10,
+   "measuredBy": "main session, one gridded crop",
+   "polygonPx": [
+    [
+     1175,
+     700
+    ],
+    [
+     1240,
+     640
+    ],
+    [
+     1268,
+     690
+    ],
+    [
+     1250,
+     790
+    ],
+    [
+     1255,
+     835
+    ],
+    [
+     1200,
+     822
+    ],
+    [
+     1170,
+     760
+    ]
+   ],
+   "notes": "Curved paths, a round flower bed and a large tree are visible in the video; only the lawn outline is recorded."
   }
  ],
  "courts": {

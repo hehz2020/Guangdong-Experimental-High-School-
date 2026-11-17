@@ -18,6 +18,7 @@ export const BUILDERS = {
   'grandstand': './builders/grandstand.js',
   'seating': './builders/seating.js',
   'none': './builders/none.js',
+  'new-building': './builders/new-building.js',
   'arc': './builders/arc.js',
   'dome': './builders/dome.js',
   'slab-block': './builders/slab-block.js',

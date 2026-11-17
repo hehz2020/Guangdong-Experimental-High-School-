@@ -1564,6 +1564,98 @@ export const CAMPUS = {
           136.2
         ]
       ]
+    },
+    {
+      "id": "new-teaching-building",
+      "name": "New comprehensive teaching building north of the dome (2022 footage; library on a lower floor)",
+      "kind": "building",
+      "style": "new-building",
+      "height": 25.2,
+      "heightBasis": "6 storeys above ground per the city planning record for the 高中综合教学大楼 (the only storey count in this project with an official source); 4.2 m floor height assumed",
+      "solid": true,
+      "walkUnder": false,
+      "confidence": "low: outline read once by the main session; podium and main bar could not be told apart",
+      "measuredBy": "main session, one gridded crop",
+      "positionAccuracyM": 4.3,
+      "correctedForObliqueView": true,
+      "notes": "Roof outline as seen: a wedge with a curved south edge following the arc building, grey roof with a terracotta-red rectangular patch and a white rooftop unit. The outline's area is about twice the per-floor area implied by the planning record (7775 m2 above ground over 6 storeys), so it probably includes a wider podium; the upper storeys are likely a narrower bar. The satellite image may predate the building's completion. Identified as the new building because the garden with curved paths lies to its west/north-west and the dome and arc building lie beyond its roof to the south-east, as in the 2022 footage.",
+      "shape": "polygon",
+      "points": [
+        [
+          152.1,
+          -218.1
+        ],
+        [
+          175.4,
+          -229.1
+        ],
+        [
+          197.4,
+          -242.8
+        ],
+        [
+          216.1,
+          -216.7
+        ],
+        [
+          216.6,
+          -197.5
+        ],
+        [
+          187.8,
+          -194.7
+        ],
+        [
+          153.4,
+          -191.4
+        ]
+      ]
+    },
+    {
+      "id": "north-garden",
+      "name": "Lawn with curved paths west of the new building",
+      "kind": "garden",
+      "style": "garden",
+      "height": 0,
+      "heightBasis": "ground surface",
+      "solid": false,
+      "walkUnder": false,
+      "confidence": "seen in satellite and in the 2022 footage (frames 21, 55)",
+      "measuredBy": "main session, one gridded crop",
+      "positionAccuracyM": 2.7,
+      "correctedForObliqueView": false,
+      "notes": "Curved paths, a round flower bed and a large tree are visible in the video; only the lawn outline is recorded.",
+      "shape": "polygon",
+      "points": [
+        [
+          129.5,
+          -228.3
+        ],
+        [
+          147.4,
+          -244.8
+        ],
+        [
+          155.1,
+          -231
+        ],
+        [
+          150.1,
+          -203.5
+        ],
+        [
+          151.5,
+          -191.2
+        ],
+        [
+          136.4,
+          -194.8
+        ],
+        [
+          128.2,
+          -211.8
+        ]
+      ]
     }
   ]
 };
