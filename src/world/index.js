@@ -34,7 +34,9 @@ export async function buildWorld(campus, only = null, tryBuilders = {}, tryExtra
   root.add(flat(stadium(t.cx, t.cz, t.straight, t.outerRadius + 3.5), 0.02, mat('apronGreen')));
   root.add(flat(outer, 0.04, mat('trackRed')));
   const f = t.infield;
-  root.add(flat([[f.cx - f.sizeX / 2, f.cz - f.sizeZ / 2], [f.cx + f.sizeX / 2, f.cz - f.sizeZ / 2], [f.cx + f.sizeX / 2, f.cz + f.sizeZ / 2], [f.cx - f.sizeX / 2, f.cz + f.sizeZ / 2]], 0.06, mat('grass')));
+  // Infield grass: the measured rectangle with its corners clipped by the inner edge of the bends (as seen in the 2022 overhead frames).
+  const clamp = (v, lo, hi) => Math.max(lo, Math.min(hi, v));
+  root.add(flat(stadium(t.cx, t.cz, t.straight, t.innerRadius - 0.4).map(([x, z]) => [clamp(x, f.cx - f.sizeX / 2, f.cx + f.sizeX / 2), clamp(z, f.cz - f.sizeZ / 2, f.cz + f.sizeZ / 2)]), 0.06, mat('grass')));
   const lineMat = new THREE.LineBasicMaterial({ color: 0xffffff });
   for (let i = 0; i <= t.lanes; i++) {
     const pts = stadium(t.cx, t.cz, t.straight, t.innerRadius + i * t.laneWidth).map(([x, z]) => new THREE.Vector3(x, 0.07, z));
