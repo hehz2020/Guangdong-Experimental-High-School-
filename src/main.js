@@ -24,7 +24,7 @@ const only = params.get('only') ? new Set(params.get('only').split(',')) : null;
 // ?try=style:file.js,style:file.js mounts builders from src/world/builders/ for this page load; ?tryx=file.js,... mounts extras from src/world/extras/
 const tryBuilders = Object.fromEntries((params.get('try') || '').split(',').filter(Boolean).map(s => { const i = s.indexOf(':'); return [s.slice(0, i), './builders/' + s.slice(i + 1)]; }));
 const tryExtras = (params.get('tryx') || '').split(',').filter(Boolean).map(f => './extras/' + f);
-const { root, colliders, report, details } = await buildWorld(CAMPUS, only, tryBuilders, tryExtras);
+const { root, colliders, report, details } = await buildWorld(CAMPUS, only, tryBuilders, tryExtras, { lowPower });
 scene.add(root);
 
 let lighting = null;

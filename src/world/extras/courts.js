@@ -50,7 +50,8 @@ export function build(ctx) {
   const gx = (k.w + k.e) / 2, gz = (k.n + k.s) / 2, g = 2.5;
   run(k.w, k.n, k.w, gz - g); run(k.w, gz + g, k.w, k.s); run(k.e, k.n, k.e, gz - g); run(k.e, gz + g, k.e, k.s);
   run(k.w, k.s, gx - g, k.s); run(gx + g, k.s, k.e, k.s);
-  for (let i = 0; i < 6; i++) tree(v, k.w - 4.5, k.n + 6 + i * (k.s - k.n - 12) / 5, 8 + (i % 3));
+  // just outside the west fence: the road between the track and the courts lies further west
+  for (let i = 0; i < 6; i++) tree(v, k.w - 1.6, k.n + 6 + i * (k.s - k.n - 12) / 5, 7 + (i % 3) * 0.6);
   for (let i = 0; i < 14; i++) { const z = k.n + 5 + i * (k.s - k.n - 10) / 13; v.frame(k.e + 1.6, z).box('white', 0, 1.9, 0, 0.06, 1.2, 1.2).box('apronGreen', 0, 0.65, 0, 0.06, 1.3, 0.06); }
   ctx.add(v.build({ name: 'courts' }));
   const cg = c.build(); ctx.add(cg).visible = false; cg.children.forEach(m => ctx.collide(m));

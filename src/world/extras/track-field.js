@@ -21,8 +21,9 @@ export function build(ctx) {
   // high-jump mats in the south D
   for (const dx of [-7, 7]) { v.frame(t.cx + dx, t.cz + t.straight / 2 + 14).box('seatBlue', 0, 0.35, 0, 5, 0.7, 3); c.frame(t.cx + dx, t.cz + t.straight / 2 + 14).box('generic', 0, 0.35, 0, 5, 0.7, 3); }
   // railing along the east straight (visual only, so it does not fence the player out)
-  for (let z = -40; z <= 40; z += 2.5) v.frame(t.cx + R + 4.6, t.cz + z).box('steel', 0, 0.55, 0, 0.05, 1.1, 0.05);
-  v.frame(t.cx + R + 4.6, t.cz).box('steel', 0, 1.08, 0, 0.05, 0.05, 80).box('steel', 0, 0.6, 0, 0.04, 0.04, 80);
+  const railX = t.cx + R + 1.0;                                         // at the kerb: the road starts right beside the track here
+  for (let z = -40; z <= 40; z += 2.5) v.frame(railX, t.cz + z).box('steel', 0, 0.55, 0, 0.05, 1.1, 0.05);
+  v.frame(railX, t.cz).box('steel', 0, 1.08, 0, 0.05, 0.05, 80).box('steel', 0, 0.6, 0, 0.04, 0.04, 80);
   // fighter jet on a plinth outside the south-west bend
   const jx = t.cx - 40, jz = t.cz + 81, a = 0.3;                      // heading: local +X turned a little from east toward north
   v.frame(jx, jz, a).box('concrete', -1, 1.0, 0, 3.2, 2.0, 1.6);
