@@ -37,7 +37,9 @@ if (flatCheck) {
     else child.visible = false;
   }
 } else {
-  lighting = createLighting(scene, renderer, { shadows: params.get('shadows') !== '0', shadowRes: num('shadowres', lowPower ? 1024 : 2048) });
+  // post: true/false when ?post=1/0 is given, otherwise undefined so the lighting module picks its default (it should be cheaper when lowPower is set)
+  lighting = createLighting(scene, renderer, { shadows: params.get('shadows') !== '0', shadowRes: num('shadowres', lowPower ? 1024 : 2048), lowPower,
+    post: params.has('post') ? params.get('post') !== '0' : undefined, antialias: params.get('aa') !== '0', camera: null });
   lighting.setTime(num('time', 15));
 }
 
