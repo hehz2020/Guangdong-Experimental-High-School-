@@ -67,7 +67,16 @@ export function initUI({ player, lighting, campus, camera, renderer, view }) {
     const sn = campus.items.find(i => i.id === 'slab-north');
     if (sn && sn.mainBar) { const b = sn.mainBar; add('教学楼二层外廊', b.w + 14, b.s - 1.7, 90, 3.9); add('二层教室', b.w + 6.2, b.n + 4.8, 90, 3.9); }
     const arc = boxOf('arc-building'); if (arc && can) add('弧形楼前', can.cx - 5, can.n - 8, 0);
-    const nb = boxOf('new-teaching-building'), gd = boxOf('north-garden'); if (nb && gd) add('新综合楼前', gd.cx, gd.cz, toward(gd.cx, gd.cz, nb.cx, nb.cz));
+    // New teaching building: its outline is stored west, north, east, south-east, south-west; the south face (last edge) has the library doors.
+    const nbi = campus.items.find(i => i.id === 'new-teaching-building');
+    if (nbi && nbi.points && nbi.points.length === 5) {
+      const E = nbi.points[4], D = nbi.points[3], a = Math.atan2(-(D[1] - E[1]), D[0] - E[0]), cs = Math.cos(a), sn = Math.sin(a);
+      const W = (X, Z) => [E[0] + X * cs + Z * sn, E[1] - X * sn + Z * cs];          // X along the south face from its west end, Z out of the building
+      const out = W(46.5, 14), door = W(46.5, 0), lobby = W(45, -4.2), hall = W(30, -11), gal = W(53.5, -16), galLook = W(40, -10);
+      add('新综合楼前', out[0], out[1], toward(out[0], out[1], door[0], door[1]));
+      add('图书馆大厅', lobby[0], lobby[1], toward(lobby[0], lobby[1], hall[0], hall[1]), 0.3);      // just inside the doors, looking across the reading hall
+      add('图书馆二层回廊', gal[0], gal[1], toward(gal[0], gal[1], galLook[0], galLook[1]), 4.2);
+    }
     add('航拍：校园全景', -80, 220, toward(-80, 220, 110, -50), 120, true, -0.42);
     const sw = boxOf('sign-wing-between-slabs'); if (sw) add('航拍：校名墙', sw.cx + 10, sw.n - 44, toward(sw.cx + 10, sw.n - 44, sw.cx, sw.n), 31, true, -0.3);
 

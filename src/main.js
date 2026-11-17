@@ -57,7 +57,7 @@ if (view === 'top') {
   camera.position.set(num('cx', -120), num('cy', 170), num('cz', 330)); camera.lookAt(num('tx', 90), num('ty', 0), num('tz', -40));
   if (lighting) lighting.follow(60, -40);
 } else {
-  camera = new THREE.PerspectiveCamera(70, innerWidth / innerHeight, 0.1, 6000);
+  camera = new THREE.PerspectiveCamera(70, innerWidth / innerHeight, 0.15, 3600);   // a tighter depth range: ground layers flickered from very high up
   const f = CAMPUS.track.infield;
   player = createPlayer(camera, renderer.domElement, colliders, { x: f.cx, z: f.cz + f.sizeZ / 2 - 5, yawDeg: 0 });
 }

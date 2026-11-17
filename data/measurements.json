@@ -827,7 +827,7 @@
    "name": "Road between the slabs and the canal",
    "kind": "road",
    "surface": "ground",
-   "style": "road",
+   "style": "none",
    "height": {
     "metres": 0,
     "basis": "ground surface"
@@ -835,7 +835,7 @@
    "confidence": "confirmed in video",
    "accuracyPx": 10,
    "measuredBy": "measurement agent (east-slabs), single reading, recheck pending",
-   "notes": "Grey asphalt about 25 px (7 m) wide, largely under tree crowns and tree shadow, so edges are approximate. It is NOT due north-south: it trends NNE-SSW (about 13 px west per 100 px south). White car on it at (1679,1360).",
+   "notes": "Grey asphalt about 25 px (7 m) wide, largely under tree crowns and tree shadow, so edges are approximate. It is NOT due north-south: it trends NNE-SSW (about 13 px west per 100 px south). White car on it at (1679,1360). NOT DRAWN: superseded by the landscape module (src/world/extras/landscape.js), which traces the road and the canal over the whole height of the image; kept here as the original reading.",
    "polygonPx": [
     [
      1715,
@@ -943,7 +943,7 @@
    "name": "Canal west bank line",
    "kind": "water",
    "surface": "ground",
-   "style": "water",
+   "style": "none",
    "height": {
     "metres": 0,
     "basis": "ground surface"
@@ -951,7 +951,7 @@
    "confidence": "confirmed in video",
    "accuracyPx": 6,
    "measuredBy": "measurement agent (east-slabs), single reading, recheck pending",
-   "notes": "West edge of the water (pale stone revetment about 8 px wide just west of it); polygon closes eastward only to x 1840, the east bank is outside my crops. At this latitude the canal is at x greater than about 1750-1800 and tilted, not at x 1700-1800: the band x 1725-1775 is a tree belt between road and canal.",
+   "notes": "West edge of the water (pale stone revetment about 8 px wide just west of it); polygon closes eastward only to x 1840, the east bank is outside my crops. At this latitude the canal is at x greater than about 1750-1800 and tilted, not at x 1700-1800: the band x 1725-1775 is a tree belt between road and canal. NOT DRAWN: superseded by the landscape module (src/world/extras/landscape.js), which traces the road and the canal over the whole height of the image; kept here as the original reading.",
    "polygonPx": [
     [
      1802,
@@ -1215,89 +1215,35 @@
    "surface": "roof",
    "style": "new-building",
    "height": {
-    "metres": 25.2,
-    "basis": "6 storeys above ground per the city planning record for the 高中综合教学大楼 (the only storey count in this project with an official source); 4.2 m floor height assumed"
+    "metres": 23.4,
+    "basis": "6 storeys (city planning record) x 3.9 m; agrees with the length-to-height ratio of the north-west face, about 2.45 : 1, read from the 2022 footage (frame f_055) against its 55.6 m length on the satellite image"
    },
-   "confidence": "low: outline read once by the main session; podium and main bar could not be told apart",
-   "accuracyPx": 12,
-   "measuredBy": "main session, one gridded crop",
+   "confidence": "roof outline re-read by the modelling agent (single reading); faces identified from the 2022 footage",
+   "accuracyPx": 6,
+   "measuredBy": "modelling agent (library), gridded crops",
    "polygonPx": [
     [
-     1250,
-     795
+     1236,
+     829
     ],
     [
-     1335,
-     755
+     1406,
+     719
     ],
     [
-     1415,
-     705
+     1484,
+     808
     ],
     [
-     1483,
-     800
+     1477,
+     871
     ],
     [
-     1485,
-     870
-    ],
-    [
-     1380,
-     880
-    ],
-    [
-     1255,
-     892
+     1249,
+     890
     ]
    ],
-   "notes": "Roof outline as seen: a wedge with a curved south edge following the arc building, grey roof with a terracotta-red rectangular patch and a white rooftop unit. The outline's area is about twice the per-floor area implied by the planning record (7775 m2 above ground over 6 storeys), so it probably includes a wider podium; the upper storeys are likely a narrower bar. The satellite image may predate the building's completion. Identified as the new building because the garden with curved paths lies to its west/north-west and the dome and arc building lie beyond its roof to the south-east, as in the 2022 footage."
-  },
-  {
-   "id": "north-garden",
-   "name": "Lawn with curved paths west of the new building",
-   "kind": "garden",
-   "surface": "ground",
-   "style": "garden",
-   "height": {
-    "metres": 0,
-    "basis": "ground surface"
-   },
-   "solid": false,
-   "confidence": "seen in satellite and in the 2022 footage (frames 21, 55)",
-   "accuracyPx": 10,
-   "measuredBy": "main session, one gridded crop",
-   "polygonPx": [
-    [
-     1175,
-     700
-    ],
-    [
-     1240,
-     640
-    ],
-    [
-     1268,
-     690
-    ],
-    [
-     1250,
-     790
-    ],
-    [
-     1255,
-     835
-    ],
-    [
-     1200,
-     822
-    ],
-    [
-     1170,
-     760
-    ]
-   ],
-   "notes": "Curved paths, a round flower bed and a large tree are visible in the video; only the lawn outline is recorded."
+   "notes": "Corner order: west, north, east, south-east, south-west; the last edge (south-west to south-east) is the south face with the library entrance. The south edge bows about 1.5 m northward at mid-length (drawn straight). A triangular light well in the roof lies at about pixels (1343,822) (1399,786) (1425,822). CORRECTION: the first outline, read once by the main session, put the north-west edge 4 to 8 m too far out because it took part of the shadowed facade for roof. The satellite image predates this building (an older building stands on the site), so the outline rests on the roof as seen there plus the 2022 footage; treat it as approximate. The builder (src/world/builders/new-building.js) carries the same footprint in its own FOOT constant."
   }
  ],
  "courts": {

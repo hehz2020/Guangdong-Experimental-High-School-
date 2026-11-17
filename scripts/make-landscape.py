@@ -4,8 +4,9 @@
     python3 -I scripts/make-landscape.py /path/to/campus_z19.jpg [--debug DIR]
 
 The mosaic (Esri World Imagery, zoom 19, 2304 x 2816 px) is NOT part of the repository; only numbers derived from it
-are stored. Needs Pillow, nothing else. Reads data/measurements.json (georeference, lean of the oblique view) and
-src/campus-data.js (building outlines, track, courts). Writes
+are stored. Needs Pillow, nothing else. Reads data/measurements.json (georeference, lean of the oblique view),
+src/campus-data.js (building outlines, track, courts) and the footprint constant FOOT in
+src/world/builders/new-building.js (that building is newer than the mosaic; its surroundings are kept clear). Writes
 
     data/landscape.json                  the readable record
     src/world/extras/landscape.js        the same data, minified, between the marker comments
@@ -42,7 +43,8 @@ TREE_H_MIN, TREE_H_MAX = 6.0, 12.0           # metres, by crown radius
 CROWN_CENTRE = 0.7                           # the middle of a crown is taken to sit at 0.7 x tree height (for the lean correction)
 SPACING = 0.85                                # two trees are at least SPACING x (r1 + r2) apart
 BUILDING_MARGIN = 1.5                        # metres a trunk must keep from a building's ground outline
-APRON = 3.5                                  # width of the green apron the model draws around the track (src/world/index.js)
+APRON = 3.5                                  # width of the green apron the model draws around the track (src/world/index.js;
+                                             # on the east side it is cut back to 0.9 m and the road digitised below takes its place)
 SHADOW_SWEEP = (-0.45, -0.55)                # building shadows: metres west / north per metre of height (read off the gym and the slabs, rough)
 
 # ----------------------------------------------------------------------------------------------------------------
@@ -371,6 +373,37 @@ def polygons_from_mask(mask, eps, min_area, min_hole, level=0.5):
     return result
 
 
+def new_building_zones():
+    """The new teaching building is newer than the mosaic, and its builder (src/world/builders/new-building.js) lays out
+    its own plaza and garden from the 2022 footage around its own re-read footprint. Returns (footprint, garden zone,
+    plaza zone) in metres, or None when that footprint cannot be read: nothing of the landscape goes into these zones.
+      garden zone: from 30 m before corner A to 6 m past corner B along the north-west face, 2 m inside to 34 m outside it
+      plaza zone:  from 6 m before corner E to 14 m past corner D along the south face, 2 m inside to 26 m outside it"""
+    path = os.path.join(ROOT, 'src', 'world', 'builders', 'new-building.js')
+    try:
+        text = open(path, encoding='utf8').read()
+        line = text[text.index('const FOOT = {'):]
+        line = line[:line.index('}')]
+        pts = {k: (float(x), float(z)) for k, x, z in re.findall(r'([A-E]):\s*\[\s*(-?[\d.]+)\s*,\s*(-?[\d.]+)\s*\]', line)}
+        foot = [pts[k] for k in 'ABCDE']
+    except (OSError, ValueError, KeyError):
+        return None
+    cx, cz = sum(p[0] for p in foot) / 5, sum(p[1] for p in foot) / 5
+
+    def strip(p, q, before, after, inside, outside):
+        dx, dz = q[0] - p[0], q[1] - p[1]
+        n = math.hypot(dx, dz)
+        ux, uz = dx / n, dz / n
+        ox, oz = -uz, ux
+        if (p[0] - cx) * ox + (p[1] - cz) * oz < 0:        # make (ox, oz) point away from the building
+            ox, oz = -ox, -oz
+        P = lambda s, d: (p[0] + ux * s + ox * d, p[1] + uz * s + oz * d)
+        return [P(-before, -inside), P(n + after, -inside), P(n + after, outside), P(-before, outside)]
+
+    A, B, C_, D, E = foot
+    return foot, strip(A, B, 30, 6, 2, 34), strip(E, D, 6, 14, 2, 26)
+
+
 # ----------------------------------------------------------------------------------------------------------------
 def main():
     args = sys.argv[1:]
@@ -546,6 +579,15 @@ def main():
     plaza_img = draw_mask([item_poly(it) for it in plazas])
     tennis_img = draw_mask([tennis['surround']])
     hard_img = draw_mask([[to_m(p) for p in HARD_COURT_PX]])
+    zones = new_building_zones()
+    if zones:
+        nb_foot, nb_garden, nb_plaza = zones
+        nb_garden_img = draw_mask([nb_garden])
+        nb_plaza_img = ImageChops.lighter(draw_mask([nb_plaza]), draw_mask([nb_foot]).filter(ImageFilter.MaxFilter(17)))   # footprint grown 8 m
+    else:
+        print('WARNING: footprint of the new teaching building not found in src/world/builders/new-building.js; its surroundings are not kept clear')
+        nb_garden_img = nb_plaza_img = Image.new('L', (W, H), 0)
+    nb_garden_m, nb_plaza_m = grid_from_image(nb_garden_img), grid_from_image(nb_plaza_img)
     # canal banks: 12 m west of the west edge (up to the road) and 9 m east of the east edge
     bank_w = [(x - cnorm[0] * 12, z - cnorm[1] * 12) for x, z in canal_w]
     bank_e = [(x + cnorm[0] * 9, z + cnorm[1] * 9) for x, z in canal_e]
@@ -562,10 +604,11 @@ def main():
     # 4. Trees
     # ------------------------------------------------------------------------------------------------------------
     canopy = [[(cfw if water[j][i] else cfs if doubt[j][i] else cf)[j][i] >= 128 and not roof[j][i] and not track_m[j][i] and not courts_m[j][i] and not tennis_m[j][i]
+               and not nb_garden_m[j][i] and not nb_plaza_m[j][i]
                for i in range(W)] for j in range(H)]
     # close one-cell holes (sunlit specks inside a crown)
     cimg = image_from_grid([[255 if v else 0 for v in row] for row in canopy]).filter(ImageFilter.MaxFilter(3)).filter(ImageFilter.MinFilter(3))
-    canopy = [[v > 0 for v in row] for row in grid_from_image(cimg)]
+    canopy = [[v > 0 and not nb_garden_m[j][i] and not nb_plaza_m[j][i] for i, v in enumerate(row)] for j, row in enumerate(grid_from_image(cimg))]
     canopy_area = sum(v for row in canopy for v in row) * CELL * CELL
     dist = chamfer(canopy)
 
@@ -596,9 +639,9 @@ def main():
         return TREE_H_MIN + (TREE_H_MAX - TREE_H_MIN) * (r - CROWN_R_MIN) / (CROWN_R_MAX - CROWN_R_MIN)
 
     solid_polys = [(it['id'], item_poly(it)) for it in solids]
-    court_row_x = K['w'] - 4.5                        # the six trees src/world/extras/courts.js already plants
+    court_row_x = K['w'] - 1.6                        # the six trees src/world/extras/courts.js already plants, just outside the west fence
     road_bands = [(rd['id'], rd['_pts'], rd['widthM']) for rd in roads]
-    dropped = dict(insideBuilding=0, onTrackOrApron=0, onCourts=0, onTennisCourts=0, onRoad=0, inCanal=0, onPlaza=0,
+    dropped = dict(insideBuilding=0, onTrackOrApron=0, onCourts=0, onTennisCourts=0, onRoad=0, inCanal=0, onPlaza=0, newBuildingSite=0,
                    nearExistingCourtTrees=0, nearModelFurniture=0, outsideWindow=0)
     trees, by_building, moved, trimmed = [], {}, dict(offRoad=0, offCourts=0, ontoCanalBank=0), 0
     for cx, cz, r in crowns:
@@ -664,9 +707,11 @@ def main():
                     break
         if not why and -1.5 <= canal_offset(x, z) <= canal_width_m + 1.5:
             why = 'inCanal'
+        if not why and 0 <= int(x - X0) < W and 0 <= int(z - Z0) < H and (nb_garden_m[int(z - Z0)][int(x - X0)] or nb_plaza_m[int(z - Z0)][int(x - X0)]):
+            why = 'newBuildingSite'
         if not why and any(point_in_polygon(x, z, item_poly(it)) for it in plazas):
             why = 'onPlaza'
-        if not why and abs(x - court_row_x) < 4 and K['n'] <= z <= K['s']:
+        if not why and abs(x - court_row_x) < 3.5 and K['n'] <= z <= K['s']:
             why = 'nearExistingCourtTrees'
         if not why and any(math.hypot(x - a, z - b) < rr for a, b, rr, _ in KEEP_CLEAR):
             why = 'nearModelFurniture'
@@ -720,6 +765,10 @@ def main():
                                                       # visible edge is the straight road edge and not a ragged class boundary
             if plaza_m[j][i]:
                 v = PAVED                             # plaza items and the hard court read by hand
+            if nb_garden_m[j][i]:
+                v = LAWN                              # new teaching building: plain lawn under its garden,
+            if nb_plaza_m[j][i]:
+                v = PAVED                             # plain paving under and around the building and its plaza
             label[j][i] = v
     # fill the unknown cells from the nearest known cell (breadth first), buildings then stand on whatever surrounds them
     frontier = [(i, j) for j in range(H) for i in range(W) if label[j][i] != UNKNOWN]
@@ -811,6 +860,12 @@ def main():
             'surveyArea is only the area in which ground cover was classified. It is not a surveyed campus boundary.',
         ],
         'surveyArea': ring(survey),
+        'newBuildingSite': {
+            'note': 'The new teaching building is newer than the mosaic and its builder lays out its own plaza and garden (2022 footage) around its own '
+                    're-read footprint. No tree is placed in these zones; the ground there is plain lawn (garden zone) and plain paving (plaza zone and '
+                    'footprint grown 8 m) for the builder to draw on.',
+            'gardenZone': ring(zones[1]) if zones else None, 'plazaZone': ring(zones[2]) if zones else None,
+        },
         'trees': {
             'count': len(trees),
             'fields': ['x', 'z', 'height', 'crownRadius (trimmed where a building is closer than the crown seen)', 'trunkCollides', 'castsShadow'],

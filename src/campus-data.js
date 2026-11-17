@@ -1119,7 +1119,7 @@ export const CAMPUS = {
       "id": "canal-road",
       "name": "Road between the slabs and the canal",
       "kind": "road",
-      "style": "road",
+      "style": "none",
       "height": 0,
       "heightBasis": "ground surface",
       "solid": false,
@@ -1128,7 +1128,7 @@ export const CAMPUS = {
       "measuredBy": "measurement agent (east-slabs), single reading, recheck pending",
       "positionAccuracyM": 2.7,
       "correctedForObliqueView": false,
-      "notes": "Grey asphalt about 25 px (7 m) wide, largely under tree crowns and tree shadow, so edges are approximate. It is NOT due north-south: it trends NNE-SSW (about 13 px west per 100 px south). White car on it at (1679,1360).",
+      "notes": "Grey asphalt about 25 px (7 m) wide, largely under tree crowns and tree shadow, so edges are approximate. It is NOT due north-south: it trends NNE-SSW (about 13 px west per 100 px south). White car on it at (1679,1360). NOT DRAWN: superseded by the landscape module (src/world/extras/landscape.js), which traces the road and the canal over the whole height of the image; kept here as the original reading.",
       "shape": "polygon",
       "points": [
         [
@@ -1235,7 +1235,7 @@ export const CAMPUS = {
       "id": "canal-west-bank",
       "name": "Canal west bank line",
       "kind": "water",
-      "style": "water",
+      "style": "none",
       "height": 0,
       "heightBasis": "ground surface",
       "solid": false,
@@ -1244,7 +1244,7 @@ export const CAMPUS = {
       "measuredBy": "measurement agent (east-slabs), single reading, recheck pending",
       "positionAccuracyM": 1.6,
       "correctedForObliqueView": false,
-      "notes": "West edge of the water (pale stone revetment about 8 px wide just west of it); polygon closes eastward only to x 1840, the east bank is outside my crops. At this latitude the canal is at x greater than about 1750-1800 and tilted, not at x 1700-1800: the band x 1725-1775 is a tree belt between road and canal.",
+      "notes": "West edge of the water (pale stone revetment about 8 px wide just west of it); polygon closes eastward only to x 1840, the east bank is outside my crops. At this latitude the canal is at x greater than about 1750-1800 and tilted, not at x 1700-1800: the band x 1725-1775 is a tree belt between road and canal. NOT DRAWN: superseded by the landscape module (src/world/extras/landscape.js), which traces the road and the canal over the whole height of the image; kept here as the original reading.",
       "shape": "polygon",
       "points": [
         [
@@ -1570,90 +1570,36 @@ export const CAMPUS = {
       "name": "New comprehensive teaching building north of the dome (2022 footage; library on a lower floor)",
       "kind": "building",
       "style": "new-building",
-      "height": 25.2,
-      "heightBasis": "6 storeys above ground per the city planning record for the 高中综合教学大楼 (the only storey count in this project with an official source); 4.2 m floor height assumed",
+      "height": 23.4,
+      "heightBasis": "6 storeys (city planning record) x 3.9 m; agrees with the length-to-height ratio of the north-west face, about 2.45 : 1, read from the 2022 footage (frame f_055) against its 55.6 m length on the satellite image",
       "solid": true,
       "walkUnder": false,
-      "confidence": "low: outline read once by the main session; podium and main bar could not be told apart",
-      "measuredBy": "main session, one gridded crop",
-      "positionAccuracyM": 4.3,
+      "confidence": "roof outline re-read by the modelling agent (single reading); faces identified from the 2022 footage",
+      "measuredBy": "modelling agent (library), gridded crops",
+      "positionAccuracyM": 3.1,
       "correctedForObliqueView": true,
-      "notes": "Roof outline as seen: a wedge with a curved south edge following the arc building, grey roof with a terracotta-red rectangular patch and a white rooftop unit. The outline's area is about twice the per-floor area implied by the planning record (7775 m2 above ground over 6 storeys), so it probably includes a wider podium; the upper storeys are likely a narrower bar. The satellite image may predate the building's completion. Identified as the new building because the garden with curved paths lies to its west/north-west and the dome and arc building lie beyond its roof to the south-east, as in the 2022 footage.",
+      "notes": "Corner order: west, north, east, south-east, south-west; the last edge (south-west to south-east) is the south face with the library entrance. The south edge bows about 1.5 m northward at mid-length (drawn straight). A triangular light well in the roof lies at about pixels (1343,822) (1399,786) (1425,822). CORRECTION: the first outline, read once by the main session, put the north-west edge 4 to 8 m too far out because it took part of the shadowed facade for roof. The satellite image predates this building (an older building stands on the site), so the outline rests on the roof as seen there plus the 2022 footage; treat it as approximate. The builder (src/world/builders/new-building.js) carries the same footprint in its own FOOT constant.",
       "shape": "polygon",
       "points": [
         [
-          152.1,
-          -218.1
+          148.1,
+          -207.6
         ],
         [
-          175.4,
-          -229.1
+          194.8,
+          -237.8
         ],
         [
-          197.4,
-          -242.8
+          216.2,
+          -213.4
         ],
         [
-          216.1,
-          -216.7
+          214.3,
+          -196.1
         ],
         [
-          216.6,
-          -197.5
-        ],
-        [
-          187.8,
-          -194.7
-        ],
-        [
-          153.4,
-          -191.4
-        ]
-      ]
-    },
-    {
-      "id": "north-garden",
-      "name": "Lawn with curved paths west of the new building",
-      "kind": "garden",
-      "style": "garden",
-      "height": 0,
-      "heightBasis": "ground surface",
-      "solid": false,
-      "walkUnder": false,
-      "confidence": "seen in satellite and in the 2022 footage (frames 21, 55)",
-      "measuredBy": "main session, one gridded crop",
-      "positionAccuracyM": 2.7,
-      "correctedForObliqueView": false,
-      "notes": "Curved paths, a round flower bed and a large tree are visible in the video; only the lawn outline is recorded.",
-      "shape": "polygon",
-      "points": [
-        [
-          129.5,
-          -228.3
-        ],
-        [
-          147.4,
-          -244.8
-        ],
-        [
-          155.1,
-          -231
-        ],
-        [
-          150.1,
-          -203.5
-        ],
-        [
-          151.5,
-          -191.2
-        ],
-        [
-          136.4,
-          -194.8
-        ],
-        [
-          128.2,
-          -211.8
+          151.7,
+          -190.9
         ]
       ]
     }
