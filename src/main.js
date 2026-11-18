@@ -16,7 +16,22 @@ const num = (k, d = null) => (params.has(k) && !Number.isNaN(Number(params.get(k
 // The lighting module patches shader code, and none of this has run on a real graphics card: if a shader fails to compile
 // there, the page reloads itself once in safe mode instead of showing black walls.
 const safe = params.get('safe') === '1';
-const renderer = new THREE.WebGLRenderer({ antialias: params.get('aa') !== '0' && !safe });
+// Loading takes tens of seconds (every texture, model and shader is made on the spot), so the page says what it is doing:
+// step() writes a line on the loading panel (index.html) and breathe() gives the browser a moment to draw it.
+const step = text => { if (window.__loadStep) window.__loadStep(text); console.info('[load] ' + Math.round(performance.now()) + ' ms: ' + text); };
+const breathe = () => new Promise(done => { let over = false; const go = () => { if (!over) { over = true; done(); } }; requestAnimationFrame(() => setTimeout(go, 0)); setTimeout(go, 150); });
+step(safe ? '正在启动（安全模式）' : '正在启动'); await breathe();
+let renderer;
+try { renderer = new THREE.WebGLRenderer({ antialias: params.get('aa') !== '0' && !safe }); }
+catch (err) { if (window.__loadFail) window.__loadFail('这个浏览器没有提供 WebGL（三维绘图），页面无法显示。原始信息：' + err.message); throw err; }
+// Which graphics device the browser draws with. A software renderer means the browser is not using the graphics card
+// (hardware acceleration switched off, a blocked driver, a remote desktop): the page runs, but at seconds per frame.
+const graphics = (() => { try { const gl = renderer.getContext(), e = gl.getExtension('WEBGL_debug_renderer_info'); return e ? String(gl.getParameter(e.UNMASKED_RENDERER_WEBGL)) : ''; } catch (err) { return ''; } })();
+const software = /swiftshader|basic render|llvmpipe|softpipe|software|warp/i.test(graphics);
+{ const line = document.getElementById('loading-gpu');
+  if (line) { line.textContent = software ? '注意：浏览器没有用显卡绘图（' + graphics + '）。能运行，但会非常卡；请在浏览器“设置 → 系统”里开启“使用硬件加速”并重启浏览器，或更新显卡驱动。' : (graphics ? '绘图设备：' + graphics : '');
+    if (software) line.style.color = '#ffd98a'; } }
+console.info('[load] graphics: ' + (graphics || 'not named') + (software ? ' (software rendering)' : ''));
 renderer.debug.onShaderError = (gl, program, vertexShader, fragmentShader) => {
   console.error('shader failed to compile or link:', gl.getProgramInfoLog(program), gl.getShaderInfoLog(vertexShader), gl.getShaderInfoLog(fragmentShader));
   if (safe || window.__shaderFailed) return;
@@ -37,11 +52,14 @@ const only = params.get('only') ? new Set(params.get('only').split(',')) : null;
 const tryBuilders = Object.fromEntries((params.get('try') || '').split(',').filter(Boolean).map(s => { const i = s.indexOf(':'); return [s.slice(0, i), './builders/' + s.slice(i + 1)]; }));
 const tryExtras = (params.get('tryx') || '').split(',').filter(Boolean).map(f => './extras/' + f);
 setTextureQuality({ anisotropy: renderer.capabilities.getMaxAnisotropy() });
-const { root, colliders, report, details, updaters, places } = await buildWorld(CAMPUS, only, tryBuilders, tryExtras, { lowPower, extras: params.get('extras') === '1', safe });
+const { root, colliders, report, details, updaters, places } = await buildWorld(CAMPUS, only, tryBuilders, tryExtras, { lowPower, extras: params.get('extras') === '1', safe,
+  progress: async (what, i, n) => { step(`${what === 'item' ? '正在搭建楼宇' : '正在布置场地和周边'} ${i} / ${n}`); await breathe(); } });
 scene.add(root);
+step('正在处理材质'); await breathe();
 // Fine grain and patchy gloss on every flat-coloured material (desktop only; not in safe mode: it edits shaders). ?grain=0 turns it off.
 if (!lowPower && !safe && params.get('grain') !== '0') addSurfaceGrain(root);
 
+step('正在准备光照'); await breathe();
 let lighting = null;
 if (flatCheck) {
   scene.background = new THREE.Color(0x000000);
@@ -58,6 +76,7 @@ if (flatCheck) {
   lighting.setTime(num('time', 9.2));                 // morning: the sun is in the east and lights the front of the gate, where the walk starts
 }
 
+step('正在建立碰撞检测'); await breathe();
 let camera, player = null;
 if (view === 'top') {
   // Optional exact bounds in metres so a screenshot can be overlaid pixel-for-pixel on imagery: &w=..&e=..&n=..&s=..
@@ -87,7 +106,12 @@ addEventListener('resize', () => {
   if (lighting && lighting.resize) lighting.resize(innerWidth, innerHeight);
 });
 
-document.getElementById('loading').remove();
+// For a person the loading panel stays up until everything has been drawn (see the frame loop). Under automation it goes
+// away here, as it always did, so that scripts can act as soon as the page reports ready; ?reveal=1 gives a script the
+// person's sequence.
+const human = params.has('reveal') ? params.get('reveal') === '1' : !navigator.webdriver;
+if (!human) document.getElementById('loading').remove();
+step('正在准备界面'); await breathe();
 
 // Start panel and status notice. Hidden in the top-down check view so alignment screenshots stay clean.
 const startPanel = document.getElementById('start'), notice = document.getElementById('notice');
@@ -95,8 +119,10 @@ const showUi = params.get('ui') !== '0';              // ?ui=0 hides the panel a
 if (player && showUi) {
   startPanel.hidden = false; notice.hidden = false;
   if (!player.canLock) {
-    // Touch devices: keyboard and mouse hints do not apply, so hide them rather than show advice that cannot be followed.
-    document.getElementById('start-how').textContent = '触屏操控尚未完成，暂请用电脑浏览。';
+    // No mouse pointer that can be locked: the keyboard and mouse hints do not apply, so hide them. On touch devices
+    // src/ui.js replaces this line straight away by its own hint (stick and swipe); what stays visible here is only for a
+    // device with neither a mouse nor a touch screen, where the view cannot be turned at all.
+    document.getElementById('start-how').textContent = '这台设备不能锁定鼠标，无法转动视角；请改用带鼠标的电脑或触屏设备。';
     startPanel.querySelector('.keys').hidden = true; startPanel.style.cursor = 'default';
   }
   startPanel.addEventListener('click', () => player.requestLock());
@@ -141,9 +167,25 @@ function watchFrameTime(now) {
   adaptive.settle = 90;
 }
 
+// A shader is compiled the first time something that uses it is drawn. Drawing the whole world in one first frame
+// makes a frame that can take tens of seconds on a real graphics driver (the browser cannot repaint meanwhile, and may
+// even give up on its graphics process). So the world is switched on a few groups per frame behind the loading panel,
+// which keeps counting; the panel goes away once everything has been drawn and the shadows have been redrawn.
+// Not under automation, and not when the browser draws in software (there every extra frame costs seconds), unless
+// ?reveal=1 asks for it.
+const reveal = { groups: root.children.filter(o => o.visible), next: 0, settle: 0, shown: false,
+  on: params.has('reveal') ? params.get('reveal') === '1' : (human && !software) };       // with software rendering every extra frame costs seconds
+if (reveal.on) for (const g of reveal.groups) g.visible = false; else reveal.next = reveal.groups.length;
+step('正在编译着色器并绘制第一帧（画面会停顿一会儿，请稍等）'); await breathe(); await breathe();
 const timer = new THREE.Timer();
 let frames = 0;
 renderer.setAnimationLoop(timestamp => {
+  if (reveal.next < reveal.groups.length) {
+    const batch = Math.ceil(reveal.groups.length / 16);
+    for (let i = 0; i < batch && reveal.next < reveal.groups.length; i++) reveal.groups[reveal.next++].visible = true;
+    step(`正在编译着色器并绘制 ${reveal.next} / ${reveal.groups.length}（画面会有停顿）`);
+    if (reveal.next === reveal.groups.length && lighting) lighting.setTime(lighting.getTime());      // shadow maps again, with everything in place
+  }
   timer.update(timestamp);
   watchFrameTime(performance.now());
   // seconds; clamped above so a long frame or a tab switch cannot teleport the player, and below because the first delta can be
@@ -158,10 +200,17 @@ renderer.setAnimationLoop(timestamp => {
   if (ui && ui.update) ui.update(dt);
   if (lighting && lighting.render) lighting.render(scene, camera); else renderer.render(scene, camera);
   frames++;
+  if (!reveal.shown && reveal.next >= reveal.groups.length && ++reveal.settle >= (reveal.on ? 5 : 1)) {
+    reveal.shown = true; console.info('[load] ' + Math.round(performance.now()) + ' ms: everything drawn, panel removed');
+    const panel = document.getElementById('loading'); if (panel) panel.remove(); if (window.__app) window.__app.drawn = true;
+  }
 });
 
 window.__app = {
-  ready: true, items: CAMPUS.items.length, report, walking: !!player, view: view || 'walk', safe,
+  ready: true,            // the world is built and the hooks below can be used
+  drawn: false,           // true once everything has been drawn and the loading panel is gone
+  graphics, software,
+  items: CAMPUS.items.length, report, walking: !!player, view: view || 'walk', safe,
   // deterministic hooks for automated checks (pointer lock needs a real user gesture)
   setPose: (x, z, yawDeg, y) => player && player.setPose(x, z, yawDeg, y),
   step: (input, seconds) => player && player.step(input, seconds),

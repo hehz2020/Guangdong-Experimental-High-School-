@@ -19,8 +19,12 @@ const errors = [];
 page.on('console', m => { if (m.type() === 'error') errors.push(m.text().slice(0, 300)); });
 page.on('pageerror', e => errors.push('pageerror: ' + e.message));
 const t0 = Date.now();
-await page.goto(url + '?time=9.2', { waitUntil: 'load' });
-await page.waitForFunction(() => window.__app && window.__app.ready, null, { timeout: 20 * 60000 });
+// ?reveal=1: the sequence a person gets (the world switched on group by group behind the loading panel)
+page.on('console', m => { if (/^\[load\]/.test(m.text()) && !/楼宇 ([2-9]|[1-3][0-9]) |周边 [2-6] /.test(m.text())) console.log(m.text()); });
+await page.goto(url + '?time=9.2&reveal=1', { waitUntil: 'load' });
+await page.waitForFunction(() => (window.__app && window.__app.drawn) || /失败/.test((document.getElementById('loading-main') || {}).textContent || ''), null, { timeout: 25 * 60000, polling: 500 });
+const panel = await page.evaluate(() => { const p = document.getElementById('loading'); return p ? [document.getElementById('loading-main').textContent, document.getElementById('loading-step').textContent].join(' | ') : null; });
+if (panel) { console.log('the page stopped on its loading panel:', panel); process.exit(1); }
 const info = await page.evaluate(() => {
   const c = document.createElement('canvas'), g = c.getContext('webgl2') || c.getContext('webgl'), e = g && g.getExtension('WEBGL_debug_renderer_info');
   return { address: location.search, failed: __app.report.failed, built: __app.report.built.length, fallback: __app.report.fallback.length, render: __app.renderInfo(),

@@ -95,8 +95,10 @@ export async function buildWorld(campus, only = null, tryBuilders = {}, tryExtra
 
   // (the running track, the pitch and their markings are drawn by extras/athletics.js)
 
+  const todo = campus.items.filter(i => !only || only.has(i.id)); let done = 0;
   for (const item of campus.items) {
     if (only && !only.has(item.id)) continue;
+    if (env.progress) await env.progress('item', ++done, todo.length);       // lets the page show progress between builders
     const group = new THREE.Group(); group.name = item.id; root.add(group);
     const ctx = {
       campus, item, detail, lowPower: !!env.lowPower,
@@ -118,7 +120,9 @@ export async function buildWorld(campus, only = null, tryBuilders = {}, tryExtra
     }
   }
   // With ?only= (a close-up of chosen items) the standing extras are left out unless ?extras=1 asks for them.
-  for (const path of [...(only && !env.extras ? [] : EXTRAS), ...tryExtras]) {
+  const extras = [...(only && !env.extras ? [] : EXTRAS), ...tryExtras]; let k = 0;
+  for (const path of extras) {
+    if (env.progress) await env.progress('extra', ++k, extras.length);
     const group = new THREE.Group(); group.name = path; root.add(group);
     const ctx = {
       campus, detail, lowPower: !!env.lowPower, safe: !!env.safe,

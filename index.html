@@ -9,7 +9,11 @@
   html, body { margin: 0; height: 100%; background: #10141a; overflow: hidden; font-family: system-ui, "PingFang SC", "Microsoft YaHei", sans-serif; }
   canvas { display: block; }
   [hidden] { display: none !important; }
-  #loading { position: fixed; inset: 0; display: grid; place-items: center; color: #dfe6ee; background: #10141a; font-size: 18px; }
+  #loading { position: fixed; inset: 0; z-index: 20; display: grid; place-items: center; color: #dfe6ee; background: #10141a; font-size: 18px; text-align: center; padding: 16px; box-sizing: border-box; }
+  #loading p { margin: 0 0 10px; }
+  #loading-step { font-size: 14px; opacity: 0.9; min-height: 1.4em; overflow-wrap: anywhere; }
+  #loading-hint { font-size: 12px; opacity: 0.6; line-height: 1.7; max-width: 46em; }
+  #loading-gpu { font-size: 12px; opacity: 0.75; line-height: 1.6; max-width: 46em; overflow-wrap: anywhere; }
   #start { position: fixed; inset: 0; display: grid; place-items: center; background: rgba(12, 16, 22, 0.55); color: #eef2f6; cursor: pointer; text-align: center; padding: 16px; box-sizing: border-box; }
   #start h1 { margin: 0 0 6px; font-size: 26px; font-weight: 600; }
   #start .sub { margin: 0 0 18px; font-size: 14px; opacity: 0.8; }
@@ -20,7 +24,40 @@
 <script type="importmap">{"imports":{"three":"./vendor/three/three.module.js","three/addons/":"./vendor/three/addons/"}}</script>
 </head>
 <body>
-<div id="loading">加载中…</div>
+<div id="loading"><div>
+  <p id="loading-main">加载中…</p>
+  <p id="loading-step"></p>
+  <p id="loading-gpu"></p>
+  <p id="loading-hint">第一次打开通常要 20 秒到 1 分多钟：贴图、模型和着色器都是在你的电脑上现算的，期间画面可能不动。<br>下面这行进度超过 3 分钟没有变化才算卡住。</p>
+</div></div>
+<script>
+// A plain script, before the module: it shows what the page is doing while it loads and, if something stops it, the
+// error itself (a page that fails silently looks the same as one that is still working).
+(function () {
+  var t0 = Date.now(), step = '', failed = false;
+  function seconds() { return Math.round((Date.now() - t0) / 1000); }
+  window.__loadStep = function (text) { step = text; var el = document.getElementById('loading-step'); if (el) el.textContent = text + '　·　已用 ' + seconds() + ' 秒'; };
+  window.__loadFail = function (text) {
+    var m = document.getElementById('loading-main'); if (!m || failed) return;       // the first report stays: later ones are its echoes
+    failed = true;
+    m.textContent = '加载失败（第 ' + seconds() + ' 秒，停在：' + (step || '开始') + '）'; m.style.color = '#ff9a8a'; step = '';
+    var s = document.getElementById('loading-step'); if (s) { s.textContent = text; s.style.color = '#ffd0c8'; }
+    var h = document.getElementById('loading-hint'); if (h) h.innerHTML = '可以试试：在地址后面加 <b>?safe=1</b> 再打开；换用新版 Chrome 或 Edge；确认浏览器“设置 → 系统”里开启了“使用硬件加速”。<br>把上面两行字告诉作者，有助于查出原因。';
+  };
+  window.addEventListener('error', function (e) {
+    if (!document.getElementById('loading')) return;
+    var where = e.filename ? '　' + e.filename.split('/').slice(-2).join('/') + ':' + e.lineno : '';
+    if (e.message) window.__loadFail(e.message + where);
+    else if (e.target && e.target.src) window.__loadFail('有一个文件没有取到：' + e.target.src);
+  }, true);
+  window.addEventListener('unhandledrejection', function (e) {
+    if (document.getElementById('loading')) window.__loadFail(String((e.reason && (e.reason.stack || e.reason.message)) || e.reason).slice(0, 500));
+  });
+  var timer = setInterval(function () { if (!document.getElementById('loading')) clearInterval(timer); else if (step) window.__loadStep(step); }, 1000);
+  window.__loadStep('正在读取程序');
+})();
+</script>
+<script nomodule>window.__loadFail('这个浏览器太旧，不支持本页面。请用新版 Chrome 或 Edge 打开。');</script>
 <div id="start" hidden>
   <div>
     <h1>广东实验中学 · 校园漫游</h1>
