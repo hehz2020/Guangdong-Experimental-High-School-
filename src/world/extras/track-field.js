@@ -17,7 +17,7 @@
 import { THREE } from '../../kit.js';
 import { Batch } from '../../batch.js';
 import { pbr, plain, rng } from '../../hifi.js';
-import { emblemTexture } from '../../signs.js';
+import { emblemTexture, textTexture } from '../../signs.js';
 import { LIT } from '../../street.js';
 
 /** Circles the landscape keeps its own trees, lamps and benches out of: [x, z, radius]. */
@@ -94,6 +94,10 @@ export function build(ctx) {
     ctx.add(ring.build({ name: 'jet-chains', castShadow: false }));
     // a stone with a plate, two floodlights
     v.frame(jx, jz, heading).box(greyGranite, 4.5, 0.55, 7.6, 2.2, 1.1, 0.5).box(gold, 4.5, 0.62, 7.86, 1.5, 0.6, 0.02);
+    { // the plate's inscription (made up: such aircraft are given to schools for national-defence education)
+      const { texture } = textTexture('国防教育展品', { color: '#3b2a10', background: '#d8a93a', pad: 0.22 }); texture.wrapS = texture.wrapT = THREE.RepeatWrapping; texture.repeat.set(1 / 1.3, 1 / 0.26);
+      const m = new THREE.MeshStandardMaterial({ map: texture, roughness: 0.4, metalness: 0.7 }); m.name = 'hifi-plate-text';
+      v.quad(m, [3.85, 0.56, 7.875], [5.15, 0.56, 7.875], [5.15, 0.82, 7.875], [3.85, 0.82, 7.875]); }
     c.frame(jx, jz, heading).box('generic', 4.5, 0.55, 7.6, 2.2, 1.1, 0.5);
     for (const [fx, fz] of [[7.5, 5.5], [-7.5, 5.5]]) { v.frame(jx, jz, heading).box(dark, fx, 0.2, fz, 0.4, 0.3, 0.3).box(lamp, fx, 0.36, fz, 0.3, 0.02, 0.2); const cs = Math.cos(heading), sn = Math.sin(heading); LIT.push([jx + fx * cs * 0.6 + fz * sn * 0.6, jz - fx * sn * 0.6 + fz * cs * 0.6, 9]); }
   }

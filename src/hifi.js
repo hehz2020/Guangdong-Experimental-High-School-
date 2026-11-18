@@ -198,12 +198,12 @@ SURFACES.brick = (hex = 0xa5452f) => once('br' + hex, () => {
 // granular sports surface: running track, court paint
 SURFACES.rubber = (hex = 0x9c4235, tile = 2) => once('rb' + hex + tile, () => {
   const S = 512, base = rgbOf(hex), fine = valueNoise(S, 256, 121), n = fbm(S, 5, 4, hex & 1023), sp = white(S, 123);
-  return { ...surface(S, { tile, strength: 1.3, height: fine, col: i => mul(base, 0.84 + 0.2 * n[i] + 0.22 * (fine[i] - 0.5) + (sp[i] > 0.97 ? 0.12 : 0)), rough: i => 0.82 + 0.14 * fine[i] }), roughness: 1, metalness: 0 };
+  return { ...surface(S, { tile, strength: 0.7, height: fine, col: i => mul(base, 0.84 + 0.2 * n[i] + 0.14 * (fine[i] - 0.5) + (sp[i] > 0.97 ? 0.12 : 0)), rough: i => 0.82 + 0.14 * fine[i] }), roughness: 1, metalness: 0 };
 });
 // turf of any green
 SURFACES.turf = (hex = 0x5f9a4a, tile = 3.5) => once('tf' + hex + tile, () => {
   const S = 512, base = rgbOf(hex), fine = white(S, 131), n1 = fbm(S, 10, 4, 132), n2 = fbm(S, 3, 3, 133), blades = valueNoise(S, 256, 134);
-  return { ...surface(S, { tile, strength: 2.4, height: blades, col: i => { const k = 0.66 + 0.46 * n1[i] + 0.3 * (blades[i] - 0.5) + 0.1 * (fine[i] - 0.5), y = (n2[i] - 0.5) * 0.3; return [base[0] * k * (1 + y), base[1] * k, base[2] * k * (1 - y)]; }, rough: () => 0.93 }), roughness: 1, metalness: 0 };
+  return { ...surface(S, { tile, strength: 1.7, height: blades, col: i => { const k = 0.66 + 0.46 * n1[i] + 0.3 * (blades[i] - 0.5) + 0.1 * (fine[i] - 0.5), y = (n2[i] - 0.5) * 0.3; return [base[0] * k * (1 + y), base[1] * k, base[2] * k * (1 - y)]; }, rough: () => 0.93 }), roughness: 1, metalness: 0 };
 });
 // wide floor or deck boards
 SURFACES.boards = (hex = 0xc9a878, tile = 1.2) => once('bd' + hex + tile, () => {

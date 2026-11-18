@@ -129,6 +129,7 @@ export function treePit(v, x, z, s = 1.6, ang = 0) {
 // ---- notice boards -------------------------------------------------------------------------------------------------
 const POSTERS = [
   ['校园公告', '#b3261e'], ['光荣榜', '#b8860b'], ['社团招新', '#1f6fb5'], ['科技节', '#0f7a6a'], ['校运会', '#c2410c'], ['阅读之星', '#6d3fa0'],
+  ['安全教育', '#a61b29'], ['艺术节', '#b0307a'], ['值日安排', '#3d6b35'], ['心理健康', '#2a7f9e'], ['志愿服务', '#c7631a'], ['升旗仪式', '#b3261e'],
 ];
 function posterMaterial(k, w, h) {
   return once('poster' + k + w + h, () => {
@@ -182,12 +183,17 @@ export function noticeBoard(v, c, x, z, ang, panels = 3, first = 0, title = '宣
       v.quad(m, [cx - pw / 2, y0, 0], [cx + pw / 2, y0, 0], [cx + pw / 2, y0 + ph, 0], [cx - pw / 2, y0 + ph, 0]);
       for (const s of [-1, 1]) v.box(F.dark(), cx + s * (pw / 2 + 0.015), y0 + ph / 2, 0.01, 0.03, ph + 0.06, 0.04);
       v.box(F.dark(), cx, y0 - 0.015, 0.01, pw + 0.06, 0.03, 0.04).box(F.dark(), cx, y0 + ph + 0.015, 0.01, pw + 0.06, 0.03, 0.04);
+      // the back carries posters too, so that the board is not a blank sheet from behind
+      const mb = posterMaterial(first + panels + i, pw, ph), zb = -0.075;
+      v.quad(mb, [cx + pw / 2, y0, zb], [cx - pw / 2, y0, zb], [cx - pw / 2, y0 + ph, zb], [cx + pw / 2, y0 + ph, zb]);
+      for (const s of [-1, 1]) v.box(F.dark(), cx + s * (pw / 2 + 0.015), y0 + ph / 2, zb - 0.01, 0.03, ph + 0.06, 0.04);
+      v.box(F.dark(), cx, y0 - 0.015, zb - 0.01, pw + 0.06, 0.03, 0.04).box(F.dark(), cx, y0 + ph + 0.015, zb - 0.01, pw + 0.06, 0.03, 0.04);
     }
     const hh = 0.3, hm = headerMaterial(title, W, hh);
     v.quad(hm, [-W / 2, 2.28, 0.03], [W / 2, 2.28, 0.03], [W / 2, 2.28 + hh, 0.03], [-W / 2, 2.28 + hh, 0.03]);
     v.box(F.steel(), 0, 2.43, -0.02, W, hh, 0.08);
-    v.box(F.dark(), 0, 2.66, 0.12, W + 0.5, 0.05, 0.9);                                                               // roof
-    v.box(F.lamp(), 0, 2.62, 0.3, W - 0.4, 0.02, 0.06);
+    v.box(F.dark(), 0, 2.66, 0, W + 0.5, 0.05, 1.1);                                                                  // roof
+    v.box(F.lamp(), 0, 2.62, 0.3, W - 0.4, 0.02, 0.06).box(F.lamp(), 0, 2.62, -0.36, W - 0.4, 0.02, 0.06);
     if (c) c.box('generic', 0, 1.3, 0, W + 0.2, 2.6, 0.24);
   });
 }

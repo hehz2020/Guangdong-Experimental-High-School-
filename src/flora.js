@@ -98,7 +98,7 @@ function geometryOf(parts, withColor = false) {
 
 // ---- broadleaf tree -------------------------------------------------------------------------------------------------
 /** One tree shape: { trunk, crown } geometries, built around the origin with the foot at y = 0. */
-function broadleafShape(seed, { height = 11, spread = 5.2, cards = 300 } = {}) {
+function broadleafShape(seed, { height = 11, spread = 5.2, cards = 300, size = 1 } = {}) {
   const r = rng(seed), V = (x, y, z) => new THREE.Vector3(x, y, z);
   const trunkH = height * (0.36 + 0.08 * r()), cy = trunkH + (height - trunkH) * 0.5, ry = (height - trunkH) * 0.62, lean = V((r() - 0.5) * 0.5, 0, (r() - 0.5) * 0.5);
   const parts = [tube([V(0, 0, 0), V(lean.x * 0.3, trunkH * 0.5, lean.z * 0.3), V(lean.x, trunkH, lean.z)], [0.34 + 0.02 * height, 0.26, 0.2], 9)];
@@ -118,7 +118,7 @@ function broadleafShape(seed, { height = 11, spread = 5.2, cards = 300 } = {}) {
     p.multiplyScalar(rad).add(c);
     n.copy(p).sub(centre).normalize().add(V(r() - 0.5, r() - 0.5, r() - 0.5).multiplyScalar(1.1)).normalize();
     t1.crossVectors(n, Math.abs(n.y) > 0.9 ? V(1, 0, 0) : V(0, 1, 0)).normalize(); t2.crossVectors(n, t1);
-    const ang = r() * 6.283, s = (1.5 + 1.1 * r()) * 0.5, ca = Math.cos(ang) * s, sa = Math.sin(ang) * s, base = crown.pos.length / 3;
+    const ang = r() * 6.283, s = (1.5 + 1.1 * r()) * 0.5 * size, ca = Math.cos(ang) * s, sa = Math.sin(ang) * s, base = crown.pos.length / 3;
     sn.copy(p).sub(centre); sn.y *= 0.7; sn.normalize().lerp(V(0, 1, 0), 0.28).normalize();
     const depth = Math.min(1, p.clone().sub(centre).length() / (spread * 0.9)), shade = (0.5 + 0.55 * depth + 0.16 * (p.y - cy) / ry) * (0.86 + 0.22 * r()), warm = 0.94 + 0.12 * r();
     for (const [u, v] of [[-1, -1], [1, -1], [1, 1], [-1, 1]]) {
@@ -221,25 +221,33 @@ export function broadleafTrees(list, { seed = 1, low = false, hue = 100 } = {}) 
 /**
  * Many broadleaf trees over a large area. list: [[x, z, height, crownRadius]...]. The trees are split into square cells
  * so that whole cells outside the view (or outside a shadow map) are skipped. Two leaf tints, three shapes.
+ * Each cell has two crowns: the full one and, for cells far from the viewer, one with a quarter of the leaf cards, each
+ * twice the size (same boughs and clusters, so the outline is the same). Call group.userData.update(camera) every frame
+ * to switch between them; until the first call the far crowns are shown.
  */
 export function forest(list, { seed = 11, low = false, cell = 64 } = {}) {
-  const group = new THREE.Group(), r = rng(seed * 419 + 7), bark = pbr('bark');
-  const kinds = [0, 1, 2, 3, 4, 5].map(k => ({ shape: broadleafShape(seed * 37 + k * 11, { cards: low ? 140 : 280 }), leaves: foliage(leafCluster(k % 2 ? 86 : 104), 'leaves' + (k % 2 ? 86 : 104), 0.05) }));
+  const group = new THREE.Group(), r = rng(seed * 419 + 7), bark = pbr('bark'), NEAR = low ? 70 : 150;
+  const kinds = [0, 1, 2, 3, 4, 5].map(k => ({ shape: broadleafShape(seed * 37 + k * 11, { cards: low ? 140 : 280 }), far: broadleafShape(seed * 37 + k * 11, { cards: low ? 36 : 70, size: 2 }).crown,
+    leaves: foliage(leafCluster(k % 2 ? 86 : 104), 'leaves' + (k % 2 ? 86 : 104), 0.05) }));
   const cells = new Map();
   for (const [x, z, h, cr = 4.6] of list) {
     const cx = Math.floor(x / cell), cz = Math.floor(z / cell), key = cx + ',' + cz + ',' + (((cx * 7 + cz * 13) % kinds.length + kinds.length) % kinds.length);   // one shape per cell: fewer meshes to draw
     if (!cells.has(key)) cells.set(key, []);
     cells.get(key).push([x, z, h / 11 * (0.94 + 0.12 * r()), Math.max(0.35, Math.min(1.45, cr / 4.4)), r() * 6.283]);
   }
-  const M = new THREE.Matrix4(), q = new THREE.Quaternion(), up = new THREE.Vector3(0, 1, 0);
+  const M = new THREE.Matrix4(), q = new THREE.Quaternion(), up = new THREE.Vector3(0, 1, 0), lod = [];
   for (const [key, inst] of cells) {
-    const kind = kinds[+key.split(',')[2]];
-    for (const [geo, material, name] of [[kind.shape.trunk, bark, 'hifi-tree-trunks'], [kind.shape.crown, kind.leaves, 'hifi-tree-crowns']]) {
+    const kind = kinds[+key.split(',')[2]], made = [];
+    for (const [geo, material, name] of [[kind.shape.trunk, bark, 'hifi-tree-trunks'], [kind.shape.crown, kind.leaves, 'hifi-tree-crowns'], [kind.far, kind.leaves, 'hifi-tree-crowns-far']]) {
       const m = new THREE.InstancedMesh(geo, material, inst.length);
       inst.forEach(([x, z, sy, sw, rot], i) => m.setMatrixAt(i, M.compose(new THREE.Vector3(x, 0, z), q.setFromAxisAngle(up, rot), new THREE.Vector3(sy * sw, sy, sy * sw))));
-      m.castShadow = true; m.receiveShadow = true; m.name = name; m.computeBoundingSphere(); m.computeBoundingBox(); group.add(m);
+      m.castShadow = true; m.receiveShadow = true; m.name = name; m.computeBoundingSphere(); m.computeBoundingBox(); group.add(m); made.push(m);
     }
+    made[1].visible = false;
+    lod.push({ x: inst.reduce((s, i) => s + i[0], 0) / inst.length, z: inst.reduce((s, i) => s + i[1], 0) / inst.length, near: made[1], far: made[2] });
   }
+  group.userData.update = camera => { const cx = camera.position.x, cy = camera.position.y, cz = camera.position.z;
+    for (const c of lod) { const on = (c.x - cx) ** 2 + (c.z - cz) ** 2 + cy * cy < NEAR * NEAR; if (c.near.visible !== on) { c.near.visible = on; c.far.visible = !on; } } };
   return group;
 }
 /** Royal palms. list: [[x, z, height]...]. */

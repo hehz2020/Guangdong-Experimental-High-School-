@@ -35,7 +35,7 @@
 //   - Tennis courts: two regulation courts with nets, an umpire's chair each and a chain-link fence, centred on the two
 //     readings; whether the courts belong to the school is not confirmed.
 //   - FURNITURE (street.js): garden lamps on a jittered 30 m grid, benches, litter bins, notice boards with made-up
-//     posters, a finger post, bicycle racks north of the first dormitory slab, tree pits round the trees that stand in
+//     posters, a finger post, bicycle racks between the courts and the long blocks, tree pits round the trees that stand in
 //     paving. All imagined.
 //
 // Collision: the canal's two banks (an invisible barrier 1.4 m high), the boundary fence, the tennis fence and nets, lamp
@@ -48,7 +48,7 @@ import { fieldKeepOut } from './athletics.js';
 import { KEEP_OUT } from './track-field.js';
 import { THREE, mat } from '../../kit.js';
 import { Batch } from '../../batch.js';
-import { pbr, plain, waterNormals } from '../../hifi.js';
+import { pbr, plain } from '../../hifi.js';
 import { strips, ribbon, stripMesh } from '../../shapes.js';
 import { FURNITURE, gardenLamp, streetLight, bench, bins, treePit, noticeBoard, bikeRack, fingerPost } from '../../street.js';
 
@@ -288,13 +288,24 @@ function buildFence(ctx, v, c, site) {
 }
 
 // ---- canal ---------------------------------------------------------------------------------------------------------
+/** Normal map of small wind ripples: a sum of waves running in unrelated directions, so that no grid shows; it repeats exactly. */
+function rippleTexture() {
+  const S = 256, waves = [[3, 7, 1.0], [-5, 4, 0.9], [8, -3, 0.7], [11, 6, 0.45], [-2, -9, 0.6], [13, -8, 0.3], [-7, -12, 0.3], [17, 5, 0.2], [4, 19, 0.2], [-21, 9, 0.12]];
+  const h = new Float32Array(S * S);
+  for (let y = 0; y < S; y++) for (let x = 0; x < S; x++) { let s = 0; waves.forEach(([kx, ky, a], i) => { s += a * Math.sin((kx * x + ky * y) / S * 6.2832 + i * 1.7); }); h[y * S + x] = s; }
+  const cv = document.createElement('canvas'); cv.width = cv.height = S; const g = cv.getContext('2d'), im = g.createImageData(S, S), at = (x, y) => h[((y + S) % S) * S + ((x + S) % S)];
+  for (let y = 0; y < S; y++) for (let x = 0; x < S; x++) { const dx = (at(x + 1, y) - at(x - 1, y)) * 0.55, dy = (at(x, y + 1) - at(x, y - 1)) * 0.55, l = Math.hypot(dx, dy, 1), i = (y * S + x) * 4;
+    im.data[i] = 127.5 - 127.5 * dx / l; im.data[i + 1] = 127.5 + 127.5 * dy / l; im.data[i + 2] = 127.5 + 127.5 / l; im.data[i + 3] = 255; }
+  g.putImageData(im, 0, 0);
+  const t = new THREE.CanvasTexture(cv); t.wrapS = t.wrapT = THREE.RepeatWrapping; t.anisotropy = 8; return t;
+}
 function buildCanal(ctx, low) {
   const { westEdge: w, eastEdge: e } = DATA.canal;
   const stone = pbr('paving', [0x8f8a7f, 0x7c776d, 2, 5, [3.0, 3.0], 23, true]), coping = pbr('concrete', [0xd3cfc4]), slime = plain('algae', 0x39472f, 0.85, 0);
   const rail = pbr('concrete', [0xcfcac0]);
   // water: murky green, glossy, slowly drifting ripples. It lies below the banks, in a channel open in the ground.
-  const ripple = waterNormals().clone(); ripple.wrapS = ripple.wrapT = THREE.RepeatWrapping; ripple.repeat.set(1 / 7, 1 / 7); ripple.needsUpdate = true;
-  const water = new THREE.MeshStandardMaterial({ color: 0x33493a, roughness: 0.07, metalness: 0.4, normalMap: ripple, envMapIntensity: 1.5 }); water.normalScale.set(0.45, 0.45); water.name = 'canal-water';
+  const ripple = rippleTexture(); ripple.repeat.set(1 / 9, 1 / 9);
+  const water = new THREE.MeshStandardMaterial({ color: 0x33493a, roughness: 0.07, metalness: 0.4, normalMap: ripple, envMapIntensity: 1.5 }); water.normalScale.set(0.38, 0.38); water.name = 'canal-water';
   const wm = groundMesh([{ outer: [w[0], e[0], e[1], w[1]] }], WATER_Y, water); wm.material = water; wm.renderOrder = 0; wm.name = 'canal-water'; ctx.add(wm);
   if (ctx.animate) ctx.animate((dt, t) => { ripple.offset.set(t * 0.012, t * 0.021); });
 
@@ -441,6 +452,7 @@ function buildTrees(ctx, low, site, v) {
   }
   // Trees are leaf-card trees from flora.js: split into cells so that hidden cells are skipped.
   const woods = forest(fitted, { seed: 11, low }); woods.name = 'trees'; ctx.add(woods);
+  if (ctx.animate) ctx.animate((dt, time, env) => { if (env && env.camera) woods.userData.update(env.camera); });
   // trunk colliders: thin five-sided posts, only for the trees flagged in the data (near paving or a road); those trees
   // also get a tree pit, a granite frame round bare soil
   const col = new Batch();
@@ -465,8 +477,8 @@ function buildFurniture(ctx, v, c, site, low) {
     for (let x = south.points[0][0] + 9; x < south.points[1][0] - 2; x += 19) if (site.free(x, z, 0.3, false)) gardenLamp(v, c, x, z);
     for (const x of [72, 98, 118]) if (site.free(x, z - south.widthM - 1.6, 0.6, false)) bench(v, c, x, z - south.widthM - 1.6, 0);
   }
-  // bicycle parking in the lane north of the first dormitory slab
-  for (const [x, n, seed] of [[166, 12, 1], [180, 12, 2], [194, 12, 3], [208, 10, 4]]) if (site.free(x, 21.2, 0.9)) bikeRack(v, c, x, 21.2, 0, n, seed);
+  // bicycle parking on the strip between the courts and the west ends of the long blocks (clear of their walls)
+  for (const [z, n, seed] of [[31, 12, 1], [41, 12, 2], [51, 12, 3], [61, 10, 4]]) if (site.free(138.6, z, 0.9)) bikeRack(v, c, 138.6, z, Math.PI / 2, n, seed);
   // garden lamps over the grounds: a jittered 30 m grid, kept where the ground is free and within 60 m of a building
   let lamps = 0;
   for (let gx = -100; gx <= 300; gx += 30) for (let gz = -240; gz <= 150; gz += 30) {
