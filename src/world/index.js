@@ -101,7 +101,9 @@ export async function buildWorld(campus, only = null, tryBuilders = {}, tryExtra
     if (env.progress) await env.progress('item', ++done, todo.length);       // lets the page show progress between builders
     const group = new THREE.Group(); group.name = item.id; root.add(group);
     const ctx = {
-      campus, item, detail, lowPower: !!env.lowPower,
+      campus, item, detail, lowPower: !!env.lowPower, safe: !!env.safe,
+      // per-frame hook, as the extras have: fn(dt, seconds, { camera, lighting, renderer })
+      animate: fn => { updaters.push(fn); },
       add: obj => { group.add(obj); return obj; },
       // register a mesh (in world coordinates) that the player cannot walk through
       // Call after ctx.add (the mesh needs its parents to know where it is). For an invisible barrier, add a mesh and set visible = false.
