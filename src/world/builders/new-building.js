@@ -9,7 +9,8 @@
 // - Height: in frame 55 the north-west face is about 2.45 times as long as it is high (camera pitch worked out from the
 //   converging verticals and the horizon). That face is 55.6 m long on the satellite image, so the building is about
 //   23 m high: 6 storeys (planning record) x 3.9 m = 23.4 m is used. The data file says 25.2 m.
-// - Ground position = roof pixels moved by -23.4 m x the image lean (-0.28, 2.3 px per metre), then converted to metres.
+// - Ground position = roof pixels moved by -23.4 m x the image lean (-0.243, 2.0 px per metre; it was -0.28, 2.3 until an
+//   independent second reading re-calibrated it, which moved this footprint 1.9 m south), then converted to metres.
 // - The dark triangle in the roof on the satellite image is a light well: (1343,822) (1399,786) (1425,822).
 //
 // FROM THE REFERENCES
@@ -79,7 +80,7 @@ import { Batch } from '../../batch.js';
 import { tree } from '../../plants.js';
 
 // Ground footprint in metres (x east, z south, origin at the centre of the track). See FOOTPRINT above.
-const FOOT = { A: [148.07, -207.61], B: [194.77, -237.83], C: [216.20, -213.38], D: [214.27, -196.07], E: [151.64, -190.86] };
+const FOOT = { A: [147.85, -205.69], B: [194.54, -235.91], C: [215.97, -211.46], D: [214.05, -194.15], E: [151.42, -188.93] };
 const FH = 3.9, H = 6 * FH;                    // storey height and roof level (23.4 m)
 const F0 = 0.3, F2 = 4.2, F3 = 2 * FH;         // library floor, gallery floor, terrace = third floor (7.8 m)
 const CEIL1 = 3.55, CEIL2 = 7.0;               // ceilings of the two library levels

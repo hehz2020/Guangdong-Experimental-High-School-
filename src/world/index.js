@@ -23,6 +23,7 @@ export const BUILDERS = {
   'dome': './builders/dome.js',
   'slab-block': './builders/slab-block.js',
   'round-tower': './builders/round-tower.js',
+  'plain': './builders/plain-block.js',
 };
 
 // Modules that add things not tied to one data item (track furniture, courts, landscape...). Each exports build(ctx).

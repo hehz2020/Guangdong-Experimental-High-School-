@@ -13,11 +13,15 @@
   ],
   "lean": {
    "pxPerMetreOfHeight": [
+    -0.243,
+    2.0
+   ],
+   "range": "1.9 to 2.3 px per metre along the south component",
+   "basis": "The image is oblique, viewed from the north-north-east: roofs appear displaced toward the south-south-west of their bases and north facades are visible. Direction: white piers on a dormitory north face lean dx/dy = -0.115 to -0.12. Magnitude re-calibrated by an independent second reading on floor bands of the teaching-slab facades: 33 to 35 px from the parapet top down to the first-floor band (four storeys and the parapet, 16.8 m with the assumed 3.9 m storeys) gives 1.96 to 2.07 px per metre; band spacing is 7.4 to 8.0 px per storey. The first value (2.3) came from a 47 px facade band that included a dark zone below the first floor whose extent was a guess. What is measured directly is the roof displacement of the five-storey slabs, about 41 px; the split into height and px per metre still rests on the assumed storey height (with 2.3 the same bands would mean 3.3 m storeys).",
+   "previous": [
     -0.28,
     2.3
-   ],
-   "range": "2.1 to 3.1 px per metre along the south component",
-   "basis": "The image is oblique, viewed from the north-north-east: roofs appear displaced toward the south-south-west of their bases and north facades are visible. Magnitude calibrated on the teaching slabs' visible north facade band (about 47 px) against an estimated 20.7 m height, so it inherits that height's uncertainty. Found by the east-slabs measurement agent; not independently calibrated."
+   ]
   }
  },
  "assumptions": {
@@ -81,14 +85,14 @@
     "basis": "top of the upper seating tier above the track apron; estimate"
    },
    "confidence": "confirmed in video",
-   "accuracyPx": 6,
-   "measuredBy": "main session, gridded 2x crops",
-   "notes": "Three colour blocks north to south: blue, red, teal. Longer than the roof at both ends.",
+   "accuracyPx": 3,
+   "measuredBy": "main session, gridded 2x crops; independent second reading (measurement agent, 2026-11), checked by the main session on its overlay",
+   "notes": "CORRECTED after an independent second reading (rectPx was [463, 1325, 499, 1720]): the first south end (1720) was the edge of a tree shadow across the teal seat block. The white rail line on the west side of the seats runs unbroken to y 1751 and the three colour blocks then come out nearly equal (blue 1330-1467, red 1467-1603, teal 1603-1750). The stand is about 8 m longer at its south end. | Earlier note: Three colour blocks north to south: blue, red, teal. Longer than the roof at both ends.",
    "rectPx": [
-    463,
-    1325,
-    499,
-    1720
+    465,
+    1328,
+    501,
+    1750
    ]
   },
   {
@@ -102,14 +106,14 @@
     "basis": "tall single hall, eave below the 5-storey roofs in the videos; estimate, +/- 3 m"
    },
    "confidence": "confirmed in video",
-   "accuracyPx": 6,
-   "measuredBy": "main session, gridded 2x crops",
-   "notes": "Dark main roof, south eave slightly bowed. A further dark band about 13 m deep lies north of pixel row 1400; unresolved whether it is an annex or shadow, so it is excluded here. Three pale roof strips about 32 m long near the centre.",
+   "accuracyPx": 4,
+   "measuredBy": "main session, gridded 2x crops; independent second reading (measurement agent, 2026-11), checked by the main session on its overlay",
+   "notes": "CORRECTED after an independent second reading (rectPx was [901, 1400, 1200, 1615]): the roof lies 1.9 m further east: x 901 was a grey strip of shaded ground, and the white glazed strip recorded as gym-roof-east-edge-feature runs to x 1207.5 with dark roof north and south of it reaching the same x. North and south edges are not straight: west of x 945 they lie 14 to 16 px further north, which fits a west part of the roof 6 to 8 m lower than the rest (not modelled: the builder uses one arc). | Earlier note: Dark main roof, south eave slightly bowed. A further dark band about 13 m deep lies north of pixel row 1400; unresolved whether it is an annex or shadow, so it is excluded here. Three pale roof strips about 32 m long near the centre.",
    "rectPx": [
-    901,
-    1400,
-    1200,
-    1615
+    908,
+    1405,
+    1207.5,
+    1617
    ]
   },
   {
@@ -125,7 +129,7 @@
    "confidence": "seen in satellite only",
    "accuracyPx": 6,
    "measuredBy": "main session, gridded 2x crops",
-   "notes": "Overlaps the gym main roof by about 4 m and projects about 2 m beyond its east edge, so it is a feature on the roof edge, not a separate building beside the gym. Ladder-like texture in the southern half. Function unknown from plan view.",
+   "notes": "The second reading puts the gym roof's east edge at x 1207.5, so this strip lies on the roof along its east edge and does not project beyond it. | Earlier note: Overlaps the gym main roof by about 4 m and projects about 2 m beyond its east edge, so it is a feature on the roof edge, not a separate building beside the gym. Ladder-like texture in the southern half. Function unknown from plan view.",
    "rectPx": [
     1185,
     1432,
@@ -145,14 +149,14 @@
     "basis": "roof plane at about the roof level of the adjoining 5-storey blocks in the 2018 video; estimate"
    },
    "confidence": "confirmed in video",
-   "accuracyPx": 6,
-   "measuredBy": "main session, gridded 2x crops",
-   "notes": "Pale ribbed roof, ribs run north-south. Irregular notch at the south-east corner, roughly pixels 1370-1391 x 1270-1299, not modelled in this rectangle.",
+   "accuracyPx": 3,
+   "measuredBy": "main session, gridded 2x crops; independent second reading (measurement agent, 2026-11), checked by the main session on its overlay",
+   "notes": "CORRECTED after an independent second reading (rectPx was [1244, 1162, 1391, 1299]): the striped white roof continues uniformly to y 1306.5 between x 1245 and 1365; the first south edge (1299) cut across the stripes 2.1 m short. The south-east corner (x above 1366, y above 1283) is covered by a blue-grey patch with a ragged edge (shadow or a different sheet; not resolved). | Earlier note: Pale ribbed roof, ribs run north-south. Irregular notch at the south-east corner, roughly pixels 1370-1391 x 1270-1299, not modelled in this rectangle.",
    "rectPx": [
-    1244,
-    1162,
+    1243,
+    1163,
     1391,
-    1299
+    1306.5
    ],
    "walkUnder": true
   },
@@ -167,14 +171,14 @@
     "basis": "5 to 6 open-corridor levels seen in the 2018 video; 5 used; estimate"
    },
    "confidence": "inside presumed campus, building use not confirmed",
-   "accuracyPx": 6,
-   "measuredBy": "main session, gridded 2x crops",
-   "notes": "Re-measured from a crop that contains the whole building; the first reading came from a crop whose south boundary cut through it and was about 2 m too deep. Two roof zones: a darker pitched or tiled strip along the north (pixel rows 1243-1272) and a pale flat strip with small square openings along the south (rows 1272-1302), with a narrow ledge to about row 1308. Relative heights of the two zones cannot be read from plan view. Called a teaching slab by resemblance to the confirmed ones; actual use not established.",
+   "accuracyPx": 4,
+   "measuredBy": "main session, gridded 2x crops; independent second reading (measurement agent, 2026-11), checked by the main session on its overlay",
+   "notes": "CORRECTED after an independent second reading (rectPx was [1010, 1243, 1195, 1305]): the first reading took the visible NORTH FACADE (dark band y 1243-1275 with floor lines every 8 px and pier lines) for roof and stopped short at the south. The roof is the cream surface from y 1276 (1284 for the eastern 65 px) to a bright parapet line at y 1316.5; a fainter strip continues to y 1325.5 between x 1085 and 1164. The south edge is put at the outer edge of that strip, the same convention as the two east slabs (see README: whether the walls stand under the parapet line or under the strip's edge is undecided; if under the parapet line this slab is about 2.5 m too deep at the south). West end is pointed (tip 1014,1286). The slab is about 13.6 m deep by this convention (11 m to the parapet line), not 17 m, and its north edge lies 9 m further south than first recorded. | Earlier note: Re-measured from a crop that contains the whole building; the first reading came from a crop whose south boundary cut through it and was about 2 m too deep. Two roof zones: a darker pitched or tiled strip along the north (pixel rows 1243-1272) and a pale flat strip with small square openings along the south (rows 1272-1302), with a narrow ledge to about row 1308. Relative heights of the two zones cannot be read from plan view. Called a teaching slab by resemblance to the confirmed ones; actual use not established.",
    "rectPx": [
-    1010,
-    1243,
-    1195,
-    1305
+    1018,
+    1276,
+    1192,
+    1325.5
    ]
   },
   {
@@ -188,12 +192,12 @@
     "basis": "drum with at least 3 window rows visible above trees, dome on top; estimate, +/- 4 m"
    },
    "confidence": "seen in satellite only",
-   "accuracyPx": 6,
-   "measuredBy": "main session, gridded 2x crops",
-   "notes": "Outer ring about 24.7 m across, inner dome about 13 m across. Not seen in the reference video; use unknown.",
+   "accuracyPx": 3,
+   "measuredBy": "main session, gridded 2x crops; independent second reading (measurement agent, 2026-11), checked by the main session on its overlay",
+   "notes": "CORRECTED after an independent second reading (circlePx was [1487, 930, 45]): circle fitted to 17 points on the white outer arc gives centre (1486.5, 936.9); the first centre was about 1.9 m too far north. | Earlier note: Outer ring about 24.7 m across, inner dome about 13 m across. Not seen in the reference video; use unknown.",
    "circlePx": [
     1487,
-    930,
+    937,
     45
    ]
   },
@@ -210,7 +214,7 @@
    "confidence": "seen in satellite only",
    "accuracyPx": 6,
    "measuredBy": "main session, gridded 2x crops",
-   "notes": "Concave side faces south. Row of dark rectangular openings along the roof. Chord about 188 m. Recorded as a hand-traced centreline because the two ends are not symmetric and no circle fit was made. Whether it belongs to the school is not confirmed.",
+   "notes": "SECOND READING, NOT YET MODELLED: eight cross-sections show the same roof-level section everywhere: solid roof 32 to 33 px deep from the outer (north-west) parapet, a row of dark rectangular openings about 19 px deep crossed by white beams, then a continuous pale strip 15 to 16 px deep with a bright line on its inner (concave) side; 68 to 72 px in all. The stored band (50 px) ends at the inner side of the openings and leaves the inner strip out; the outer edge agrees within 3 px. What stands under the inner strip is not visible. | Concave side faces south. Row of dark rectangular openings along the roof. Chord about 188 m. Recorded as a hand-traced centreline because the two ends are not symmetric and no circle fit was made. Whether it belongs to the school is not confirmed.",
    "bandPx": {
     "centreline": [
      [
@@ -308,7 +312,7 @@
    "confidence": "confirmed in video",
    "accuracyPx": 4,
    "measuredBy": "measurement agent (east-slabs), single reading, recheck pending",
-   "notes": "ROOF outline as it appears in the image, NOT a ground footprint: the image is oblique (taken from the NNE), the blue-grey gridded band at y 1098-1136/1146 is the north facade, not shadow and not roof. Ground footprint is roughly this outline moved about 47 px north and 5 px east (uncertain 40-60 px). Dark grey flat roof with white parapets and rooftop units; long white pipe/parapet lines at y 1157/1167 and 1176; lighter 9 px strip y 1176-1185 along the south side (corridor roof). North edge steps 10 px at x 1529 (west 68 px at y 1146, east part at y 1136); video suggests the west part is taller, so the step may be height rather than plan. Small block at SW corner x 1460-1489, y 1181-1203 included. South edge east of x 1575 is in shadow (inferred). Main bar 176 px long (48 m), 39-49 px deep. Video frame 5 shows about 5 window rows on the north facade (count +/-1). One of TWO slabs in this zone.",
+   "notes": "ROOF outline as it appears in the image, NOT a ground footprint: the image is oblique (taken from the NNE), the blue-grey gridded band at y 1098-1136/1146 is the north facade, not shadow and not roof. Ground footprint is roughly this outline moved about 47 px north and 5 px east (uncertain 40-60 px). Dark grey flat roof with white parapets and rooftop units; long white pipe/parapet lines at y 1157/1167 and 1176; lighter 9 px strip y 1176-1185 along the south side (corridor roof). North edge steps 10 px at x 1529 (west 68 px at y 1146, east part at y 1136); video suggests the west part is taller, so the step may be height rather than plan. Small block at SW corner x 1460-1489, y 1181-1203 included. South edge east of x 1575 is in shadow (inferred). Main bar 176 px long (48 m), 39-49 px deep. Video frame 5 shows about 5 window rows on the north facade (count +/-1). One of TWO slabs in this zone. | SECOND READING: north, west and east edges agree within 1 px. South edge: a bright parapet line lies 6 to 11 px north of the stored edge (y 1175.5 on the north teaching slab, 1316.5 on the south one); the stored edge is the outer edge of a fainter strip south of it. Which of the two is the wall line cannot be told from the image.",
    "polygonPx": [
     [
      1461,
@@ -366,8 +370,8 @@
    "surface": "roof",
    "style": "stair-tower-oculus",
    "height": {
-    "metres": 23.5,
-    "basis": "stair tower slightly taller than the slab with an open top loggia (2018 video); estimate"
+    "metres": 21.5,
+    "basis": "2018 stills: the tower roof slab stands only about 0.8 m above the slab parapet (20.7 m); the first estimate was 23.5 m"
    },
    "confidence": "confirmed in video",
    "accuracyPx": 5,
@@ -463,7 +467,7 @@
    "confidence": "confirmed in video",
    "accuracyPx": 5,
    "measuredBy": "measurement agent (east-slabs), single reading, recheck pending",
-   "notes": "ROOF outline as seen (oblique image; facade band y 1238-1277/1287 north of it is the north facade). Ground footprint roughly 47 px further north, 5 px east. Same plan as the north slab, offset (-24,+141) px: north edge steps 10 px at x 1508, inner lines at y 1307 and 1317, SW corner block x 1437-1466 y 1316-1343 included. South edge (1324) is the least certain edge (+/-5): it blends with trees and a sunlit paved yard, and the south facade is not visible at all. Frames 6-7 show 5 window rows on the north facade (+/-1) and the west part standing slightly higher than the east part.",
+   "notes": "ROOF outline as seen (oblique image; facade band y 1238-1277/1287 north of it is the north facade). Ground footprint roughly 47 px further north, 5 px east. Same plan as the north slab, offset (-24,+141) px: north edge steps 10 px at x 1508, inner lines at y 1307 and 1317, SW corner block x 1437-1466 y 1316-1343 included. South edge (1324) is the least certain edge (+/-5): it blends with trees and a sunlit paved yard, and the south facade is not visible at all. Frames 6-7 show 5 window rows on the north facade (+/-1) and the west part standing slightly higher than the east part. | SECOND READING: north, west and east edges agree within 1 px. South edge: a bright parapet line lies 6 to 11 px north of the stored edge (y 1175.5 on the north teaching slab, 1316.5 on the south one); the stored edge is the outer edge of a fainter strip south of it. Which of the two is the wall line cannot be told from the image.",
    "polygonPx": [
     [
      1437,
@@ -521,8 +525,8 @@
    "surface": "roof",
    "style": "stair-tower-oculus",
    "height": {
-    "metres": 23.5,
-    "basis": "as the north slab's east stair tower; estimate"
+    "metres": 21.5,
+    "basis": "as the north slab's east stair tower: about 0.8 m above the slab parapet in the 2018 stills; the first estimate was 23.5 m"
    },
    "confidence": "confirmed in video",
    "accuracyPx": 6,
@@ -711,10 +715,10 @@
     "metres": 40.0,
     "basis": "top about twice the 5-storey slab height in frame 8 of the 2018 video; rough estimate, +/- 5 m"
    },
-   "confidence": "confirmed in video",
+   "confidence": "confirmed in video; POSITION DISPUTED",
    "accuracyPx": 10,
    "measuredBy": "measurement agent (east-slabs), single reading, recheck pending",
-   "notes": "Identified with moderate-to-good confidence, but NOT as a clean square in plan: because the image is oblique the tower shows as a leaning strip (see clock-tower-leaning-image) with its top displaced about 100 px SSW of its base. This rect is where the shaft sits relative to the south slab's roof outline as drawn (about 20 px = 5.5 m square, 19-39 px west of the slab's west end, level with the northern/central part of the slab's width), so it can be used directly next to the slab entries. True ground position is roughly centre (1413,1255) +/-12. The base is hidden behind the glass stair block. Rough height from video proportions (top is about 6 storey-heights above the slab roof): about 45 m, +/-5, an estimate not a measurement. Evidence: strip follows the lean direction of other vertical edges; sunlit white east-face sliver; teal shadow patch on the canopy's SE corner (x 1355-1390, y 1278-1310) pointing back to it; position matches frames 7-10 (west end of the south slab, glass block on its north side, canopy beyond).",
+   "notes": "POSITION DISPUTED by the second reading: no shaft is visible where a 40 m tower at this position would lean, and frames 8 to 10 of the 2018 video show the tower directly behind the west end of the south slab within the slab's width, with the glass core on its north side. A candidate (dark-red patch at x 1418-1437, y 1299-1346, low confidence) lies about 6 m east of this position on the ground. Being re-examined. | Identified with moderate-to-good confidence, but NOT as a clean square in plan: because the image is oblique the tower shows as a leaning strip (see clock-tower-leaning-image) with its top displaced about 100 px SSW of its base. This rect is where the shaft sits relative to the south slab's roof outline as drawn (about 20 px = 5.5 m square, 19-39 px west of the slab's west end, level with the northern/central part of the slab's width), so it can be used directly next to the slab entries. True ground position is roughly centre (1413,1255) +/-12. The base is hidden behind the glass stair block. Rough height from video proportions (top is about 6 storey-heights above the slab roof): about 45 m, +/-5, an estimate not a measurement. Evidence: strip follows the lean direction of other vertical edges; sunlit white east-face sliver; teal shadow patch on the canopy's SE corner (x 1355-1390, y 1278-1310) pointing back to it; position matches frames 7-10 (west end of the south slab, glass block on its north side, canopy beyond).",
    "rectPx": [
     1398,
     1292,
@@ -1001,7 +1005,7 @@
    "confidence": "confirmed in video",
    "accuracyPx": 4,
    "measuredBy": "measurement agent (dorms), single reading, recheck pending",
-   "notes": "Roof outline as seen: 349 x 43 px = 95.9 x 11.8 m, exactly east-west. Beige flat roof; band of rooftop structures along the north half (y 1662-1679, incl. a light-blue item at x 1382-1397 and white ribbed blocks), plain band along the south half, white south parapet at y 1699-1701. White parapet bar on the west end (x 1216-1220). SE corner is notched: the plain south band stops at x~1558 and there is a dark recess at x 1530-1556, y 1690-1703. IMPORTANT: imagery is oblique; roofs of these ~6-floor slabs are displaced about 41 px south and 6 px west of their bases, so the estimated ground footprint is rect [1223,1617,1572,1660] (+/-8 px), not directly visible because trees cover it. Video f_006-f_009 show its north facade: white roof parapet carrying a row of red characters (unreadable), red-brick sections with recessed balconies separated by white vertical bays, white west end bay; only the top ~3 floor rows show above the trees. EAST END: Part of the A north slab, not a separate building: bright white ribbed roof strip 87 x 21 px (24 x 5.8 m) at the east end. In the video this end of the north facade is a full-height row of slender white columns in front of glazing (about 6 column lines; satellite shows them as leaning lines at x~1490,1506,1519,1532,1544,1562, pitch ~12.5 px = 3.4 m, visible from y 1625 to 1658 north of the roof edge). Occupies roughly the east quarter of the slab length. Function not established.",
+   "notes": "Roof outline as seen: 349 x 43 px = 95.9 x 11.8 m, exactly east-west. Beige flat roof; band of rooftop structures along the north half (y 1662-1679, incl. a light-blue item at x 1382-1397 and white ribbed blocks), plain band along the south half, white south parapet at y 1699-1701. White parapet bar on the west end (x 1216-1220). SE corner is notched: the plain south band stops at x~1558 and there is a dark recess at x 1530-1556, y 1690-1703. IMPORTANT: imagery is oblique; roofs of these ~6-floor slabs are displaced about 41 px south and 6 px west of their bases, so the estimated ground footprint is rect [1223,1617,1572,1660] (+/-8 px), not directly visible because trees cover it. Video f_006-f_009 show its north facade: white roof parapet carrying a row of red characters (unreadable), red-brick sections with recessed balconies separated by white vertical bays, white west end bay; only the top ~3 floor rows show above the trees. EAST END: Part of the A north slab, not a separate building: bright white ribbed roof strip 87 x 21 px (24 x 5.8 m) at the east end. In the video this end of the north facade is a full-height row of slender white columns in front of glazing (about 6 column lines; satellite shows them as leaning lines at x~1490,1506,1519,1532,1544,1562, pitch ~12.5 px = 3.4 m, visible from y 1625 to 1658 north of the roof edge). Occupies roughly the east quarter of the slab length. Function not established. | SECOND READING: north, west and east edges agree within 1 px. South edge: a bright parapet line lies 6 to 11 px north of the stored edge (y 1175.5 on the north teaching slab, 1316.5 on the south one); the stored edge is the outer edge of a fainter strip south of it. Which of the two is the wall line cannot be told from the image.",
    "rectPx": [
     1217,
     1658,
@@ -1043,7 +1047,7 @@
    "confidence": "seen in satellite only",
    "accuracyPx": 4,
    "measuredBy": "measurement agent (dorms), single reading, recheck pending",
-   "notes": "Roof outline as seen: 315 x 44 px = 86.5 x 12.1 m, exactly east-west. White north parapet line at y 1853, rooftop structures along the north half (light-blue item at x 1360-1375, ribbed block at x 1425-1455), plain band on the south, white south parapet at y 1891-1892. White bar on west end x 1217-1221. Dark recess at SE corner x 1500-1529, y 1871-1892. A white leaning line at x 1528-1536 running y 1838-1900 is the east end wall/corner seen obliquely, so east edge is +/-4. Estimated ground footprint: rect [1223,1807,1538,1851] (+/-8), hidden by trees; bluish patches north of the roof at x~1220-1245, 1305-1315, 1360-1375, 1515-1530 are white facade bays in shade.",
+   "notes": "Roof outline as seen: 315 x 44 px = 86.5 x 12.1 m, exactly east-west. White north parapet line at y 1853, rooftop structures along the north half (light-blue item at x 1360-1375, ribbed block at x 1425-1455), plain band on the south, white south parapet at y 1891-1892. White bar on west end x 1217-1221. Dark recess at SE corner x 1500-1529, y 1871-1892. A white leaning line at x 1528-1536 running y 1838-1900 is the east end wall/corner seen obliquely, so east edge is +/-4. Estimated ground footprint: rect [1223,1807,1538,1851] (+/-8), hidden by trees; bluish patches north of the roof at x~1220-1245, 1305-1315, 1360-1375, 1515-1530 are white facade bays in shade. | SECOND READING: north, west and east edges agree within 1 px. South edge: a bright parapet line lies 6 to 11 px north of the stored edge (y 1175.5 on the north teaching slab, 1316.5 on the south one); the stored edge is the outer edge of a fainter strip south of it. Which of the two is the wall line cannot be told from the image.",
    "rectPx": [
     1217,
     1848,

@@ -19,6 +19,7 @@
 //     pattern (white grid, dark-red spandrels, window strips), three storeys of 3.6 m, a door each;
 //   - slab-north-ne-wing: storey heights (3 x 3.6 m), the ground level (hidden by trees), the west and south faces, the
 //     roofs of the two parts being 0.6 m apart in height, all sizes of windows; the wedge is drawn 1.1 m high;
+//     its outline is built as three rectangles (the slightly skewed north edge is squared off at its mean position);
 //   - block-north-of-canopy-east-end: the lower part of the south face and the whole north and west faces (same small
 //     square windows), the door and its canopy, the height of the roof boxes; the red item is drawn as a hose cabinet;
 //   - teaching-slab-west-link-e: all of it beyond the outline (white, one window per bay and storey, a door);

@@ -5,7 +5,7 @@ import { readFileSync, writeFileSync } from 'node:fs';
 const M = JSON.parse(readFileSync('data/measurements.json', 'utf8'));
 const mpp = M.image.metresPerPixel;
 const [leanX, leanY] = M.image.lean.pxPerMetreOfHeight;      // roof displacement in px per metre of height
-const leanSpread = 0.4;                                        // px per metre: half-width of the stated lean range
+const leanSpread = 0.3;                                        // px per metre: half-width of the stated lean range (it covers the first value, 2.3)
 
 // Origin = centre of the running track.
 const [iw, inn, ie, is] = M.track.infieldPx;
