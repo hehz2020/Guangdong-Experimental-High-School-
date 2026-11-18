@@ -52,9 +52,15 @@ jobs:
       - name: Load the whole page from it in this machine's browser (headless) and take a picture
         shell: pwsh
         run: |
+          # the launcher started in the step before was ended with that step: start it again here
+          $p = Start-Process -FilePath launcher\dist\gdsy-campus-3d.exe -ArgumentList '-open=false','-port=18080' -PassThru -RedirectStandardOutput launcher-out2.txt
+          Start-Sleep 3
           npm init -y | Out-Null
           npm install --no-save --no-audit --no-fund playwright-core | Out-Null
           node launcher/ci-load.mjs http://127.0.0.1:18080/ windows-first-view.png
+          $code = $LASTEXITCODE
+          Stop-Process -Id $p.Id -Force
+          exit $code
 
       - name: Start it the way a double click does and look for the window it opens
         shell: pwsh
@@ -68,6 +74,13 @@ jobs:
           $w = Get-CimInstance Win32_Process | Where-Object { $_.CommandLine -like "*--app=$url*" }
           if ($w) { $w | Select-Object -First 1 Name, CommandLine | Format-List; "a browser window in app mode was started for the page" }
           else { "NO app-mode browser process found for $url"; Get-CimInstance Win32_Process | Where-Object { $_.Name -match 'chrome|msedge|rundll32' } | Select-Object Name, CommandLine | Format-List; exit 1 }
+
+      - name: Fingerprint of the program built here (to compare with a build of the same commit made on Linux)
+        if: always()
+        shell: pwsh
+        run: |
+          Get-FileHash launcher\dist\gdsy-campus-3d.exe -Algorithm SHA256 | Format-List Hash, Path
+          "size: $((Get-Item launcher\dist\gdsy-campus-3d.exe).Length) bytes"
 
       - uses: actions/upload-artifact@v4
         if: always()
