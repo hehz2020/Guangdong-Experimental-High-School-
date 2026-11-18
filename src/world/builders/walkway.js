@@ -1,11 +1,13 @@
 // Link walkway along the west ends of the two east teaching slabs (link-corridor-west) and the small roof at its north end
 // (link-corridor-north-pavilion): built as an ELEVATED DECK WITH PARAPETS on columns, open underneath.
 //
-// HEIGHT: the data item still says 4 m ("not established; single-storey covered walkway assumed"). This builder does not use
-// item.height: the deck's walking surface is at DECK = 7.8 m, the parapet tops at 8.85 m. Reasons: in the 2018 footage (the
-// frames between sampled frames 7 and 8, camera above the south slab looking west) the white structure meets the south
-// slab's north-west corner between the third and fourth window rows counted from the roof, which is the floor of the third
-// storey (2 x 3.9 m); the tower-location agent got 7 to 8 m for its top from the shadows on the satellite image.
+// HEIGHT: both data items now say 7.8 m (they said 4 m, "single-storey covered walkway assumed", when this builder was
+// written). The builder still does not read item.height: the deck's walking surface is at its own constant DECK = 7.8 m,
+// the parapet tops at 8.85 m; if the data height is changed, DECK must be changed too. Reasons for 7.8 m: in the 2018
+// footage (the frames between sampled frames 7 and 8, camera above the south slab looking west) the white structure
+// meets the south slab's north-west corner between the third and fourth window rows counted from the roof, which is the
+// floor of the third storey (2 x 3.9 m); the study of the satellite image that located the clock tower got 7 to 8 m for
+// its top from the shadows.
 //
 // SEEN in those frames: a narrow white structure along the east edge of the open paving, leaving the south slab's north-west
 //   corner toward the north; from above it shows two raised white edges with a grey surface between them (read as parapets

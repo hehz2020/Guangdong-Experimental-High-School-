@@ -12,10 +12,10 @@
 //     window at the top, and a dark-red strip at the SOUTH end running from the ground to the roof slab;
 //   - south tower only (frame 6): behind the roof slab stands a taller white box capped by a stepped two-tier slab
 //     with red pipes.
-// NOT RESOLVED: the stills show the roof slab only about 0.8 m above the slab's north parapet and the loggia beside the
-//   slab's top-floor windows, i.e. a tower about 2 m lower than the 23.5 m in the data (or a slab about 2 m taller than
-//   modelled). The builder follows item.height: the loggia floor is put at the slab's roof level and everything hangs
-//   from that, so only the data needs changing if this is settled.
+// HEIGHT (settled in the data): the stills show the roof slab only about 0.8 m above the slab's north parapet and the
+//   loggia beside the slab's top-floor windows. The data height of both towers was therefore lowered from the first
+//   estimate, 23.5 m, to 21.5 m (the slab's parapet at 20.7 m plus 0.8 m). The builder follows item.height: the loggia
+//   floor is put at the slab's roof level and everything hangs from that.
 //
 // ASSUMED (not visible in any reference; kept plain):
 //   - the south and west faces (white, the red strip wraps the south-east corner; small windows on the south face);

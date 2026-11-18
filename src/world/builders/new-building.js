@@ -1,14 +1,16 @@
 // New comprehensive teaching building (style "new-building", item new-teaching-building), with the library on its two
 // lowest storeys. The only references are the 2022 video "一本书的梦" (1280x720 frames, numbers below) and the satellite image.
 //
-// FOOTPRINT (defined here, not taken from the data file: see FOOT below)
+// FOOTPRINT (kept here as the constant FOOT below; item.points is not read. data/measurements.json now holds the same
+// five corners and the same 23.4 m, so the two agree to 0.1 m; a change must be made in both places)
 // - Re-read on the zoom-19 satellite mosaic. The roof is a five-sided wedge; roof corners in image pixels:
 //   A west (1236,829), B north (1406,719), C east (1484,808), D south-east (1477,871), E south-west (1249,890).
 //   The south edge bows about 1.5 m northward at mid-length (it follows the arc building); it is drawn straight.
-//   The data file's outline lay 4 to 8 m too far north-west: it had taken part of the shadowed north-west facade for roof.
+//   The data file's first outline lay 4 to 8 m too far north-west: it had taken part of the shadowed north-west facade
+//   for roof. It has since been replaced by these corners.
 // - Height: in frame 55 the north-west face is about 2.45 times as long as it is high (camera pitch worked out from the
 //   converging verticals and the horizon). That face is 55.6 m long on the satellite image, so the building is about
-//   23 m high: 6 storeys (planning record) x 3.9 m = 23.4 m is used. The data file says 25.2 m.
+//   23 m high: 6 storeys (planning record) x 3.9 m = 23.4 m is used. The data file said 25.2 m at first and now says 23.4 m.
 // - Ground position = roof pixels moved by -23.4 m x the image lean (-0.243, 2.0 px per metre; it was -0.28, 2.3 until an
 //   independent second reading re-calibrated it, which moved this footprint 1.9 m south), then converted to metres.
 // - The dark triangle in the roof on the satellite image is a light well: (1343,822) (1399,786) (1425,822).

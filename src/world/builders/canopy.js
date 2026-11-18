@@ -9,8 +9,9 @@
 //     whose camera position was resected by the tower-location agent);
 //   - the east edge spans free between the glass stair block and the block to the north: no columns are visible along it;
 //     a white column stands at the south-east corner beside the glass block; no columns in the middle of the plaza;
-//   - the south edge sits against a five-storey white block that is NOT in the data, the west side faces a building with
-//     planted corridors; so in reality the frame bears mostly on its neighbours;
+//   - the south edge sits against a five-storey white block (not an item of campus-data.js; it is core-pergola-block in
+//     data/context.json and is built by extras/context.js), the west side faces a building with planted corridors; so in
+//     reality the frame bears mostly on its neighbours;
 //   - floor: pale paving; along the west side a wavy black-and-white band with three round stepped planters, a palm in each.
 //
 // ASSUMED (kept plain):

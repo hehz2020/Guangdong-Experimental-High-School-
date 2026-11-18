@@ -6,8 +6,10 @@
 // The numbers in the DATA block below are a copy of "buildings" in data/context.json (which also records the pixel
 // readings, the basis of every height, the confidence and what was left out). Both were written from the same roof
 // outlines, read ONCE off gridded enlargements of the zoom-19 satellite mosaic (not in the repository); a roof pixel at
-// height h was moved by (+0.243 h, -2.0 h) px to its ground position, as scripts/build-campus-data.mjs does. There is
-// no generator script in the repository: a change must be made in both places.
+// height h was moved by (+0.243 h, -2.0 h) px to its ground position, as scripts/build-campus-data.mjs does. Both are
+// written by scripts/make-context.py, which holds the readings: change them there and run
+//   python3 -I scripts/make-context.py <repository> /path/to/campus_z19.jpg     (needs the mosaic and Pillow)
+// A hand edit of data/context.json or of the DATA block is overwritten by the next run.
 //
 // SEEN (and where)
 //   core-pergola-block   2022 video, frame 60 (from the east): long narrow block running west from the clock tower along
@@ -46,7 +48,8 @@
 //   - Skewed outlines are squared, the S-curved parapet of north-wavy-parapet-block is straight, light wells and roof
 //     openings are left out (see "notModelled" in data/context.json).
 //   - south-tall-building is the least certain entry: its 75 m come from the mosaic alone, and the 2018 frames that
-//     look its way show open sky (built later, or misread). To drop it, delete its line in the DATA block below.
+//     look its way show open sky (built later, or misread). To drop it, remove its bld(...) entry in
+//     scripts/make-context.py and regenerate.
 //   - The ground under the south group beyond the landscape survey (z 150.5 to 246, x 20 to 215) is one plain paving
 //     rectangle: the image shows paved yards and parking there, but neither extent nor surface was measured.
 //
@@ -62,7 +65,7 @@
 import { THREE, mat, flat, prism, circlePoints } from '../../kit.js';
 import { CAMPUS } from '../../campus-data.js';
 
-/* <context-data> copy of "buildings" in data/context.json (ground outlines in metres) - edit there, not here */
+/* <context-data> copy of "buildings" in data/context.json (ground outlines in metres), written by scripts/make-context.py - do not edit by hand */
 const DATA = [
   {"id":"core-pergola-block","group":"core","parts":[{"id":"main","height":20.7,"look":{"kind":"pergola-block","wall":"white","roof":"beige","storeys":5,"storeyH":3.9},"shape":"polygon","points":[[148.8,-73.2],[190.8,-73.2],[190.8,-57.8],[148.8,-57.8]],"roofColourInImage":"#656149","pergolaStripDepthM":6.6}]},
   {"id":"south-round-pavilion","group":"south","parts":[{"id":"disc","height":15,"look":{"kind":"pavilion","wall":"white","roof":"pale","storeys":4,"storeyH":3.6},"shape":"circle","cx":28.9,"cz":108.2,"radius":8.8,"roofColourInImage":"#8a8f7b","drumRadiusM":5.5,"columnRingRadiusM":7.6,"columns":12}]},
