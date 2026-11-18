@@ -270,10 +270,13 @@ const WINDOW_GLSL = /* glsl */`
 `;
 
 export function createLighting(scene, renderer, opts = {}) {
-  const low = !!opts.lowPower, shadowsOn = opts.shadows !== false;
+  const low = !!opts.lowPower, shadowsOn = opts.shadows !== false && !opts.plain;
   // Diagnostic switches read from the address: ?env=0 (no sky capture, plain hemisphere light instead), ?cascades=1|2|3.
   const query = new URLSearchParams(typeof location !== 'undefined' ? location.search : '');
-  const useEnv = query.has('env') ? query.get('env') !== '0' : true;
+  // opts.plain (the page's safe mode): stock three.js shaders only. No shadow maps (their shader chunk is patched here), no
+  // window-glow patch, no sky capture, no post-processing.
+  const plain = !!opts.plain;
+  const useEnv = plain ? false : query.has('env') ? query.get('env') !== '0' : true;
   renderer.toneMapping = THREE.ACESFilmicToneMapping;
   renderer.shadowMap.enabled = shadowsOn;
   renderer.shadowMap.type = THREE.PCFShadowMap;      // hardware-filtered depth comparison, 5 taps (the soft variant no longer exists in this release)
@@ -328,7 +331,7 @@ export function createLighting(scene, renderer, opts = {}) {
     seen.add(m);
     const name = m.name || '';
     // Glass: by palette name, or (materials the builders made without a name) anything smooth: roughness up to 0.3.
-    if (m.isMeshStandardMaterial && !m.userData.campusWindow && (isGlassName(name) || (!name && m.roughness <= 0.3 && m.metalness <= 0.5))) {
+    if (!plain && m.isMeshStandardMaterial && !m.userData.campusWindow && (isGlassName(name) || (!name && m.roughness <= 0.3 && m.metalness <= 0.5))) {
       // window glass: an extra emissive term that only this module drives (the material's own emissive is left alone)
       m.userData.campusWindow = true;
       const before = m.onBeforeCompile, key = m.customProgramCacheKey ? m.customProgramCacheKey() : '';
@@ -481,7 +484,7 @@ export function createLighting(scene, renderer, opts = {}) {
   }
 
   // ---- post-processing (loaded on demand)
-  const wantPost = opts.post === true || (opts.post === undefined && !low);
+  const wantPost = !plain && (opts.post === true || (opts.post === undefined && !low));
   let post = null, postState = wantPost ? 'loading' : 'off', postEnabled = true;      // postEnabled: switched at run time by setPost()
   if (wantPost) {
     import('./post.js').then(m => { post = m.createPost(renderer, { antialias: opts.antialias !== false, lowPower: low }); postState = post ? 'on' : 'unavailable'; })

@@ -11,7 +11,18 @@ const flatCheck = params.get('flat') === '1';          // footprints in one unli
 const num = (k, d = null) => (params.has(k) && !Number.isNaN(Number(params.get(k))) ? Number(params.get(k)) : d);
 
 // Diagnostic switches: ?aa=0 antialiasing off, ?shadows=0 shadow maps off, ?time=17.5 hour of day.
-const renderer = new THREE.WebGLRenderer({ antialias: params.get('aa') !== '0' });
+// Safe mode (?safe=1): stock shaders only (no shadows, no window glow, no sky capture, no post-processing, no antialiasing).
+// The lighting module patches shader code, and none of this has run on a real graphics card: if a shader fails to compile
+// there, the page reloads itself once in safe mode instead of showing black walls.
+const safe = params.get('safe') === '1';
+const renderer = new THREE.WebGLRenderer({ antialias: params.get('aa') !== '0' && !safe });
+renderer.debug.onShaderError = (gl, program, vertexShader, fragmentShader) => {
+  console.error('shader failed to compile or link:', gl.getProgramInfoLog(program), gl.getShaderInfoLog(vertexShader), gl.getShaderInfoLog(fragmentShader));
+  if (safe || window.__shaderFailed) return;
+  window.__shaderFailed = true;
+  const q = new URLSearchParams(location.search); q.set('safe', '1');
+  setTimeout(() => location.replace(location.pathname + '?' + q.toString()), 50);
+};
 // Phones and tablets get a lower pixel density and a smaller shadow map by default; ?quality=high or ?quality=low overrides.
 const lowPower = params.get('quality') ? params.get('quality') === 'low' : matchMedia('(pointer: coarse)').matches;
 renderer.setPixelRatio(Math.min(devicePixelRatio, lowPower ? 1.5 : 2));
@@ -38,7 +49,7 @@ if (flatCheck) {
   }
 } else {
   // post: true/false when ?post=1/0 is given, otherwise undefined so the lighting module picks its default (it should be cheaper when lowPower is set)
-  lighting = createLighting(scene, renderer, { shadows: params.get('shadows') !== '0', shadowRes: num('shadowres', lowPower ? 1024 : 2048), lowPower,
+  lighting = createLighting(scene, renderer, { shadows: params.get('shadows') !== '0', shadowRes: num('shadowres', lowPower ? 1024 : 2048), lowPower, plain: safe,
     post: params.has('post') ? params.get('post') !== '0' : undefined, antialias: params.get('aa') !== '0', camera: null });
   lighting.setTime(num('time', 15));
 }
@@ -141,7 +152,7 @@ renderer.setAnimationLoop(timestamp => {
 });
 
 window.__app = {
-  ready: true, items: CAMPUS.items.length, report, walking: !!player, view: view || 'walk',
+  ready: true, items: CAMPUS.items.length, report, walking: !!player, view: view || 'walk', safe,
   // deterministic hooks for automated checks (pointer lock needs a real user gesture)
   setPose: (x, z, yawDeg, y) => player && player.setPose(x, z, yawDeg, y),
   step: (input, seconds) => player && player.step(input, seconds),

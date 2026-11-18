@@ -172,17 +172,17 @@ export const ac = (S, put, u, y) => {                                           
   for (const s of [-0.3, 0.27]) put(S.d, lm('alu'), u + s, u + s + 0.03, y - 0.04, y, 0, 0.4, 'FLRD');
 };
 /** Double door with a frame and a flat canopy (drawn always); split line, handles, step and a light in the detail batch. */
-export function door(S, put, uc, { w = 1.5, h = 2.2, canopy = 1.0 } = {}) {
-  const FR = lm('frame');
-  put(S.v, lm('door'), uc - w / 2, uc + w / 2, 0, h, 0.03, 0.07, 'F');
-  put(S.v, FR, uc - w / 2 - 0.08, uc + w / 2 + 0.08, h, h + 0.1, 0.03, 0.1, 'FLRUD');
-  put(S.v, FR, uc - w / 2 - 0.08, uc - w / 2, 0, h, 0.03, 0.1, 'FLR'); put(S.v, FR, uc + w / 2, uc + w / 2 + 0.08, 0, h, 0.03, 0.1, 'FLR');
-  if (canopy) put(S.v, lm('cope'), uc - w / 2 - 0.5, uc + w / 2 + 0.5, h + 0.35, h + 0.5, 0, canopy, 'FLRUD');
-  put(S.d, lm('dark'), uc - 0.012, uc + 0.012, 0, h, 0.07, 0.074, 'F');
-  for (const s of [-0.16, 0.12]) put(S.d, lm('alu'), uc + s, uc + s + 0.04, 0.95, 1.25, 0.07, 0.12, 'FLRUD');
-  for (const s of [-1, 1]) put(S.d, lm('glassWin'), uc + s * w / 4 - 0.14, uc + s * w / 4 + 0.14, 1.25, 1.85, 0.07, 0.075, 'F');   // vision panels
-  put(S.d, lm('concrete'), uc - w / 2 - 0.3, uc + w / 2 + 0.3, 0, 0.1, 0, 0.8, 'FLRU');
-  lamp(S, put, uc, h + 0.22);
+export function door(S, put, uc, { w = 1.5, h = 2.2, canopy = 1.0, y0 = 0 } = {}) {
+  const FR = lm('frame'), y1 = y0 + h;
+  put(S.v, lm('door'), uc - w / 2, uc + w / 2, y0, y1, 0.03, 0.07, 'F');
+  put(S.v, FR, uc - w / 2 - 0.08, uc + w / 2 + 0.08, y1, y1 + 0.1, 0.03, 0.1, 'FLRUD');
+  put(S.v, FR, uc - w / 2 - 0.08, uc - w / 2, y0, y1, 0.03, 0.1, 'FLR'); put(S.v, FR, uc + w / 2, uc + w / 2 + 0.08, y0, y1, 0.03, 0.1, 'FLR');
+  if (canopy) put(S.v, lm('cope'), uc - w / 2 - 0.5, uc + w / 2 + 0.5, y1 + 0.35, y1 + 0.5, 0, canopy, 'FLRUD');
+  put(S.d, lm('dark'), uc - 0.012, uc + 0.012, y0, y1, 0.07, 0.074, 'F');
+  for (const s of [-0.16, 0.12]) put(S.d, lm('alu'), uc + s, uc + s + 0.04, y0 + 0.95, y0 + 1.25, 0.07, 0.12, 'FLRUD');
+  for (const s of [-1, 1]) put(S.d, lm('glassWin'), uc + s * w / 4 - 0.14, uc + s * w / 4 + 0.14, y0 + 1.25, y0 + 1.85, 0.07, 0.075, 'F');   // vision panels
+  put(S.d, lm('concrete'), uc - w / 2 - 0.3, uc + w / 2 + 0.3, y0, y0 + 0.1, 0, 0.8, 'FLRU');
+  lamp(S, put, uc, y1 + 0.22);
 }
 
 /** Inclined slab whose top runs from a to c ([x, y, z] on its centre line), w wide, th thick. Leaves the batch in the world frame. */
@@ -198,7 +198,7 @@ export function ramp(b, m, a, c, w, th = 0.16, faces = ALL) {
  * and a half landing (zB0..zB1); flight 1 uses x0..xm-g, flight 2 xm+g..x1. Soffit slabs and landings are always drawn;
  * treads, risers and handrails go to the detail batch.
  */
-export function dogleg(S, { x0, x1, zA0, zA1, zB0, zB1, floors, FH, y0 = 0, steps = 13, gap = 0.1, landingsA = true }) {
+export function dogleg(S, { x0, x1, zA0, zA1, zB0, zB1, floors, FH, y0 = 0, steps = 13, gap = 0.1, landingsA = true, topLanding = true }) {
   const xm = (x0 + x1) / 2, CO = lm('concrete'), TR = lm('tread'), RA = lm('rail');
   const za = Math.abs(zA0 - zB0) < Math.abs(zA1 - zB0) ? zA0 : zA1, zb = Math.abs(zB0 - za) < Math.abs(zB1 - za) ? zB0 : zB1;   // facing edges
   const dir = Math.sign(zb - za), go = Math.abs(zb - za) / steps, rise = FH / 2 / steps;
@@ -217,14 +217,14 @@ export function dogleg(S, { x0, x1, zA0, zA1, zB0, zB1, floors, FH, y0 = 0, step
       for (const [zz, yy] of [[zf, yf], [(zf + zt) / 2, (yf + yt) / 2], [zt, yt]]) F(S.d, RA, xr - 0.02, yy, zz - 0.02, 0.04, 0.95, 0.04, 'NSEW');
     }
   }
-  if (landingsA) land(zA0, zA1, y0 + floors * FH);
+  if (landingsA && topLanding) land(zA0, zA1, y0 + floors * FH);
 }
 
 // ================= the individual blocks =================
 const rectOf = b => ({ w: b.w, e: b.e, n: b.n, s: b.s });
 const planes = r => ({ N: face('N', r.n), S: face('S', r.s), E: face('E', r.e), W: face('W', r.w) });
 const span = (r, side) => (side === 'N' || side === 'S' ? [r.w, r.e] : [r.n, r.s]);
-const other = (ctx, id) => { const it = ctx.campus && ctx.campus.items.find(i => i.id === id); return it ? bbox(itemPolygon(it)) : null; };
+export const other = (ctx, id) => { const it = ctx.campus && ctx.campus.items.find(i => i.id === id); return it ? bbox(itemPolygon(it)) : null; };
 
 // Three-storey blocks beside the east ends of the slabs: the slabs' own pattern, all ASSUMED.
 function seBlock(S, item, b, H, ctx) {
@@ -239,7 +239,7 @@ function seBlock(S, item, b, H, ctx) {
   const dSide = north ? 'E' : 'N', [a, c] = span(r, dSide);
   door(S, P[dSide], (a + c) / 2, { w: 1.4 });
   pipe(S, P.E, r.n + 0.45, H - 0.9); pipe(S, P.E, r.s - 0.45, H - 0.9);
-  if (!north) { pipe(S, P.W, r.n + 0.45, H - 0.9); ac(S, P.S, r.w + 1.4, FH + 0.3); ac(S, P.S, r.e - 1.4, 2 * FH + 0.3); }
+  if (!north) pipe(S, P.W, r.n + 0.45, H - 0.9);
 }
 
 // Low L-shaped building north of the north slab's east end, after frames 3 and 4.
