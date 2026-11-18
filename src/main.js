@@ -4,6 +4,7 @@ import { buildWorld } from './world/index.js';
 import { createLighting } from './lighting.js';
 import { createPlayer } from './player.js';
 import { initUI } from './ui.js';
+import { setTextureQuality } from './hifi.js';
 
 const params = new URLSearchParams(location.search);
 const view = params.get('view');                       // null = walk, 'top', 'overview'
@@ -35,7 +36,8 @@ const only = params.get('only') ? new Set(params.get('only').split(',')) : null;
 // ?try=style:file.js,style:file.js mounts builders from src/world/builders/ for this page load; ?tryx=file.js,... mounts extras from src/world/extras/
 const tryBuilders = Object.fromEntries((params.get('try') || '').split(',').filter(Boolean).map(s => { const i = s.indexOf(':'); return [s.slice(0, i), './builders/' + s.slice(i + 1)]; }));
 const tryExtras = (params.get('tryx') || '').split(',').filter(Boolean).map(f => './extras/' + f);
-const { root, colliders, report, details } = await buildWorld(CAMPUS, only, tryBuilders, tryExtras, { lowPower, extras: params.get('extras') === '1' });
+setTextureQuality({ anisotropy: renderer.capabilities.getMaxAnisotropy() });
+const { root, colliders, report, details, updaters, places } = await buildWorld(CAMPUS, only, tryBuilders, tryExtras, { lowPower, extras: params.get('extras') === '1' });
 scene.add(root);
 
 let lighting = null;
@@ -51,7 +53,7 @@ if (flatCheck) {
   // post: true/false when ?post=1/0 is given, otherwise undefined so the lighting module picks its default (it should be cheaper when lowPower is set)
   lighting = createLighting(scene, renderer, { shadows: params.get('shadows') !== '0', shadowRes: num('shadowres', lowPower ? 1024 : 2048), lowPower, plain: safe,
     post: params.has('post') ? params.get('post') !== '0' : undefined, antialias: params.get('aa') !== '0', camera: null });
-  lighting.setTime(num('time', 15));
+  lighting.setTime(num('time', 9.2));                 // morning: the sun is in the east and lights the front of the gate, where the walk starts
 }
 
 let camera, player = null;
@@ -70,7 +72,11 @@ if (view === 'top') {
 } else {
   camera = new THREE.PerspectiveCamera(70, innerWidth / innerHeight, 0.15, 3600);   // a tighter depth range: ground layers flickered from very high up
   const f = CAMPUS.track.infield;
-  player = createPlayer(camera, renderer.domElement, colliders, { x: f.cx, z: f.cz + f.sizeZ / 2 - 5, yawDeg: 0 });
+  // The walk starts in front of the school gate (a place offered by extras/gate.js). ?start=<place name> picks another offered
+  // place; ?start=field starts on the infield as earlier versions did.
+  const wanted = params.get('start') || '校门', sp = places.find(q => q.name === wanted && !q.fly);
+  player = createPlayer(camera, renderer.domElement, colliders, sp ? { x: sp.x, z: sp.z, yawDeg: sp.yaw, y: sp.y } : { x: f.cx, z: f.cz + f.sizeZ / 2 - 5, yawDeg: 0 });
+  if (sp && sp.pitch) player.look(0, sp.pitch);
 }
 
 addEventListener('resize', () => {
@@ -99,7 +105,7 @@ if (player && showUi) {
 }
 
 // Optional interface layer (touch controls, HUD). src/ui.js may return { update(dt), input() }; input() supplies extra movement for the player.
-const ui = showUi ? initUI({ player, lighting, campus: CAMPUS, camera, renderer, scene, view: view || 'walk' }) : null;
+const ui = showUi ? initUI({ player, lighting, campus: CAMPUS, camera, renderer, scene, view: view || 'walk', places }) : null;
 
 // Automatic quality. Nothing here has been run on a real graphics card, so the page watches its own frame time and, when
 // frames stay slow, steps down: post-processing off, then a lower pixel density, then lower again. ?adapt=0 switches this
@@ -146,6 +152,7 @@ renderer.setAnimationLoop(timestamp => {
     if (lighting) { lighting.moveFill(camera.position.x, camera.position.y, camera.position.z); if (frames % 30 === 0) lighting.follow(camera.position.x, camera.position.z); }
   }
   if (frames % 15 === 0) for (const d of details) d.obj.visible = Math.hypot(camera.position.x - d.x, camera.position.z - d.z) < d.range;
+  if (updaters.length) { const env = { camera, lighting, renderer }, seconds = timer.getElapsed(); for (const u of updaters) u(dt, seconds, env); }
   if (ui && ui.update) ui.update(dt);
   if (lighting && lighting.render) lighting.render(scene, camera); else renderer.render(scene, camera);
   frames++;
@@ -159,6 +166,7 @@ window.__app = {
   pose: () => (player ? player.pose() : null),
   locked: () => (player ? player.controls.isLocked : null),
   setTime: h => (lighting ? lighting.setTime(h) : null),
+  look: (dYaw, dPitch) => player && player.look(dYaw, dPitch),
   viewInfo: () => ({ canvasW: renderer.domElement.clientWidth, canvasH: renderer.domElement.clientHeight, aspect: camera.isPerspectiveCamera ? +camera.aspect.toFixed(4) : null, frames }),
   renderInfo: () => ({ calls: renderer.info.render.calls, triangles: renderer.info.render.triangles }),
   quality: () => ({ adaptive: adaptive.on, steps: adaptive.log.slice(), pixelRatio: renderer.getPixelRatio(), averageFrameMs: +adaptive.avg.toFixed(1), lighting: lighting && lighting.info ? lighting.info().post : null }),

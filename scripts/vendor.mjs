@@ -26,6 +26,7 @@ const FILES = [
   ['three/examples/jsm/shaders/PoissonDenoiseShader.js', 'three/addons/shaders/PoissonDenoiseShader.js'], // GTAOPass
   ['three/examples/jsm/shaders/LuminosityHighPassShader.js', 'three/addons/shaders/LuminosityHighPassShader.js'], // UnrealBloomPass
   ['three/examples/jsm/math/SimplexNoise.js', 'three/addons/math/SimplexNoise.js'],                     // GTAOPass
+  ['three/examples/jsm/objects/Water.js', 'three/addons/objects/Water.js'],                             // reflecting water of the pool (src/world/extras/gate.js)
 ];
 
 if (!existsSync('node_modules/three')) { console.error('node_modules/three missing: run npm install first'); process.exit(1); }

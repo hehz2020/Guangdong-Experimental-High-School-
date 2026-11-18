@@ -28,6 +28,7 @@ export const BUILDERS = {
 
 // Modules that add things not tied to one data item (track furniture, courts, landscape...). Each exports build(ctx).
 export const EXTRAS = [
+  './extras/gate.js',
   './extras/context.js',
   './extras/landscape.js',
   './extras/track-field.js',
@@ -45,13 +46,17 @@ export async function buildWorld(campus, only = null, tryBuilders = {}, tryExtra
   const colliders = new THREE.Group(); colliders.name = 'colliders';
   const report = { built: [], fallback: [], failed: [] };
   const details = [];        // { obj, x, z, range }: small things that are only shown when the viewer is within range metres
+  const updaters = [];       // functions (dt, seconds, { camera, lighting, renderer }) called every frame: water, fountains, leaves
+  const places = [];         // extra entries for the places menu, offered by extras: { name, x, z, yaw, y, fly, pitch }
   const detail = (obj, x, z, range) => { details.push({ obj, x, z, range }); return obj; };
 
   // ground
   // Tessellated and 5 cm below zero: as two huge triangles at y 0 it won the depth test against the paving, lawn, road and water
   // layers lying a few millimetres above it at some window sizes and from the air. The collision floor stays at 0.
-  const ground = new THREE.Mesh(new THREE.PlaneGeometry(1400, 1400, 28, 28), mat('earth'));
-  ground.rotation.x = -Math.PI / 2; ground.position.y = -0.05; ground.receiveShadow = true; root.add(ground);
+  // The grid is shifted by an odd amount: with a vertex exactly under the eye and a level view (the centre of the track was
+  // one) the software renderer drew the whole ground in the earth colour.
+  const ground = new THREE.Mesh(new THREE.PlaneGeometry(1500, 1500, 30, 30), mat('earth'));
+  ground.rotation.x = -Math.PI / 2; ground.position.set(13.7, -0.05, 21.3); ground.receiveShadow = true; root.add(ground);
   const floor = box(0, 0, 1400, 1400, -1, 0, mat('earth')); colliders.add(floor);
 
   // running track: standard geometry from the data file
@@ -100,9 +105,11 @@ export async function buildWorld(campus, only = null, tryBuilders = {}, tryExtra
       campus, detail, lowPower: !!env.lowPower,
       add: obj => { group.add(obj); return obj; },
       collide: mesh => { mesh.updateWorldMatrix(true, false); const c = new THREE.Mesh(mesh.geometry); c.matrixAutoUpdate = false; c.matrix.copy(mesh.matrixWorld); colliders.add(c); return mesh; },
+      animate: fn => { updaters.push(fn); },
+      place: (name, x, z, yaw, y = 0, fly = false, pitch = 0) => { places.push({ name, x, z, yaw, y, fly, pitch }); },
     };
     try { (await import(path)).build(ctx); report.built.push(path); }
     catch (err) { console.error('extra module failed:', path, err); group.clear(); report.failed.push(path); }
   }
-  return { root, colliders, report, details };
+  return { root, colliders, report, details, updaters, places };
 }

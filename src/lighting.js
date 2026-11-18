@@ -424,7 +424,7 @@ export function createLighting(scene, renderer, opts = {}) {
   // brightness of the sky now, to rescale the ambient capture between two captures
   function skyLevel() { const z = U.zenith.value, a = U.horizonAway.value, g = U.groundCol.value; return 0.001 + z.r + z.g + z.b + a.r + a.g + a.b + 2 * (g.r + g.g + g.b); }
   function buildEnvironment(now) {
-    const target = pmrem.fromScene(envScene, 0, 0.1, 100, { size: low ? 32 : 64 });
+    const target = pmrem.fromScene(envScene, 0, 0.1, 100, { size: low ? 64 : 256 });
     scene.environment = target.texture; scene.environmentIntensity = ENV_GAIN;
     if (envTarget) envTarget.dispose();
     envTarget = target; envLevel = skyLevel(); envDirty = false; envBuiltAt = now; envBuilds++;

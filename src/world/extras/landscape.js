@@ -44,6 +44,7 @@
 // 52,000 triangles in the shadow pass (crowns of the trees inside the surveyed area). With lowPower a crown is a single
 // blob of 80 triangles: about 66,000 and 42,000.
 import { FOOTPRINTS } from './context.js';
+import { GATE_AREA } from './gate.js';
 import { THREE, mat } from '../../kit.js';
 import { Batch } from '../../batch.js';
 
@@ -155,7 +156,8 @@ function buildTrees(ctx, low) {
     return inside || d < margin;
   };
   const decks = ((ctx.campus && ctx.campus.items) || []).filter(i => i.style === 'walkway' && i.points).map(i => i.points);
-  const blocked = (x, z) => onRoad(x, z) || FOOTPRINTS.some(q => near(q, x, z, 1.8)) || decks.some(q => near(q, x, z, 2.5));
+  // The gate and pool area (gate.js) brings its own planting.
+  const blocked = (x, z) => onRoad(x, z) || FOOTPRINTS.some(q => near(q, x, z, 1.8)) || decks.some(q => near(q, x, z, 2.5)) || near(GATE_AREA, x, z, 1.5);
   const list = DATA.trees.list.filter(([x, z]) => !blocked(x, z));
   const crownGeo = crownGeometry(low), trunkGeo = new THREE.CylinderGeometry(0.62, 1, 1, 5, 1, true).translate(0, 0.5, 0);
   const crownMat = new THREE.MeshStandardMaterial({ vertexColors: true, roughness: 0.95 });

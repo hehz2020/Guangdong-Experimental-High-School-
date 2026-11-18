@@ -34,7 +34,7 @@ const CSS = `
 }
 `;
 
-export function initUI({ player, lighting, campus, camera, renderer, view }) {
+export function initUI({ player, lighting, campus, camera, renderer, view, places: offered = [] }) {
   const style = document.createElement('style'); style.textContent = CSS; document.head.appendChild(style);
   const el = (tag, id, cls = 'hud', html = '') => { const e = document.createElement(tag); if (id) e.id = id; e.className = cls; e.innerHTML = html; document.body.appendChild(e); return e; };
   const touch = matchMedia('(pointer: coarse)').matches || 'ontouchstart' in window;
@@ -63,6 +63,7 @@ export function initUI({ player, lighting, campus, camera, renderer, view }) {
       const w = Math.min(...xs), e = Math.max(...xs), n = Math.min(...zs), s = Math.max(...zs); return { w, e, n, s, cx: (w + e) / 2, cz: (n + s) / 2, it }; };
     const toward = (x, z, tx, tz) => Math.atan2(tx - x, -(tz - z)) * 180 / Math.PI;      // heading in degrees: 0 north, 90 east
     const places = [], add = (name, x, z, yaw, y = 0, fly = false, pitch = 0) => places.push({ name, x, z, yaw, y, fly, pitch });
+    for (const q of offered) add(q.name, q.x, q.z, q.yaw, q.y, q.fly, q.pitch);        // from extras modules (the gate)
     add('操场中央', campus.track.cx, campus.track.cz, 0);
     const seat = boxOf('grandstand-seating'); if (seat) add('看台前', seat.e + 34, seat.cz, 270, 0, false, 0.1);      // from the infield, so the tiers are in view
     const gym = boxOf('gym-main'); if (gym) { add('体育馆西门外', gym.w - 14, gym.cz, 90); add('体育馆内', gym.w + 26, gym.cz, 90, 0.8); }
