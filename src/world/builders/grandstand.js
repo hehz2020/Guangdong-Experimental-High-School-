@@ -146,7 +146,7 @@ export function build(item, ctx) {
   const ring = [], n = 12, bow = i => BOW * (1 - (2 * i / n - 1) ** 2);
   for (let i = 0; i <= n; i++) ring.push([r.w + r.sx * i / n, r.n + BOW - bow(i)]);
   for (let i = n; i >= 0; i--) ring.push([r.w + r.sx * i / n, r.s - BOW + bow(i)]);
-  ctx.add(prism(ring, H - 0.3, H - 0.04, lm('white')));
+  ctx.collide(ctx.add(prism(ring, H - 0.3, H - 0.04, lm('white'))));          // collides: a player leaving drone mode above the block lands on the roof
   ctx.add(prism(ring.map(([x, z]) => [r.cx + (x - r.cx) * (1 - 0.7 / (r.sx / 2)), r.cz + (z - r.cz) * (1 - 0.7 / (r.sz / 2))]), H - 0.04, H, mat('roofPale')));
   S3(v, lm('white'), r.w + 0.9, r.e - 0.9, L.ySof, H - 0.3, r.n + BOW + 0.3, r.s - BOW - 0.3, 'U');
 

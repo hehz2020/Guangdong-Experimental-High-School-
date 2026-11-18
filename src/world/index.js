@@ -46,8 +46,10 @@ export async function buildWorld(campus, only = null, tryBuilders = {}, tryExtra
   const detail = (obj, x, z, range) => { details.push({ obj, x, z, range }); return obj; };
 
   // ground
-  const ground = new THREE.Mesh(new THREE.PlaneGeometry(1400, 1400), mat('earth'));
-  ground.rotation.x = -Math.PI / 2; ground.receiveShadow = true; root.add(ground);
+  // Tessellated and 5 cm below zero: as two huge triangles at y 0 it won the depth test against the paving, lawn, road and water
+  // layers lying a few millimetres above it at some window sizes and from the air. The collision floor stays at 0.
+  const ground = new THREE.Mesh(new THREE.PlaneGeometry(1400, 1400, 28, 28), mat('earth'));
+  ground.rotation.x = -Math.PI / 2; ground.position.y = -0.05; ground.receiveShadow = true; root.add(ground);
   const floor = box(0, 0, 1400, 1400, -1, 0, mat('earth')); colliders.add(floor);
 
   // running track: standard geometry from the data file

@@ -90,11 +90,46 @@ if (player && showUi) {
 // Optional interface layer (touch controls, HUD). src/ui.js may return { update(dt), input() }; input() supplies extra movement for the player.
 const ui = showUi ? initUI({ player, lighting, campus: CAMPUS, camera, renderer, scene, view: view || 'walk' }) : null;
 
+// Automatic quality. Nothing here has been run on a real graphics card, so the page watches its own frame time and, when
+// frames stay slow, steps down: post-processing off, then a lower pixel density, then lower again. ?adapt=0 switches this
+// off; ?quality=high and ?post=1 are taken as "leave it alone". Automated browsers are left alone too (unless ?adapt=1), so
+// test screenshots do not depend on how busy the machine is.
+const adaptive = { on: !!player && (params.get('adapt') === '1' || (params.get('adapt') !== '0' && !navigator.webdriver && params.get('quality') !== 'high' && params.get('post') !== '1')),
+  level: 0, settle: 90, avg: 0, slow: 0, last: 0, log: [] };
+const QUALITY_STEPS = [
+  () => (lighting && lighting.setPost && lighting.setPost(false) ? '关闭后期效果' : null),
+  () => (renderer.getPixelRatio() > 1 ? (renderer.setPixelRatio(1), '降低像素密度') : null),
+  () => (renderer.setPixelRatio(Math.min(renderer.getPixelRatio(), 0.75)), '再降低像素密度'),
+];
+function toast(text) {
+  let box = document.getElementById('toast');
+  if (!box) { box = document.createElement('div'); box.id = 'toast'; document.body.appendChild(box);
+    box.style.cssText = 'position:fixed;left:50%;top:calc(56px + env(safe-area-inset-top,0px));transform:translateX(-50%);z-index:6;padding:6px 12px;border-radius:6px;background:rgba(12,16,22,.78);color:#ffd98a;font:13px system-ui,"PingFang SC","Microsoft YaHei",sans-serif;pointer-events:none;max-width:calc(100% - 32px);text-align:center'; }
+  box.textContent = text; box.hidden = false; clearTimeout(toast.timer); toast.timer = setTimeout(() => { box.hidden = true; }, 5000);
+}
+function watchFrameTime(now) {
+  const ms = now - adaptive.last; adaptive.last = now;
+  if (!adaptive.on || adaptive.level >= QUALITY_STEPS.length) return;
+  if (adaptive.settle > 0) { adaptive.settle--; adaptive.avg = 0; adaptive.slow = 0; return; }   // right after loading or after a step
+  const m = Math.min(ms, 250);                // capped: one huge gap (the tab was hidden) must not count as many slow frames
+  adaptive.avg = adaptive.avg ? adaptive.avg * 0.92 + m * 0.08 : m;
+  if (adaptive.avg <= 42) { adaptive.slow = 0; return; }                                         // 24 frames a second or better
+  if (++adaptive.slow < 45) return;
+  while (adaptive.level < QUALITY_STEPS.length) {
+    const did = QUALITY_STEPS[adaptive.level++]();
+    if (did) { adaptive.log.push(did); if (lighting && lighting.resize) lighting.resize(innerWidth, innerHeight); if (showUi) toast('画面较慢，已自动' + did + '（网址加 ?quality=high 可保持高画质）'); break; }
+  }
+  adaptive.settle = 90;
+}
+
 const timer = new THREE.Timer();
 let frames = 0;
 renderer.setAnimationLoop(timestamp => {
   timer.update(timestamp);
-  const dt = Math.min(timer.getDelta(), 0.1);          // seconds; clamped so a long frame or a tab switch cannot teleport the player
+  watchFrameTime(performance.now());
+  // seconds; clamped above so a long frame or a tab switch cannot teleport the player, and below because the first delta can be
+  // negative (the timer is created after the world is built, the first frame timestamp may be older)
+  const dt = Math.max(0, Math.min(timer.getDelta(), 0.1));
   if (player) {
     player.update(dt, ui && ui.input ? ui.input() : undefined);
     if (lighting) { lighting.moveFill(camera.position.x, camera.position.y, camera.position.z); if (frames % 30 === 0) lighting.follow(camera.position.x, camera.position.z); }
@@ -115,4 +150,5 @@ window.__app = {
   setTime: h => (lighting ? lighting.setTime(h) : null),
   viewInfo: () => ({ canvasW: renderer.domElement.clientWidth, canvasH: renderer.domElement.clientHeight, aspect: camera.isPerspectiveCamera ? +camera.aspect.toFixed(4) : null, frames }),
   renderInfo: () => ({ calls: renderer.info.render.calls, triangles: renderer.info.render.triangles }),
+  quality: () => ({ adaptive: adaptive.on, steps: adaptive.log.slice(), pixelRatio: renderer.getPixelRatio(), averageFrameMs: +adaptive.avg.toFixed(1), lighting: lighting && lighting.info ? lighting.info().post : null }),
 };

@@ -404,6 +404,7 @@ export function build(item, ctx) {
   const LWELL = rounded([[27.3, -16.5], [43.4, -25.0], [49.7, -14.6]], 1.3, 4);      // light well, from the satellite image
   const wellC = [40.13, -18.7];
   cap(v, 'roofPale', [LE, LD, LC, LB, LA], H, true, [LWELL]);
+  cap(c, G, [LE, LD, LC, LB, LA], H - 0.02, true);                        // roof collider, light well covered: a player leaving drone mode above the building lands here
   { const outer = LWELL.map(p => add(p, mul(unit(sub(p, wellC)), 0.25)));
     ringQuads(v, TERR, LWELL, 8.6, H + 0.9, true); ringQuads(v, TERR, outer, H, H + 0.9, false);
     LWELL.forEach((p, i) => { const j = (i + 1) % LWELL.length; cap(v, TERR, [p, LWELL[j], outer[j], outer[i]], H + 0.9, true); }); }
@@ -544,6 +545,8 @@ export function build(item, ctx) {
     v.slab(BA, XS - 0.1, F0, zn[0], 0.1, F2 - 0.45 - F0, zn[1] - zn[0]);                                               // closes the space under the top of the second flight
     blockBox(XS, zn[0] - 0.1, xe, zn[0], F0, F3 + 1.3); blockBox(XS, zs[1], xe, zs[1] + 0.1, F0, F3 + 1.3); blockBox(xe, zn[0], xe + 0.1, zs[1], F0, F3 + 1.3);
     blockBox(XS, zn[1] - 0.05, e, zn[1] + 0.05, F0, F3 + 1.3); blockBox(XS - 0.1, zn[0], XS, zn[1], F0, F2 - 0.3);
+    // the east end of the walkway between the glass wall and the stair's north flank was open: a 3.9 m drop to the porch
+    blockBox(XS, ZG, XS + 0.1, zn[0], F2, F2 + 1.6); rail(v, [XS + 0.05, ZG + 0.1], [XS + 0.05, zn[0] - 0.1], F2, F2);
     blockBox(XS - 1.5, zs[0], XS - 1.4, zs[1], F2, F2 + 1.3); blockBox(XS - 1.4, zs[1], XS, zs[1] + 0.1, F2, F2 + 1.3); blockBox(a, zn[0], xe, zs[1], F0, ym1 - 0.2); }
 
   // ================================================================= LIBRARY SHELL (always drawn, so the glass never shows an empty building)
@@ -605,8 +608,8 @@ export function build(item, ctx) {
   const shelf = (X, Z, yaw, len, rows = 5, oneSided = false, y = F0, pitch = ROW) => {
     const h = 0.1 + rows * pitch + 0.04, d = oneSided ? 0.36 : 0.56, u0 = ((X * 7.3 + Z * 3.1) % BOOK_W + BOOK_W) % BOOK_W;
     at(fu, X, Z, yaw, y); fu.box(WL, 0, h / 2, 0, len, h, d, 'D');
-    texQuad(fu, BK, [-len / 2 + 0.04, 0.1, d / 2 + 0.004], [len / 2 - 0.04, 0.1, d / 2 + 0.004], [len / 2 - 0.04, h - 0.04, d / 2 + 0.004], [-len / 2 + 0.04, h - 0.04, d / 2 + 0.004], u0, 0, u0 + len - 0.08, rows * ROW);
-    if (!oneSided) texQuad(fu, BK, [len / 2 - 0.04, 0.1, -d / 2 - 0.004], [-len / 2 + 0.04, 0.1, -d / 2 - 0.004], [-len / 2 + 0.04, h - 0.04, -d / 2 - 0.004], [len / 2 - 0.04, h - 0.04, -d / 2 - 0.004], u0 + 1.1, 0, u0 + 1.1 + len - 0.08, rows * ROW);
+    texQuad(fu, BK, [-len / 2 + 0.04, 0.1, d / 2 + 0.012], [len / 2 - 0.04, 0.1, d / 2 + 0.012], [len / 2 - 0.04, h - 0.04, d / 2 + 0.012], [-len / 2 + 0.04, h - 0.04, d / 2 + 0.012], u0, 0, u0 + len - 0.08, rows * ROW);
+    if (!oneSided) texQuad(fu, BK, [len / 2 - 0.04, 0.1, -d / 2 - 0.012], [-len / 2 + 0.04, 0.1, -d / 2 - 0.012], [-len / 2 + 0.04, h - 0.04, -d / 2 - 0.012], [len / 2 - 0.04, h - 0.04, -d / 2 - 0.012], u0 + 1.1, 0, u0 + 1.1 + len - 0.08, rows * ROW);
     home(fu); at(c, X, Z, yaw, y); c.box(G, 0, h / 2, 0, len, h, d); home(c);
   };
   /** Upholstered armchair on wooden legs, facing the direction yaw (0 = local +X). */

@@ -134,7 +134,13 @@ function crownGeometry(low) {
 }
 
 function buildTrees(ctx, low) {
-  const list = DATA.trees.list;                                      // [x, z, height, crown radius, trunk collides, casts shadow]
+  // [x, z, height, crown radius, trunk collides, casts shadow]. The crowns were detected before the wide road beyond the
+  // north-west wall was recorded, so a few trunks stood on its carriageway: those are dropped here.
+  const wide = DATA.roads.find(r => r.id === 'road-context-north-west');
+  const onRoad = (x, z) => !!wide && wide.points.some((a, i) => { const b = wide.points[i + 1]; if (!b) return false;
+    const dx = b[0] - a[0], dz = b[1] - a[1], k = Math.max(0, Math.min(1, ((x - a[0]) * dx + (z - a[1]) * dz) / (dx * dx + dz * dz)));
+    return Math.hypot(x - a[0] - k * dx, z - a[1] - k * dz) < wide.widthM / 2 + 1; });
+  const list = DATA.trees.list.filter(([x, z]) => !onRoad(x, z));
   const crownGeo = crownGeometry(low), trunkGeo = new THREE.CylinderGeometry(0.62, 1, 1, 5, 1, true).translate(0, 0.5, 0);
   const crownMat = new THREE.MeshStandardMaterial({ vertexColors: true, roughness: 0.95 });
   const trunkMat = new THREE.MeshStandardMaterial({ color: 0x6b5a45, roughness: 0.95 });
@@ -221,7 +227,8 @@ function buildBackdrop(ctx) {
     const len = Math.hypot(x2 - x1, z2 - z1), a = Math.atan2(-(z2 - z1), x2 - x1);
     v.frame((x1 + x2) / 2, (z1 + z2) / 2, a).box('concrete', 0, (h - 0.6) / 2, 0, len, h - 0.6, w).box('roofPale', 0, h - 0.3, 0, len + 1, 0.6, w + 1.2);
   }
-  ctx.add(v.build({ name: 'backdrop', castShadow: false }));
+  const bd = ctx.add(v.build({ name: 'backdrop', castShadow: false }));
+  bd.traverse(o => { if (o.isMesh) ctx.collide(o); });                 // plain boxes, so the visible meshes serve as colliders: the towers could be walked through
   // gravel yard between the east bank and the sheds
   const { westEdge: w, eastEdge: e } = DATA.canal, ax = e[0][0] - w[0][0], az = e[0][1] - w[0][1], an = Math.hypot(ax, az);   // across the canal, eastward
   const off = (p, d) => [p[0] + ax / an * d, p[1] + az / an * d];

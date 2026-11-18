@@ -11,6 +11,21 @@ const FILES = [
   ['three/examples/jsm/controls/PointerLockControls.js', 'three/addons/controls/PointerLockControls.js'],
   ['three/examples/jsm/math/Octree.js', 'three/addons/math/Octree.js'],                 // 3D collision
   ['three/examples/jsm/math/Capsule.js', 'three/addons/math/Capsule.js'],               // imported by Octree.js
+  // post-processing (src/post.js; loaded only when ambient occlusion and bloom are on)
+  ['three/examples/jsm/postprocessing/EffectComposer.js', 'three/addons/postprocessing/EffectComposer.js'],
+  ['three/examples/jsm/postprocessing/Pass.js', 'three/addons/postprocessing/Pass.js'],                 // base class of every pass
+  ['three/examples/jsm/postprocessing/ShaderPass.js', 'three/addons/postprocessing/ShaderPass.js'],     // imported by EffectComposer.js
+  ['three/examples/jsm/postprocessing/MaskPass.js', 'three/addons/postprocessing/MaskPass.js'],         // imported by EffectComposer.js
+  ['three/examples/jsm/postprocessing/RenderPass.js', 'three/addons/postprocessing/RenderPass.js'],
+  ['three/examples/jsm/postprocessing/GTAOPass.js', 'three/addons/postprocessing/GTAOPass.js'],
+  ['three/examples/jsm/postprocessing/UnrealBloomPass.js', 'three/addons/postprocessing/UnrealBloomPass.js'],
+  ['three/examples/jsm/postprocessing/OutputPass.js', 'three/addons/postprocessing/OutputPass.js'],
+  ['three/examples/jsm/shaders/CopyShader.js', 'three/addons/shaders/CopyShader.js'],                   // EffectComposer, GTAOPass, UnrealBloomPass
+  ['three/examples/jsm/shaders/OutputShader.js', 'three/addons/shaders/OutputShader.js'],               // OutputPass
+  ['three/examples/jsm/shaders/GTAOShader.js', 'three/addons/shaders/GTAOShader.js'],                   // GTAOPass
+  ['three/examples/jsm/shaders/PoissonDenoiseShader.js', 'three/addons/shaders/PoissonDenoiseShader.js'], // GTAOPass
+  ['three/examples/jsm/shaders/LuminosityHighPassShader.js', 'three/addons/shaders/LuminosityHighPassShader.js'], // UnrealBloomPass
+  ['three/examples/jsm/math/SimplexNoise.js', 'three/addons/math/SimplexNoise.js'],                     // GTAOPass
 ];
 
 if (!existsSync('node_modules/three')) { console.error('node_modules/three missing: run npm install first'); process.exit(1); }

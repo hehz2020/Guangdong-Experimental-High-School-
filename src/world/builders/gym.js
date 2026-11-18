@@ -312,7 +312,7 @@ export function build(item, ctx) {
     for (let i = 0; i < seg; i++) { const a = 2 * i; idx.push(a, a + 1, a + 3, a, a + 3, a + 2); }
     const g = new THREE.BufferGeometry();
     g.setAttribute('position', new THREE.Float32BufferAttribute(pos, 3)); g.setAttribute('normal', new THREE.Float32BufferAttribute(nor, 3)); g.setAttribute('uv', new THREE.Float32BufferAttribute(uv, 2)); g.setIndex(idx);
-    const roof = new THREE.Mesh(g, lm('roof')); roof.castShadow = roof.receiveShadow = true; roof.name = item.id + '-roof'; ctx.add(roof); }
+    const roof = new THREE.Mesh(g, lm('roof')); roof.castShadow = roof.receiveShadow = true; roof.name = item.id + '-roof'; ctx.add(roof); ctx.collide(roof); }   // also a collider: a player leaving drone mode above the hall lands on the roof
   patch(lm('soffit'), 0, LX, 0, LZ, yBot, false, 3);
   patch(lm('ceiling'), xW + 0.45, xE - 0.5, zN + 0.65, zS - 0.65, x => yBot(x) - 0.04, false, 3);
   const fb = x => yTop(x) - 0.6;                            // fascia, 0.6 m deep

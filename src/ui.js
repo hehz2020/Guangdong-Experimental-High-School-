@@ -17,9 +17,14 @@ const CSS = `
 #hud-bar{left:50%;transform:translateX(-50%);bottom:calc(20px + env(safe-area-inset-bottom,0px));display:flex;gap:8px}
 #hud-bar button{border:0;border-radius:16px;padding:7px 14px;font-size:14px;background:rgba(12,16,22,.62);color:#eef2f6}
 #hud-bar button.on{background:rgba(255,200,90,.6);color:#201a08}
-#hud-places{left:50%;transform:translateX(-50%);bottom:calc(62px + env(safe-area-inset-bottom,0px));background:rgba(12,16,22,.86);border-radius:10px;padding:6px;display:grid;grid-template-columns:1fr 1fr;gap:4px;width:min(300px,calc(100% - 32px))}
+#hud-places{left:50%;transform:translateX(-50%);bottom:calc(62px + env(safe-area-inset-bottom,0px));background:rgba(12,16,22,.9);border-radius:10px;padding:6px;display:grid;grid-template-columns:1fr 1fr;gap:4px;width:min(300px,calc(100% - 32px));z-index:7;max-height:calc(100% - 130px - env(safe-area-inset-bottom,0px));overflow-y:auto;box-sizing:border-box}
 #hud-places button{border:0;border-radius:6px;padding:9px 6px;font-size:13px;background:rgba(255,255,255,.1);color:#eef2f6;text-align:center}
 #notice{max-width:calc(50% - 110px)!important}
+@media (max-height:480px){
+  #hud-places{grid-template-columns:repeat(4,1fr);width:min(620px,calc(100% - 32px))}
+  #hud-map canvas{width:104px;height:auto}
+  #btn-run{bottom:calc(64px + env(safe-area-inset-bottom,0px));right:calc(100px + env(safe-area-inset-right,0px))}
+}
 @media (max-width:640px){
   #hud-map canvas{width:104px;height:auto}
   #hud-time{left:calc(52px + env(safe-area-inset-left,0px));transform:none;padding:4px 8px;font-size:12px}
@@ -47,8 +52,8 @@ export function initUI({ player, lighting, campus, camera, renderer, view }) {
   // --- help ---
   const helpBtn = el('button', 'hud-help-btn', 'hud', '?'), help = el('div', 'hud-help', 'hud');
   help.hidden = true;
-  help.innerHTML = touch ? '左下摇杆：移动<br>右半屏滑动：转动视角<br>“跑”：切换奔跑　“跳”：跳跃<br>“地点”：直接前往某处<br>“航拍”：飞行模式，朝视线方向飞，“跳”为上升<br>上方滑块：调整时间<br>右上：小地图（北在上）'
-    : 'W A S D / 方向键：移动<br>鼠标：转动视角（先点击画面）<br>Shift：跑　空格：跳　Esc：释放鼠标<br>F：航拍模式（空格上升，C 下降）<br>下方“地点”：直接前往某处（先按 Esc）<br>上方滑块：调整时间<br>右上：小地图（北在上）';
+  help.innerHTML = touch ? '左下摇杆：移动<br>右半屏滑动：转动视角<br>“跑”：切换奔跑　“跳”：跳跃<br>“地点”：直接前往某处<br>“航拍”：飞行模式，朝视线方向飞，“跳”为上升<br>卡在屋顶或围栏里：点“航拍”飞出来<br>上方滑块：调整时间<br>右上：小地图（北在上）'
+    : 'W A S D / 方向键：移动<br>鼠标：转动视角（先点击画面）<br>Shift：跑　空格：跳　Esc：释放鼠标<br>F：航拍模式（空格上升，C 下降）<br>卡在屋顶或围栏里：按 F 飞出来<br>下方“地点”：直接前往某处（先按 Esc）<br>上方滑块：调整时间<br>右上：小地图（北在上）';
   helpBtn.addEventListener('click', e => { e.stopPropagation(); help.hidden = !help.hidden; });
 
   // --- places menu and drone mode ---
@@ -58,12 +63,12 @@ export function initUI({ player, lighting, campus, camera, renderer, view }) {
     const toward = (x, z, tx, tz) => Math.atan2(tx - x, -(tz - z)) * 180 / Math.PI;      // heading in degrees: 0 north, 90 east
     const places = [], add = (name, x, z, yaw, y = 0, fly = false, pitch = 0) => places.push({ name, x, z, yaw, y, fly, pitch });
     add('操场中央', campus.track.cx, campus.track.cz, 0);
-    const seat = boxOf('grandstand-seating'); if (seat) add('看台前', seat.e + 7, seat.cz, 270);
+    const seat = boxOf('grandstand-seating'); if (seat) add('看台前', seat.e + 34, seat.cz, 270, 0, false, 0.1);      // from the infield, so the tiers are in view
     const gym = boxOf('gym-main'); if (gym) { add('体育馆西门外', gym.w - 14, gym.cz, 90); add('体育馆内', gym.w + 26, gym.cz, 90, 0.8); }
     if (campus.courts) { const k = campus.courts.block; add('篮球场', (k.w + k.e) / 2, (k.n + k.s) / 2, 0); }
     const can = boxOf('plaza-canopy'), tw = boxOf('clock-tower');
-    if (can) add('网架广场', can.cx, can.s - 8, tw ? toward(can.cx, can.s - 8, tw.cx, tw.cz) : 90);
-    if (tw) add('钟楼下', tw.cx - 4, tw.cz + 18, toward(tw.cx - 4, tw.cz + 18, tw.cx, tw.cz));
+    if (can) add('网架广场', can.cx, can.s - 8, tw ? toward(can.cx, can.s - 8, tw.cx, tw.cz) : 90, 0, false, 0.42);   // looking up at the space frame
+    if (tw) add('钟楼下', tw.cx - 4, tw.cz + 18, toward(tw.cx - 4, tw.cz + 18, tw.cx, tw.cz), 0, false, 0.55);              // looking up the tower
     const sn = campus.items.find(i => i.id === 'slab-north');
     if (sn && sn.mainBar) { const b = sn.mainBar; add('教学楼二层外廊', b.w + 14, b.s - 1.7, 90, 3.9); add('二层教室', b.w + 6.2, b.n + 4.8, 90, 3.9); }
     const arc = boxOf('arc-building'); if (arc && can) add('弧形楼前', can.cx - 5, can.n - 8, 0);
@@ -94,7 +99,7 @@ export function initUI({ player, lighting, campus, camera, renderer, view }) {
 
   // --- minimap ---
   const mapBox = el('div', 'hud-map'), cv = document.createElement('canvas'); mapBox.appendChild(cv);
-  const B = { w: -115, e: 320, n: -200, s: 145 }, S = 150 / (B.e - B.w); cv.width = 150; cv.height = Math.round((B.s - B.n) * S);
+  const B = { w: -115, e: 320, n: -245, s: 145 }, S = 150 / (B.e - B.w); cv.width = 150; cv.height = Math.round((B.s - B.n) * S);
   const g = cv.getContext('2d'), X = x => (x - B.w) * S, Z = z => (z - B.n) * S;
   const base = document.createElement('canvas'); base.width = cv.width; base.height = cv.height;
   (() => {

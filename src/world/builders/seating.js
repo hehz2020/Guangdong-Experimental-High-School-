@@ -74,6 +74,8 @@ function panelE(v, m, x, zc, w, y0, y1) {
   v.box('metalWhite', x + 0.03, y1 + 0.03, zc, 0.06, 0.06, w, 'W');
 }
 
+const BARRIER = 1.7;      // height of the invisible barrier above a railing's or parapet's base: the visible rail is about 1.1 m, which a jump clears
+
 export function build(item, ctx) {
   const o = bbox(item.points), H = item.height, W = o.w, E = o.e, N = o.n, S = o.s, L = S - N;
   const nR = Math.max(6, Math.round(0.48 * H / RISER)), yF = nR * RISER;        // front walkway level = a whole number of stair risers
@@ -124,7 +126,7 @@ export function build(item, ctx) {
   for (const [g0, g1] of [...gaps, [S - PAR, S]]) {
     both('wallWhite', E - PAR, E + 0.05, yF, yF + 0.4, zPrev, g0, 'D');
     railZ(v, E - PAR / 2, yF + 0.4, yF + 1.1, zPrev + 0.05, g0 - 0.05);
-    S3(c, 'generic', E - PAR / 2 - 0.03, E - PAR / 2 + 0.03, yF + 0.4, yF + 1.1, zPrev, g0, 'D');
+    S3(c, 'generic', E - PAR / 2 - 0.03, E - PAR / 2 + 0.03, yF + 0.4, yF + BARRIER, zPrev, g0, 'D');
     zPrev = g1;
   }
   const clear = z => (z < zR0 - run - 1.5 || z > zR1 + run + 1.5) && z < zSt - 2.5;                 // free stretch of the main front wall
@@ -136,7 +138,7 @@ export function build(item, ctx) {
   S3(c, 'generic', E, xR, 0, yF, zR0, zR1, 'DW');
   both('wallWhite', xR - 0.2, xR + 0.05, yF, yF + 0.45, zR0, zR1, 'D');
   railZ(v, xR - 0.1, yF + 0.45, yF + 1.1, zR0 + 0.05, zR1 - 0.05);
-  S3(c, 'generic', xR - 0.13, xR - 0.07, yF + 0.45, yF + 1.1, zR0, zR1, 'D');
+  S3(c, 'generic', xR - 0.13, xR - 0.07, yF + 0.45, yF + BARRIER, zR0, zR1, 'D');
   const zm = (zR0 + zR1) / 2;
   for (const dz of [-5.5, 5.5]) panelE(v, 'roofGrey', xR, zm + dz, 1.0, 0, yF - 0.6);
   for (const dz of [-8.2, -2.4, 2.4, 8.2]) panelE(v, 'glassDark', xR, zm + dz, 1.1, yF - 1.25, yF - 0.7);
@@ -179,9 +181,9 @@ export function build(item, ctx) {
   for (const [z0, z1] of [[N, N + PAR], [S - PAR, S]]) {
     for (let k = 1; k <= ROWS; k++) {                                           // nested brick boxes; the raked band hides their stepped tops
       const xw = xT - k * td, y = yF + k * rise;
-      S3(v, 'brickRed', W, xw + td, 0, y - 0.3, z0, z1, 'DUEW'); S3(c, 'generic', xw, xw + td, 0, y + 0.9, z0, z1, 'D');
+      S3(v, 'brickRed', W, xw + td, 0, y - 0.3, z0, z1, 'DUEW'); S3(c, 'generic', xw, xw + td, 0, y + BARRIER, z0, z1, 'D');
     }
-    S3(v, 'brickRed', W, E, 0, yF - 0.3, z0, z1, 'DUEW'); S3(c, 'generic', xT, E, 0, yF + 0.9, z0, z1, 'D');
+    S3(v, 'brickRed', W, E, 0, yF - 0.3, z0, z1, 'DUEW'); S3(c, 'generic', xT, E, 0, yF + BARRIER, z0, z1, 'D');
     S3(v, white(), xT, E + 0.05, yF - 0.4, yF + 0.9, z0 - 0.03, z1 + 0.03, 'W');
     prismZ(v, white(), [[xT, yF - 0.4], [xT, yF + 0.9], [W, H + 0.9], [W, H - 0.4]], z0 - 0.03, z1 + 0.03, [2]);
   }

@@ -7,6 +7,7 @@ import { Capsule } from 'three/addons/math/Capsule.js';
 
 export const PLAYER = { radius: 0.35, eye: 1.6, walk: 3.2, run: 8.0, gravity: 30, jump: 6.5, response: 10, fly: 14, flyFast: 40 };
 const SUB = 1 / 120;                                   // fixed physics step, seconds
+const LIMIT = 680;                                     // metres from the origin the player may go (the ground plane ends at 700)
 
 export function createPlayer(camera, domElement, colliders, start = { x: 0, z: 0, yawDeg: 0 }) {
   const controls = new PointerLockControls(camera, domElement);
@@ -37,6 +38,12 @@ export function createPlayer(camera, domElement, colliders, start = { x: 0, z: 0
   function requestLock() { if (canLock && !controls.isLocked) controls.lock(); return canLock; }
   domElement.addEventListener('click', requestLock);
 
+  // The ground is a 1400 m square. Walking off its edge used to drop the player and silently return them to the start;
+  // now the edge simply stops them.
+  function keepInside() {
+    const dx = Math.max(-LIMIT, Math.min(LIMIT, capsule.start.x)) - capsule.start.x, dz = Math.max(-LIMIT, Math.min(LIMIT, capsule.start.z)) - capsule.start.z;
+    if (dx || dz) { capsule.translate(push.set(dx, 0, dz)); if (dx) vel.x = 0; if (dz) vel.z = 0; }
+  }
   function sub(input, dt) {
     const fwd = (input.f ? 1 : 0) - (input.b ? 1 : 0) + (input.moveY || 0), side = (input.r ? 1 : 0) - (input.l ? 1 : 0) + (input.moveX || 0);
     // Standing still on a floor: sleep, so the contact flag is stable and the player does not creep down slopes.
@@ -48,7 +55,7 @@ export function createPlayer(camera, domElement, colliders, start = { x: 0, z: 0
       vel.x += ((dir.x * fwd + rx * side) * sp - vel.x) * kf; vel.y += (wy * sp - vel.y) * kf; vel.z += ((dir.z * fwd + rz * side) * sp - vel.z) * kf;
       capsule.translate(push.copy(vel).multiplyScalar(dt));
       if (capsule.start.y < PLAYER.radius + 0.5) capsule.translate(push.set(0, PLAYER.radius + 0.5 - capsule.start.y, 0));   // stay above the ground
-      onFloor = false; floorTimer = 0; return;
+      keepInside(); onFloor = false; floorTimer = 0; return;
     }
     controls.getDirection(dir);
     let fx = dir.x, fz = dir.z; const n = Math.hypot(fx, fz) || 1; fx /= n; fz /= n;
@@ -68,6 +75,7 @@ export function createPlayer(camera, domElement, colliders, start = { x: 0, z: 0
       if (hit.depth >= 1e-10) capsule.translate(hit.normal.multiplyScalar(hit.depth));
     }
     onFloor = floorTimer > 0;
+    keepInside();
     if (capsule.start.y < -30) place(start.x, start.y ?? 0, start.z);       // fell out of the world
   }
   function sync() { camera.position.set(capsule.end.x, capsule.end.y + 0.05, capsule.end.z); }
@@ -80,8 +88,9 @@ export function createPlayer(camera, domElement, colliders, start = { x: 0, z: 0
       e.y -= dYaw; e.x = Math.max(-1.45, Math.min(1.45, e.x + dPitch)); e.z = 0;
     },
     update(dt, extra) {
-      carry = Math.min(carry + dt, 0.25);
-      const input = extra ? { ...keys, ...extra } : keys;
+      carry = Math.max(0, Math.min(carry + dt, 0.25));   // never negative: a negative first frame delta used to freeze the player
+      // Keyboard and on-screen controls are combined, not overwritten: the HUD reports run/jump false when nothing is touched.
+      const input = extra ? { ...keys, moveX: extra.moveX || 0, moveY: extra.moveY || 0, run: keys.run || !!extra.run, jump: keys.jump || !!extra.jump, down: keys.down || !!extra.down } : keys;
       while (carry >= SUB) { sub(input, SUB); carry -= SUB; }
       sync();
     },
