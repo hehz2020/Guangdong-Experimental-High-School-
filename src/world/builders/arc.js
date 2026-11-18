@@ -1,14 +1,38 @@
-// Long curved building north of the teaching core (item "arc-building"). Exterior only: nobody can go in or onto the roof.
+// Long curved building north of the teaching core (item "arc-building"). Exterior only: nobody can go in. A walker who
+// leaves drone mode above it lands on the roof canopy (the collider plate at canopy level also closes the roof openings).
+//
+// DEPTH (the one thing here that does not come straight from the data item)
+// The item is a band 13.7 m deep. Its convex (north) edge is the outer roof edge; its concave edge lies at the inner
+// side of the row of roof openings. The second reading of the mosaic (eight cross-sections; scratch file
+// shots/measure/corrections.json) gives this roof section, from the outer edge inward: solid roof about 9 m, a row of
+// openings 5.2 m, a solid strip 4.3 m, 68 to 72 px (about 19 m) in all. The item keeps its band, so the extra depth is a
+// constant in this file, measured from the band's concave edge: the canopy's inner edge lies INNER = 4.3 m beyond that
+// edge, and the concave facade EXT = INNER - OVI = 3.3 m beyond it. Built that way the canopy is 18.6 m deep:
+// 9.1 m solid, 5.2 m of openings, 4.3 m solid.
+// The inner strip is NOT modelled as a deep eave in front of a facade that stays on the band, because of what the
+// 2022 "一本书的梦" frames show:
+// - frames 14, 16, 17 (from below, brightness profiles beside the columns): under the concave fascia first a solid
+//   soffit, then the openings (sky and distant towers seen through them), then the white face of a deep beam, then
+//   dark soffit. So the solid strip is on the concave side of the openings, as in the mosaic.
+// - frame 18 (camera between parapet and canopy level): the big round columns stand directly behind the wide white
+//   coping of the red parapet, with shrubs and trees right behind them; in frames 14, 16, 17 and 18 their tops meet
+//   the soffit a quarter to a half of the way across the solid strip, that is 1 to 2 m behind the fascia.
+// - frame 16: the red-framed facade is one vertical plane from that coping down to the ground.
+// So the roof garden and the facade reach the inner edge, and the canopy overhangs the facade by about a metre.
 //
 // SEEN in the references
-// - Concave (south) face, 2022 "一本书的梦" frames 9-18: a red frame (wide red end pier, red band from the top windows
-//   up to the parapet, white coping) around a cream field with four rows of ribbon windows; a white ledge over each
+// - Concave (south) face, 2022 frames 9-18: a red frame (wide red end pier, red band from the top windows up to the
+//   parapet, wide white coping) around a cream field with four rows of ribbon windows; a white ledge over each
 //   window row with air-conditioner units standing on it; a white surround to the top row; curtains behind the glass.
 //   The red cladding is a speckled orange-red tile (the notes call it red brick). 2018 frames 67-69 show the same
 //   red-framed field starting right behind the west corner, so the motif is repeated along the whole face.
-// - Roof, same frames plus frame 58 and 2018 frames 2-3: a roof garden behind the red parapet and, over it, a flat grey
-//   concrete canopy on white posts with a deep white edge, pierced near the south edge by a row of long rectangular
-//   openings with white rims (the "pergola" seen from below); trees grow up through the openings.
+// - Roof, frames 14-18, frame 58 and 2018 frames 2-3: a roof garden behind the red parapet and, over it, a flat grey
+//   concrete canopy with a deep white edge. Frame 58 looks at it from the north (from the new building's roof): a
+//   wide solid strip, then rectangular openings with white rims and trees growing up through them, then a narrow
+//   strip. White cross beams run across the canopy at equal steps: 21.9 px = 6.0 m apart along the row of openings
+//   in the mosaic (nine beams between px x 1275 and 1450), modelled as every second bay (5.9 m on the concave face).
+//   On the concave side round white columns stand under three of every five beams (gaps of one, two and two steps;
+//   frames 14, 16 and 17). A smaller post stands under the far side of the openings (frame 17).
 // - West end, 2018 frames 24-25, 43, 53, 55-56, 67-69 and 10: cream end wall with wide windows (three rows visible)
 //   and a column of narrow ones; a blue-green glass curtain-wall box at the outer corner, taller than the cream wall;
 //   a sloping white louvred panel over the cream wall; one large roof plane that tilts up toward the outer west corner,
@@ -20,6 +44,10 @@
 //   standing in front of it.
 //
 // ASSUMED (no reference supports these)
+// - That the extra depth is the same along the whole building, the west end under the tilted roof included (the eight
+//   cross-sections lie between px x 1010 and 1575; near the east end the roof is about 80 px deep), and that every
+//   floor is as deep as the top one (frame 16 shows one field of the facade; the mosaic cannot show the concave face).
+//   The canopy overhang beyond the concave facade (1.0 m, from the column tops) and beyond the convex one (0.6 m).
 // - The whole convex (north) face below the parapet: kept plain, the same bands and ribbon windows as the concave
 //   face but without ledges, air-conditioners, red piers or doors. Its first bays, under the tilted roof, are red
 //   (see above); where the red stops and how the windows sit in it is a guess.
@@ -32,20 +60,30 @@
 // - The tilted west roof: its plan outline, fold line and overhangs, its rise (0.37 x item.height above the canopy at
 //   the tip, read from frames 53 and 67, so the tip stands ABOVE item.height), and the number and exact places of the
 //   tall columns. The louvred panel's size, number of slats and the two props under it. The glass box's depth.
-// - Canopy details: post spacing (every third bay), cross beams, size of the openings, interior posts.
+// - Canopy details: where along the building the column rhythm starts; column diameter (0.6 m); that the posts on the
+//   convex parapet and the posts under the far side of the openings stand under the same beams as the columns; the
+//   size of the deep beam and of the rims; that the row of openings starts where the flat canopy is deep enough
+//   beside the tilted roof and stops one bay short of the east end; the width of the coping (0.6 m).
 // - Positions and sizes of the rooftop trees and shrubs (planting is seen, its layout is not); they use the shared
 //   tree shape from plants.js.
 // - Size and position of the cream panel and its windows on the east end wall.
 // NOT MODELLED: interiors; the green bicycle shelter at the foot of the west end (2018 frames 55-56); the dark green
-// glazed section beside the east end (2018 frame 2); the junction with the round dome building.
+// glazed section beside the east end (2018 frame 2); the junction with the round dome building; stretches of the
+// roof where the mosaic shows no dark openings (planting fills them, or the roof is solid there).
 import { THREE, mat } from '../../kit.js';
 import { Batch } from '../../batch.js';
 import { tree } from '../../plants.js';
 
 const BAY = 2.97, PANES = 3, ATLAS = 8;      // bay length on the concave face = three window panes; panes drawn in the window texture
-const T = 0.3, PROUD = 0.15, OV = 0.6;       // wall thickness; how far the red frame stands proud of the cream field; canopy overhang
+const T = 0.3, PROUD = 0.15, OV = 0.6;       // wall thickness; how far the red frame stands proud of the cream field; canopy overhang beyond the convex face
 const SLAB = 0.25, FASCIA = 0.8;             // canopy slab thickness and depth of its white edge
-const D1 = 1.4, D2 = 4.6;                    // the row of roof openings lies between these distances from the south edge
+// Roof section (see DEPTH in the header). INNER: the solid inner strip of the canopy, measured from the data band's concave
+// edge; VOID: depth of the row of openings, which ends at that edge; OVI: canopy overhang beyond the concave facade.
+const INNER = 4.3, VOID = 5.2, OVI = 1.0;
+const EXT = INNER - OVI;                     // how far the concave facade stands beyond the data band's concave edge
+const D1 = EXT, D2 = EXT + VOID;             // the row of roof openings lies between these distances from the concave facade
+const STN = 2, COLS = [0, 1, 3];             // a cross beam every STN bays; columns under these beams of every five
+const COL_R = 0.3, COL_D = 0.75, COPE = 0.6; // round columns behind the concave parapet: radius, distance in from the facade; coping width
 const GX = 3.6, GD = 3.6, RECESS = 2.4;      // glass box at the west end (width, depth); how far the cream end wall sits back
 const UP = [0, 1, 0], DOWN = [0, -1, 0];
 
@@ -148,7 +186,7 @@ export function build(item, ctx) {
   if (ea[0][0] > ea[half - 1][0]) { ea.reverse(); eb.reverse(); }                    // run west to east
   const polyLen = p => p.slice(1).reduce((s, q, i) => s + dist(q, p[i]), 0);
   const [inn, out] = polyLen(ea) <= polyLen(eb) ? [ea, eb] : [eb, ea];               // the shorter edge is the concave one
-  const di = smooth(inn, 24), dn = smooth(out, 24), cum = [0];
+  const dn = smooth(out, 24), di = smooth(inn, 24).map((p, k) => add(p, mul(unit(sub(p, dn[k])), EXT))), cum = [0];   // the facade stands EXT beyond the band
   for (let i = 1; i < di.length; i++) cum.push(cum[i - 1] + dist(di[i], di[i - 1]));
   const total = cum[cum.length - 1], NB = Math.max(16, Math.round(total / BAY)), bay = total / NB, PW = bay / PANES;
   const I = [], O = [];                                                              // bay corners on the concave (I) and convex (O) edge
@@ -183,7 +221,7 @@ export function build(item, ctx) {
   // ---------- concave (south) face ----------
   for (let j = 0; j < NB; j++) {
     const A = I[j], B = I[j + 1], L = along(v, A, B);
-    v.slab(m.white, 0, parapet, -T - 0.03, L, 0.09, T + PROUD + 0.06, 'D');                    // coping
+    v.slab(m.white, 0, parapet, -COPE, L, 0.09, COPE + PROUD + 0.03, 'D');                     // wide coping (frame 18)
     if (fieldOf[j] < 0) { v.slab(m.red, 0, 0, -T, L, parapet, T + PROUD, 'D'); continue; }     // red pier, ground to parapet
     const first = posIn[j] === 0, last = posIn[j] === fb - 1, door = posIn[j] === (fb >> 1), ends = 'N' + (first ? '' : 'W') + (last ? '' : 'E');
     let y = 0;
@@ -277,14 +315,16 @@ export function build(item, ctx) {
 
   // ---------- the tilted roof over the west end: a plane hinged on a fold line, rising toward the outer west corner ----------
   const TIP = 0.37 * H, WTH = 0.3;                                                              // rise of the tip above the flat canopy; slab thickness
-  const tip = add(O[0], mul(e, 8.3), mul(q, 3.5)), swIn = add(I[0], mul(e, -OV), mul(q, 2.5));
-  const Fi = pt(jfi, -OV), Fo = pt(jfo, W[jfo] + OV), fd = unit(sub(Fo, Fi));
+  const tip = add(O[0], mul(e, 8.3), mul(q, 3.5)), swIn = add(I[0], mul(e, -OVI), mul(q, 2.5));
+  const Fi = pt(jfi, -OVI), Fo = pt(jfo, W[jfo] + OV), fd = unit(sub(Fo, Fi));
   let fn = [fd[1], -fd[0]]; if (dot(sub(tip, Fi), fn) < 0) fn = mul(fn, -1);                   // across the fold line, toward the tip
   const slope = TIP / dot(sub(tip, Fi), fn), top = p => H + slope * Math.max(0, dot(sub(p, Fi), fn));
   const ovOut = j => OV + 5.4 * (1 - j / jfo);                                                 // overhang beyond the convex face, widest at the west end
   // dF[j]: how far across cross-section j the flat canopy reaches (the fold line west of jfo, the north edge east of it)
-  const dF = I.map((p, j) => j <= jfi ? -OV : j < jfo ? -dot(sub(p, Fi), fn) / dot(X[j], fn) : W[j] + OV);
-  v.frame(0, 0, 0);
+  const dF = I.map((p, j) => j <= jfi ? -OVI : j < jfo ? -dot(sub(p, Fi), fn) / dot(X[j], fn) : W[j] + OV);
+  // bays whose flat canopy is deep enough carry the row of openings; the last bay before the east end is solid
+  const holed = j => j >= jfi && j < NB - 1 && Math.min(dF[j], dF[j + 1]) > D2 + 1.2;
+  v.frame(0, 0, 0); c.frame(0, 0, 0);
   {
     const secs = [[swIn, tip]];
     for (let j = 0; j <= jfo; j++) secs.push([pt(j, dF[j]), j < jfo ? pt(j, W[j] + ovOut(j)) : Fo]);
@@ -295,6 +335,7 @@ export function build(item, ctx) {
     for (let s = 0; s < secs.length - 1; s++) {
       const [a0, b0] = secs[s], [a1, b1] = secs[s + 1], ring = [a0, a1, b1, b0];
       face(v, 'roofGrey', ring.map(p => P3(p, top(p))), UP); face(v, m.white, ring.map(p => P3(p, top(p) - WTH)), DOWN);
+      face(c, 'generic', ring.map(p => P3(p, top(p))), UP);                                    // collider: the tilted plane itself
       const outward = sub(mix(b0, b1, 0.5), mix(a0, a1, 0.5));
       edge(b0, b1, outward); if (s <= jfi) edge(a0, a1, mul(outward, -1));
     }
@@ -302,35 +343,40 @@ export function build(item, ctx) {
     // very tall slender columns from the ground to the tilted roof (collide), and shorter posts on the convex parapet
     const cols = [add(I[0], mul(q, 0.55), mul(e, -0.55)), add(O[0], mul(e, -(GX + 0.45)), mul(q, 0.6)), add(O[0], mul(e, 0.65), mul(q, 0.6)), add(O[0], mul(e, 5.4), mul(q, 1.2))];
     for (const j of [2, 4, 6]) if (j < jfo) cols.push(pt(j, W[j] + ovOut(j) - 0.7));
-    c.frame(0, 0, 0);
     for (const p of cols) { v.cyl(m.white, p[0], 0, p[1], 0.3, top(p) - WTH, 14, false); c.box('generic', p[0], 3, p[1], 0.6, 6, 0.6); }
     for (let j = jfi + 3; j < jfo; j += 3) { const p = pt(j, W[j] - 0.1); v.box(m.white, p[0], (parapet + top(p) - WTH) / 2, p[1], 0.45, top(p) - WTH - parapet, 0.45); }
   }
 
-  // ---------- flat canopy east of the fold line: slab with a row of openings, white edge, cross beams and posts ----------
+  // ---------- flat canopy east of the fold line: solid strip, row of openings, solid strip; white edges, beams, columns ----------
   for (let j = jfi; j < NB; j++) {
-    for (const [d0, d1] of (j < jfo ? [[-OV, null]] : [[-OV, D1], [D2, null]])) {              // null: out to the fold line or the north edge
+    for (const [d0, d1] of (holed(j) ? [[-OVI, D1], [D2, null]] : [[-OVI, null]])) {            // null: out to the fold line or the convex edge
       const ring = [pt(j, d0), pt(j + 1, d0), pt(j + 1, d1 ?? dF[j + 1]), pt(j, d1 ?? dF[j])];
       face(v, 'roofGrey', ring.map(p => P3(p, H)), UP); face(v, m.white, ring.map(p => P3(p, H - SLAB)), DOWN);
     }
   }
   for (let j = jfi; j < NB; j++) {
-    let L = along(v, pt(j, -OV), pt(j + 1, -OV)); v.slab(m.white, 0, beamY, -0.16, L, FASCIA + 0.05, 0.16, 'EW');                  // south edge
-    if (j < jfo) continue;
-    L = along(v, pt(j + 1, W[j + 1] + OV), pt(j, W[j] + OV)); v.slab(m.white, 0, beamY, -0.16, L, FASCIA + 0.05, 0.16, 'EW');      // north edge
-    for (const d of [D1, D2]) { L = along(v, pt(j, d), pt(j + 1, d)); v.slab(m.white, 0, H - SLAB, -0.08, L, SLAB + 0.2, 0.16, 'EW'); }   // rims of the openings
+    let L = along(v, pt(j, -OVI), pt(j + 1, -OVI)); v.slab(m.white, 0, beamY, -0.16, L, FASCIA + 0.05, 0.16, 'EW');                // concave edge
+    if (j >= jfo) { L = along(v, pt(j + 1, W[j + 1] + OV), pt(j, W[j] + OV)); v.slab(m.white, 0, beamY, -0.16, L, FASCIA + 0.05, 0.16, 'EW'); }   // convex edge
+    if (!holed(j)) continue;
+    L = along(v, pt(j, D1), pt(j + 1, D1)); v.slab(m.white, 0, H - SLAB, -0.08, L, SLAB + 0.2, 0.16, 'EW');                         // rim on the concave side
+    L = along(v, pt(j, D2), pt(j + 1, D2)); v.slab(m.white, 0, beamY + 0.2, -0.3, L, FASCIA, 0.3, 'EW');                            // deep beam on the far side (frames 16-18)
   }
-  { const L = along(v, pt(NB, -OV), pt(NB, W[NB] + OV)); v.slab(m.white, 0, beamY, -0.16, L, FASCIA + 0.05, 0.16); }                // east edge
+  { const L = along(v, pt(NB, -OVI), pt(NB, W[NB] + OV)); v.slab(m.white, 0, beamY, -0.16, L, FASCIA + 0.05, 0.16); }               // east edge
   for (let j = jfi; j <= NB; j++) {
-    if (!(j === NB || j === jfo || ((j - jfi) % 3 === 0 && NB - j >= 2))) continue;
-    const full = j >= jfo, dEnd = dF[j], z = j === NB ? -0.3 : 0;                                // the last frame stands just inside the east end wall
+    const k = (j - jfi) / STN, main = j === NB || j === jfo || (Number.isInteger(k) && NB - j >= 2);
+    const inRow = holed(j - 1) || holed(j), rowEnd = holed(j - 1) !== holed(j);
+    if (!main && !rowEnd) continue;
+    const dEnd = dF[j], z = j === NB ? -0.45 : 0, bw = main ? 0.36 : 0.16;                      // the last frame stands just inside the east end wall
     along(v, I[j], O[j]);                                                                       // local x = distance in from the concave face
-    if (dEnd > 0.5) v.slab(m.white, -OV, beamY, z - 0.18, dEnd + OV, FASCIA - SLAB, 0.36, 'U');   // cross beam under the slab
-    if (full) v.slab(m.white, D1, H - SLAB, z - 0.18, D2 - D1, SLAB + 0.2, 0.36, 'D');            // and across the row of openings
-    v.box(m.white, 0.08, (parapet + 0.09 + beamY) / 2, z, 0.45, beamY - parapet - 0.09, 0.45, 'UD');                               // post on the south parapet
+    if (inRow) v.slab(m.white, D1, H - SLAB, z - bw / 2, D2 - D1, SLAB + 0.2, bw, 'D');         // beam across the row of openings, or its end rim
+    if (!main) continue;
+    if (dEnd > 0.5) v.slab(m.white, -OVI, beamY, z - 0.18, dEnd + OVI, FASCIA - SLAB, 0.36, 'U');   // cross beam under the slab
+    if (!(j === NB || j === jfo || COLS.includes(k % 5))) continue;
+    const cp = pt(j, COL_D), full = j >= jfo;
+    v.cyl(m.white, COL_D, deck, z, COL_R, Math.max(H - SLAB, top(cp) - WTH) - deck, 12, false);  // round column behind the concave parapet
     if (full) {
-      v.box(m.white, W[j] - 0.08, (parapet + 0.09 + beamY) / 2, z, 0.45, beamY - parapet - 0.09, 0.45, 'UD');                      // post on the north parapet
-      v.box(m.white, D2 + 0.08, (deck + beamY) / 2, z, 0.35, beamY - deck, 0.35, 'UD');                                             // post inside the garden
+      v.box(m.white, W[j] - 0.08, (parapet + 0.09 + beamY) / 2, z, 0.45, beamY - parapet - 0.09, 0.45, 'UD');                      // post on the convex parapet
+      v.box(m.white, D2 + 0.15, (deck + beamY) / 2, z, 0.35, beamY - deck, 0.35, 'UD');                                             // post inside the garden, under the deep beam
     }
   }
 
@@ -346,13 +392,15 @@ export function build(item, ctx) {
     const n = 1 + (rnd() < 0.5 ? 1 : 0) + (rnd() < 0.25 ? 1 : 0), wmin = Math.min(W[j], W[j + 1]);
     for (let i = 0; i < n; i++) {
       const f = 0.2 + rnd() * 0.6, d = 1.0 + rnd() * (wmin - 2.0), p = mix(pt(j, d), pt(j + 1, d), f);
-      const open = j >= jfo && d > D1 + 0.9 && d < D2 - 0.9, shrub = !open && rnd() < 0.3;
+      const open = holed(j) && d > D1 + 0.9 && d < D2 - 0.9, shrub = !open && rnd() < 0.3;
       tree(v, p[0], p[1], shrub ? 0.9 + rnd() * 0.6 : open ? 4.6 + rnd() * 1.6 : 2.0 + rnd() * 1.8, deck);   // only trees under an opening grow past the canopy
     }
   }
 
-  // ---------- colliders: one box per bay up to the parapet, and the west end following its recess ----------
-  for (let j = 1; j < NB; j++) { const L = along(c, I[j], I[j + 1]), w = Math.max(W[j], W[j + 1]); c.slab('generic', -0.2, 0, -w, L + 0.4, parapet, w + PROUD); }
+  // ---------- colliders: the flat canopy as one plate (it also closes the openings), one box per bay up to it, the west end following its recess ----------
+  c.frame(0, 0, 0);
+  for (let j = jfi; j < NB; j++) face(c, 'generic', [pt(j, -OVI), pt(j + 1, -OVI), pt(j + 1, dF[j + 1]), pt(j, dF[j])].map(p => P3(p, H)), UP);
+  for (let j = 1; j < NB; j++) { const L = along(c, I[j], I[j + 1]), w = Math.max(W[j], W[j + 1]); c.slab('generic', -0.35, 0, -w, L + 0.7, H - 0.03, w + PROUD); }   // overlapping, so the fan of boxes leaves no slit on the convex side
   along(c, O[0], I[0]);
   c.slab('generic', -0.1, 0, -GD, GX + 0.2, parapet, GD + 0.1).slab('generic', GX, 0, -GD, W0 - GX + PROUD, parapet, GD - RECESS).slab('generic', W0 - T, 0, -RECESS, T + PROUD, parapet, RECESS);
 

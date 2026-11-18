@@ -214,7 +214,7 @@
    "confidence": "seen in satellite only",
    "accuracyPx": 6,
    "measuredBy": "main session, gridded 2x crops",
-   "notes": "SECOND READING, NOT YET MODELLED: eight cross-sections show the same roof-level section everywhere: solid roof 32 to 33 px deep from the outer (north-west) parapet, a row of dark rectangular openings about 19 px deep crossed by white beams, then a continuous pale strip 15 to 16 px deep with a bright line on its inner (concave) side; 68 to 72 px in all. The stored band (50 px) ends at the inner side of the openings and leaves the inner strip out; the outer edge agrees within 3 px. What stands under the inner strip is not visible. | Concave side faces south. Row of dark rectangular openings along the roof. Chord about 188 m. Recorded as a hand-traced centreline because the two ends are not symmetric and no circle fit was made. Whether it belongs to the school is not confirmed.",
+   "notes": "SECOND READING, MODELLED IN THE BUILDER (src/world/builders/arc.js adds 4.3 m of canopy and 3.3 m of building beyond this band's concave edge as constants; if this band is ever widened to 70 px those constants must be reduced): eight cross-sections show the same roof-level section everywhere: solid roof 32 to 33 px deep from the outer (north-west) parapet, a row of dark rectangular openings about 19 px deep crossed by white beams, then a continuous pale strip 15 to 16 px deep with a bright line on its inner (concave) side; 68 to 72 px in all. The stored band (50 px) ends at the inner side of the openings and leaves the inner strip out; the outer edge agrees within 3 px. What stands under the inner strip is not visible. | Concave side faces south. Row of dark rectangular openings along the roof. Chord about 188 m. Recorded as a hand-traced centreline because the two ends are not symmetric and no circle fit was made. Whether it belongs to the school is not confirmed.",
    "bandPx": {
     "centreline": [
      [
@@ -588,13 +588,13 @@
    "surface": "roof",
    "style": "walkway",
    "height": {
-    "metres": 4.0,
-    "basis": "height and construction not established; single-storey covered walkway assumed"
+    "metres": 7.8,
+    "basis": "elevated deck with parapets on columns, meeting the south slab at its third-storey floor in the 2018 frames (plaza agent); shading on the mosaic gives 7 to 8 m for its top (tower-location agent). The first value, 4.0 m, took it for a low canopy"
    },
    "confidence": "confirmed in video",
    "accuracyPx": 5,
    "measuredBy": "measurement agent (east-slabs), single reading, recheck pending",
-   "notes": "Long narrow strip about 12 px (3.3 m) wide and 205 px (56 m) long. NOT exactly north-south: it runs NNE-SSW (about 10 degrees off, parallel to the canal road), passing between the block north-east of the canopy (east edge x 1444) and the north slab (west edge 1461), then between the tower/glass block and the south slab's west end. Bright white where sunlit (y 1145-1230), grey where shaded by the slabs (y 1088-1145 and 1230-1292). Low structure; frames 7-8 show a white elevated walkway with parapets leaving the south slab's north-west corner toward the north, which I take to be this. Height, and whether it is roofed or an open deck, not established. | NOT YET APPLIED: the tower-location agent calibrated the sun on the mosaic (azimuth about 142.5 degrees, elevation 47 to 52 degrees) and finds that the shading beside both slabs puts this roof at about 7 to 8 m, not the assumed 4 m; the 2018 frames show an elevated white walkway with parapets leaving the slab's north-west corner.",
+   "notes": "Long narrow strip about 12 px (3.3 m) wide and 205 px (56 m) long. NOT exactly north-south: it runs NNE-SSW (about 10 degrees off, parallel to the canal road), passing between the block north-east of the canopy (east edge x 1444) and the north slab (west edge 1461), then between the tower/glass block and the south slab's west end. Bright white where sunlit (y 1145-1230), grey where shaded by the slabs (y 1088-1145 and 1230-1292). Low structure; frames 7-8 show a white elevated walkway with parapets leaving the south slab's north-west corner toward the north, which I take to be this. Height, and whether it is roofed or an open deck, not established. | APPLIED (height now 7.8 m, which also moves the ground position about 2 m north): the tower-location agent calibrated the sun on the mosaic (azimuth about 142.5 degrees, elevation 47 to 52 degrees) and finds that the shading beside both slabs puts this roof at about 7 to 8 m, not the assumed 4 m; the 2018 frames show an elevated white walkway with parapets leaving the slab's north-west corner.",
    "polygonPx": [
     [
      1457,
@@ -678,8 +678,8 @@
    "surface": "roof",
    "style": "walkway",
    "height": {
-    "metres": 4.0,
-    "basis": "not established; assumed as the walkway"
+    "metres": 7.8,
+    "basis": "elevated deck with parapets on columns, meeting the south slab at its third-storey floor in the 2018 frames (plaza agent); shading on the mosaic gives 7 to 8 m for its top (tower-location agent). The first value, 4.0 m, took it for a low canopy"
    },
    "confidence": "seen in satellite only",
    "accuracyPx": 3,

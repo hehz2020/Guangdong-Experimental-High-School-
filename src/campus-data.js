@@ -328,7 +328,7 @@ export const CAMPUS = {
       "measuredBy": "main session, gridded 2x crops",
       "positionAccuracyM": 2.3,
       "correctedForObliqueView": true,
-      "notes": "SECOND READING, NOT YET MODELLED: eight cross-sections show the same roof-level section everywhere: solid roof 32 to 33 px deep from the outer (north-west) parapet, a row of dark rectangular openings about 19 px deep crossed by white beams, then a continuous pale strip 15 to 16 px deep with a bright line on its inner (concave) side; 68 to 72 px in all. The stored band (50 px) ends at the inner side of the openings and leaves the inner strip out; the outer edge agrees within 3 px. What stands under the inner strip is not visible. | Concave side faces south. Row of dark rectangular openings along the roof. Chord about 188 m. Recorded as a hand-traced centreline because the two ends are not symmetric and no circle fit was made. Whether it belongs to the school is not confirmed.",
+      "notes": "SECOND READING, MODELLED IN THE BUILDER (src/world/builders/arc.js adds 4.3 m of canopy and 3.3 m of building beyond this band's concave edge as constants; if this band is ever widened to 70 px those constants must be reduced): eight cross-sections show the same roof-level section everywhere: solid roof 32 to 33 px deep from the outer (north-west) parapet, a row of dark rectangular openings about 19 px deep crossed by white beams, then a continuous pale strip 15 to 16 px deep with a bright line on its inner (concave) side; 68 to 72 px in all. The stored band (50 px) ends at the inner side of the openings and leaves the inner strip out; the outer edge agrees within 3 px. What stands under the inner strip is not visible. | Concave side faces south. Row of dark rectangular openings along the roof. Chord about 188 m. Recorded as a hand-traced centreline because the two ends are not symmetric and no circle fit was made. Whether it belongs to the school is not confirmed.",
       "shape": "polygon",
       "points": [
         [
@@ -826,88 +826,88 @@ export const CAMPUS = {
       "name": "North-south link walkway along the west ends of both slabs",
       "kind": "link-corridor",
       "style": "walkway",
-      "height": 4,
-      "heightBasis": "height and construction not established; single-storey covered walkway assumed",
+      "height": 7.8,
+      "heightBasis": "elevated deck with parapets on columns, meeting the south slab at its third-storey floor in the 2018 frames (plaza agent); shading on the mosaic gives 7 to 8 m for its top (tower-location agent). The first value, 4.0 m, took it for a low canopy",
       "solid": false,
       "walkUnder": true,
       "confidence": "confirmed in video",
       "measuredBy": "measurement agent (east-slabs), single reading, recheck pending",
-      "positionAccuracyM": 1.4,
+      "positionAccuracyM": 1.5,
       "correctedForObliqueView": true,
-      "notes": "Long narrow strip about 12 px (3.3 m) wide and 205 px (56 m) long. NOT exactly north-south: it runs NNE-SSW (about 10 degrees off, parallel to the canal road), passing between the block north-east of the canopy (east edge x 1444) and the north slab (west edge 1461), then between the tower/glass block and the south slab's west end. Bright white where sunlit (y 1145-1230), grey where shaded by the slabs (y 1088-1145 and 1230-1292). Low structure; frames 7-8 show a white elevated walkway with parapets leaving the south slab's north-west corner toward the north, which I take to be this. Height, and whether it is roofed or an open deck, not established. | NOT YET APPLIED: the tower-location agent calibrated the sun on the mosaic (azimuth about 142.5 degrees, elevation 47 to 52 degrees) and finds that the shading beside both slabs puts this roof at about 7 to 8 m, not the assumed 4 m; the 2018 frames show an elevated white walkway with parapets leaving the slab's north-west corner.",
+      "notes": "Long narrow strip about 12 px (3.3 m) wide and 205 px (56 m) long. NOT exactly north-south: it runs NNE-SSW (about 10 degrees off, parallel to the canal road), passing between the block north-east of the canopy (east edge x 1444) and the north slab (west edge 1461), then between the tower/glass block and the south slab's west end. Bright white where sunlit (y 1145-1230), grey where shaded by the slabs (y 1088-1145 and 1230-1292). Low structure; frames 7-8 show a white elevated walkway with parapets leaving the south slab's north-west corner toward the north, which I take to be this. Height, and whether it is roofed or an open deck, not established. | APPLIED (height now 7.8 m, which also moves the ground position about 2 m north): the tower-location agent calibrated the sun on the mosaic (azimuth about 142.5 degrees, elevation 47 to 52 degrees) and finds that the shading beside both slabs puts this roof at about 7 to 8 m, not the assumed 4 m; the 2018 frames show an elevated white walkway with parapets leaving the slab's north-west corner.",
       "shape": "polygon",
       "points": [
         [
-          207.3,
-          -123.9
-        ],
-        [
-          206.2,
-          -117
-        ],
-        [
-          204.2,
-          -109.3
-        ],
-        [
-          203.4,
-          -101.4
-        ],
-        [
-          202.3,
-          -93.1
-        ],
-        [
-          201.5,
-          -86.3
-        ],
-        [
-          200.4,
-          -79.4
-        ],
-        [
-          198.7,
-          -73.9
-        ],
-        [
-          198.5,
-          -67.8
-        ],
-        [
-          201.8,
-          -67.8
-        ],
-        [
-          202,
-          -73.9
-        ],
-        [
-          203.7,
-          -79.4
-        ],
-        [
-          204.8,
-          -86.3
-        ],
-        [
-          205.6,
-          -93.1
+          207.5,
+          -126
         ],
         [
           206.4,
-          -101.4
+          -119.1
         ],
         [
-          207.5,
-          -109.3
+          204.5,
+          -111.4
         ],
         [
-          209.7,
-          -117
+          203.7,
+          -103.4
         ],
         [
-          210.8,
-          -123.9
+          202.6,
+          -95.2
+        ],
+        [
+          201.7,
+          -88.3
+        ],
+        [
+          200.6,
+          -81.5
+        ],
+        [
+          199,
+          -76
+        ],
+        [
+          198.7,
+          -69.9
+        ],
+        [
+          202,
+          -69.9
+        ],
+        [
+          202.3,
+          -76
+        ],
+        [
+          203.9,
+          -81.5
+        ],
+        [
+          205,
+          -88.3
+        ],
+        [
+          205.9,
+          -95.2
+        ],
+        [
+          206.7,
+          -103.4
+        ],
+        [
+          207.8,
+          -111.4
+        ],
+        [
+          210,
+          -119.1
+        ],
+        [
+          211.1,
+          -126
         ]
       ]
     },
@@ -916,32 +916,32 @@ export const CAMPUS = {
       "name": "Small white roof at the north end of the link walkway",
       "kind": "link-corridor",
       "style": "walkway",
-      "height": 4,
-      "heightBasis": "not established; assumed as the walkway",
+      "height": 7.8,
+      "heightBasis": "elevated deck with parapets on columns, meeting the south slab at its third-storey floor in the 2018 frames (plaza agent); shading on the mosaic gives 7 to 8 m for its top (tower-location agent). The first value, 4.0 m, took it for a low canopy",
       "solid": false,
       "walkUnder": true,
       "confidence": "seen in satellite only",
       "measuredBy": "measurement agent (east-slabs), single reading, recheck pending",
-      "positionAccuracyM": 0.9,
+      "positionAccuracyM": 1,
       "correctedForObliqueView": true,
       "notes": "White rectangular roof with parapet outline, about 13 x 18 px. North of it (y 1035-1070) tree crowns hide whether the walkway continues to the arc building.",
       "shape": "polygon",
       "points": [
         [
-          208.4,
-          -128.8
+          208.6,
+          -130.9
         ],
         [
-          211.9,
-          -128.8
+          212.2,
+          -130.9
         ],
         [
-          210.8,
-          -123.9
+          211.1,
+          -126
         ],
         [
-          207.3,
-          -123.9
+          207.5,
+          -126
         ]
       ]
     },

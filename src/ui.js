@@ -1,6 +1,7 @@
 // Interface layer: touch controls for phones, a minimap, a time-of-day slider and a help panel.
 // Everything is created here (DOM and CSS); index.html only provides the start panel (#start) and the notice (#notice).
 import { itemPolygon, stadium } from './kit.js';
+import { FOOTPRINTS } from './world/extras/context.js';
 
 const CSS = `
 .hud{position:fixed;z-index:5;font-family:system-ui,"PingFang SC","Microsoft YaHei",sans-serif;color:#eef2f6;user-select:none;-webkit-user-select:none}
@@ -99,7 +100,7 @@ export function initUI({ player, lighting, campus, camera, renderer, view }) {
 
   // --- minimap ---
   const mapBox = el('div', 'hud-map'), cv = document.createElement('canvas'); mapBox.appendChild(cv);
-  const B = { w: -115, e: 320, n: -245, s: 145 }, S = 150 / (B.e - B.w); cv.width = 150; cv.height = Math.round((B.s - B.n) * S);
+  const B = { w: -115, e: 320, n: -290, s: 245 }, S = 150 / (B.e - B.w); cv.width = 150; cv.height = Math.round((B.s - B.n) * S);
   const g = cv.getContext('2d'), X = x => (x - B.w) * S, Z = z => (z - B.n) * S;
   const base = document.createElement('canvas'); base.width = cv.width; base.height = cv.height;
   (() => {
@@ -107,6 +108,7 @@ export function initUI({ player, lighting, campus, camera, renderer, view }) {
     const poly = (pts, fill) => { b.beginPath(); pts.forEach(([x, z], i) => (i ? b.lineTo(X(x), Z(z)) : b.moveTo(X(x), Z(z)))); b.closePath(); b.fillStyle = fill; b.fill(); };
     const t = campus.track; poly(stadium(t.cx, t.cz, t.straight, t.outerRadius), '#a5483a'); poly(stadium(t.cx, t.cz, t.straight, t.innerRadius), '#5a9a4c');
     if (campus.courts) { const k = campus.courts.block; poly([[k.w, k.n], [k.e, k.n], [k.e, k.s], [k.w, k.s]], '#3d7f5c'); }
+    for (const q of FOOTPRINTS) poly(q, '#a9a79f');                       // surrounding buildings (context.js), a shade darker
     for (const it of campus.items) poly(itemPolygon(it), it.height <= 0 ? (it.style === 'water' ? '#3f6a78' : '#77786f') : '#d8d5cc');
   })();
   let tick = 0;

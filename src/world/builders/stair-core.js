@@ -16,10 +16,9 @@
 //     - a flat white roof slab that overhangs; a tall thin white fin beside the tower where it meets the corridors,
 //       rising well above the roof (the reference calls it "fin/portal frame"; one fin is drawn).
 //
-// WORKAROUND, to be settled in the data: the measured outline of glass-stair-block (6.1 m east-west x 3.6 m) overlaps the
-//   clock tower's outline by 2.7 m, so three quarters of it would be buried in the shaft. That outline is probably the white
-//   parapet box on the roof. When the two overlap, this builder keeps the measured east-west extent but places the core
-//   against the tower's north face and makes it 7 m long, as frame 10 shows. Its collider moves with it.
+// The data outline of glass-stair-block used to be only its roof element and overlapped the clock tower; in that case this
+//   builder placed the core against the tower's north face. The data now holds the block's real extent (from a resected 2018
+//   frame), so that branch no longer triggers; it stays as a guard.
 //
 // ASSUMED (not visible in any reference; kept plain):
 //   - glass-stair-block: the north and west faces (glazed like the east face), the white south bay being a solid shaft,

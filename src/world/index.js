@@ -28,6 +28,7 @@ export const BUILDERS = {
 
 // Modules that add things not tied to one data item (track furniture, courts, landscape...). Each exports build(ctx).
 export const EXTRAS = [
+  './extras/context.js',
   './extras/landscape.js',
   './extras/track-field.js',
   './extras/courts.js',
