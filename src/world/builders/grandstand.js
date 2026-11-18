@@ -413,7 +413,7 @@ export function build(item, ctx) {
     c.frame(cx, cz, -TH).box('generic', (r0 + Ri) / 2, yLook + BARRIER / 2, -0.04, Ri - r0 + 0.1, BARRIER, 0.08); c.frame(0, 0, 0);       // guard across the head of the well
     for (const h of [1.0, 0.55]) v.bar(steel, pt(r0 - 0.04, TH, yLook + h), pt(Ri - 0.05, TH, yLook + h), h > 0.6 ? 0.045 : 0.03);
     for (const rho of [r0 - 0.04, (r0 + Ri) / 2, Ri - 0.05]) v.bar(steel, pt(rho, TH, yLook), pt(rho, TH, yLook + 1.0), 0.04);
-    { const f = fine.at(cz); f.frame(cx, cz, 0, yLook); for (let i = 0; i < 6; i++) { const a = i * Math.PI / 3; f.frame(cx, cz, a, yLook).box(M.timber(), 0.75, 0.43, 0, 0.5, 0.05, 0.86).box(dark, 0.75, 0.2, 0, 0.42, 0.4, 0.05); } f.frame(0, 0, 0); }   // round bench in the middle of the lookout
+    fine.at(cz).cyl(dark, cx, yLook, cz, 0.62, 0.4, 20, false).cyl(M.timber(), cx, yLook + 0.4, cz, 0.98, 0.07, 28);                           // round bench in the middle of the lookout
     c.cyl('generic', cx, yLook, cz, 1.0, 0.45, 12);
   }
 
