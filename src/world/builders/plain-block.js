@@ -52,10 +52,13 @@ export function lm(name) {
   return (local[name] = m);
 }
 
-// All plain-coloured, untextured, opaque parts of a group become ONE mesh with vertex colours (same idea as teaching-slab.js).
-let flatMat = null;
-export function mergeFlat(group, castShadow) {
-  const take = group.children.filter(m => { const t = m.material; return m.isMesh && !t.map && !t.transparent && !/glass/i.test(t.name) && t.emissiveIntensity * (t.emissive.r + t.emissive.g + t.emissive.b) < 0.3; });
+// Draw-call savers (same idea as teaching-slab.js): all plain-coloured, untextured, opaque parts of a group become ONE
+// mesh with vertex colours, and all opaque window glass becomes one more (named so that it still glows at night).
+let flatMat = null, glassMat = null;
+const isFlat = t => !t.map && !t.transparent && !/glass/i.test(t.name) && t.emissiveIntensity * (t.emissive.r + t.emissive.g + t.emissive.b) < 0.3;
+const isPane = t => !t.map && !t.transparent && /glass/i.test(t.name);
+function mergeBy(group, pick, material, castShadow) {
+  const take = group.children.filter(m => m.isMesh && pick(m.material));
   if (take.length < 2) return group;
   let nv = 0, ni = 0; for (const m of take) { nv += m.geometry.attributes.position.count; ni += m.geometry.index.count; }
   const pos = new Float32Array(nv * 3), nor = new Float32Array(nv * 3), col = new Float32Array(nv * 3), idx = new Uint32Array(ni);
@@ -70,9 +73,13 @@ export function mergeFlat(group, castShadow) {
   const g = new THREE.BufferGeometry();
   g.setAttribute('position', new THREE.BufferAttribute(pos, 3)); g.setAttribute('normal', new THREE.BufferAttribute(nor, 3)); g.setAttribute('color', new THREE.BufferAttribute(col, 3));
   g.setIndex(new THREE.BufferAttribute(idx, 1));
-  if (!flatMat) { flatMat = new THREE.MeshStandardMaterial({ vertexColors: true, roughness: 0.8, metalness: 0.03 }); flatMat.name = 'ends-flat'; }
-  const mesh = new THREE.Mesh(g, flatMat); mesh.castShadow = castShadow; mesh.receiveShadow = true; group.add(mesh);
+  const mesh = new THREE.Mesh(g, material); mesh.castShadow = castShadow; mesh.receiveShadow = true; group.add(mesh);
   return group;
+}
+export function mergeFlat(group, castShadow) {
+  if (!flatMat) { flatMat = new THREE.MeshStandardMaterial({ vertexColors: true, roughness: 0.8, metalness: 0.03 }); flatMat.name = 'ends-flat'; }
+  if (!glassMat) { glassMat = new THREE.MeshStandardMaterial({ vertexColors: true, roughness: 0.1, metalness: 0.35 }); glassMat.name = 'ends-glass-panes'; }
+  return mergeBy(mergeBy(group, isFlat, flatMat, castShadow), isPane, glassMat, false);
 }
 
 /** Three batches per item: v = always drawn, d = small things shown only near the viewer, c = invisible colliders. */
@@ -180,7 +187,7 @@ export function door(S, put, uc, { w = 1.5, h = 2.2, canopy = 1.0, y0 = 0 } = {}
   if (canopy) put(S.v, lm('cope'), uc - w / 2 - 0.5, uc + w / 2 + 0.5, y1 + 0.35, y1 + 0.5, 0, canopy, 'FLRUD');
   put(S.d, lm('dark'), uc - 0.012, uc + 0.012, y0, y1, 0.07, 0.074, 'F');
   for (const s of [-0.16, 0.12]) put(S.d, lm('alu'), uc + s, uc + s + 0.04, y0 + 0.95, y0 + 1.25, 0.07, 0.12, 'FLRUD');
-  for (const s of [-1, 1]) put(S.d, lm('glassWin'), uc + s * w / 4 - 0.14, uc + s * w / 4 + 0.14, y0 + 1.25, y0 + 1.85, 0.07, 0.075, 'F');   // vision panels
+  for (const s of [-1, 1]) put(S.d, lm('dark'), uc + s * w / 4 - 0.14, uc + s * w / 4 + 0.14, y0 + 1.25, y0 + 1.85, 0.07, 0.075, 'F');   // vision panels
   put(S.d, lm('concrete'), uc - w / 2 - 0.3, uc + w / 2 + 0.3, y0, y0 + 0.1, 0, 0.8, 'FLRU');
   lamp(S, put, uc, y1 + 0.22);
 }
@@ -305,7 +312,7 @@ function canopyBlock(S, item, b, H, ctx) {
   const WH = lm('white'), cl = (v, lo, hi) => Math.max(lo, Math.min(hi, v));
   for (const [x, z] of [[192.2, -120.5], [197.7, -120.5], [198.5, -112.2]]) {
     const cx = cl(x, r.w + 1.4, r.e - 1.4), cz = cl(z, r.n + 1.4, r.s - 1.4);
-    F(S.v, WH, cx - 0.8, yr + 0.1, cz - 0.8, 1.6, 1.0, 1.6, 'NSEWU'); F(S.v, lm('dark'), cx - 0.9, yr, cz - 0.9, 1.8, 0.1, 1.8, 'NSEW');
+    F(S.v, WH, cx - 0.8, yr + 0.1, cz - 0.8, 1.6, 1.0, 1.6, 'NSEWU'); F(S.v, lm('dark'), cx - 0.9, yr, cz - 0.9, 1.8, 0.1, 1.8, 'NSEW'); hit(S, cx - 0.8, yr, cz - 0.8, 1.6, 1.1, 1.6);
   }
   F(S.d, lm('roofPale'), r.w + 3.2, yr + 0.05, r.n + 2.3, 4.6, 0.3, 0.4, 'NSEWU'); F(S.d, lm('dark'), r.w + 1, yr, r.n + sz * 0.6, r.e - r.w - 2, 0.06, 0.07, 'NSU');
 }
@@ -334,7 +341,7 @@ function dormLink(S, item, b, H, ctx) {
     pipe(S, put, a + 0.3, yr);
   }
   const [a, c] = span(r, 'W'); door(S, P.W, (a + c) / 2, { w: 1.4 }); punched(S, P.W, a + 0.6, c - 0.6, 1, FH, { cols: 2, w: 0.7, h: 0.6, sill: 1.5, n: 0 });
-  F(S.v, lm('white'), b.cx - 1.0, yr, b.cz - 0.9, 2.0, 0.9, 1.8, 'NSEWU');       // one roof unit
+  F(S.v, lm('white'), r.w + 1.0, yr, r.n + 1.0, 2.0, 0.9, 1.8, 'NSEWU'); hit(S, r.w + 1.0, yr, r.n + 1.0, 2.0, 0.9, 1.8);   // one roof unit
 }
 
 // Any other item of this style: a white block with punched windows.

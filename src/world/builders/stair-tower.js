@@ -121,7 +121,7 @@ export function build(item, ctx) {
   holedSlab(S.v, lm('roof'), R, ocx, ocz, rad, yR0, H);
   F(S.v, CP, R.w, yR0, R.n - 0.02, R.e - R.w + 0.02, 0.35, 0.02, 'NUD'); F(S.v, CP, R.e, yR0, R.n, 0.02, 0.35, R.s - R.n, 'EUD'); F(S.v, CP, R.w, yR0, R.s, R.e - R.w + 0.02, 0.35, 0.02, 'SUD');
   F(S.v, CP, R.w - 0.02, yR0, R.n, 0.02, 0.35, R.s - R.n, 'W');
-  if (!S.low) for (let i = 0; i < 12; i++) { const a = i / 12 * Math.PI * 2; F(S.d, lm('dark'), ocx + Math.cos(a) * (rad + 0.12) - 0.04, H, ocz + Math.sin(a) * (rad + 0.12) - 0.04, 0.08, 0.03, 0.08, 'NSEWU'); }   // stains round the opening's kerb
+  F(S.d, lm('dark'), ocx - rad - 0.5, H, ocz + rad * 0.2, 0.5, 0.012, 0.9, 'U');                                  // a rain stain beside the opening
 
   // ---- south tower: stepped two-tier cap on the taller box, red pipes ----
   if (tall) {

@@ -42,7 +42,7 @@ export function build(item, ctx) {
   PS(S.v, lm('base'), r.w, r.e, 0, 0.45, 0, 0.03, 'FU');
   punched(S, PS, r.w + 0.8, r.e - 0.8, floors, FH, { cols: 3, w: 1.2, h: 1.3, sill: 1.1 });
   // ---- roof: one small white box (satellite image) ----
-  F(S.v, WH, r.w + 0.5, yr, b.cz - 0.6, 1.2, 0.8, 1.2, 'NSEWU');
+  F(S.v, WH, r.w + 0.5, yr, b.cz - 0.6, 1.2, 0.8, 1.2, 'NSEWU'); hit(S, r.w + 0.5, yr, b.cz - 0.6, 1.2, 0.8, 1.2);
 
   // ---- the box that carries the name: north face = the sign wall ----
   const d = 3.0, zb = r.n + d;

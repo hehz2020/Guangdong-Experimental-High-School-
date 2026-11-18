@@ -76,14 +76,14 @@ function annex(S, r, H, ctx) {
   for (const put of [PW, PE]) { put(S.v, lm('base'), zf + 0.25, r.s - 0.5, 0, 0.3, 0, 0.05, 'FU'); curtain(S, put, zf + 0.25, r.s - 0.5, 0.3, yT, FH / 2); }
   PS(S.v, lm('base'), r.w + 0.5, r.e - 0.5, 0, 0.3, 0, 0.05, 'FU'); curtain(S, PS, r.w + 0.5, r.e - 0.5, 0.3, yT, FH / 2);
   F(S.v, WH, r.w - 0.5, yT, r.n - 0.2, r.e - r.w + 1.0, 0.3, r.s - r.n + 0.7, 'NSEWUD');                              // overhanging white roof slab
-  F(S.v, WH, r.w - 0.9, 0, zf - 0.2, 1.15, H + 3.5, 0.45, 'NSEWU');                                                  // the tall fin
+  F(S.v, WH, r.w - 0.9, 0, zf - 0.5, 1.15, H + 3.5, 0.45, 'NSEWU');                                                  // the tall fin
   F(S.v, CO, r.w, 0, zf + 0.25, r.e - r.w, 0.03, r.s - zf - 0.25, 'U');
   const xs = r.w + 4.3;                                                                                             // stair next to the west face, floor plates east of it
   dogleg(S, { x0: r.w + 0.5, x1: xs, zA0: zf + 0.25, zA1: zf + 2.2, zB0: r.s - 2.2, zB1: r.s - 0.4, floors, FH });
   for (let k = 1; k <= floors; k++) F(S.v, CO, xs, k * FH - 0.15, zf + 0.25, r.e - 0.3 - xs, 0.15, r.s - 0.4 - zf - 0.25, 'UDWS');
   for (let k = 1; k <= floors; k++) F(S.d, lm('rail'), xs, k * FH + 0.95, zf + 2.2, 0.05, 0.05, r.s - 0.4 - zf - 2.2, 'EWUD');   // guard rail along the plates' edge
   door(S, PW, zf + 1.4, { w: 1.6, canopy: 1.0 });
-  hit(S, r.w, 0, r.n, r.e - r.w, H, r.s - r.n); hit(S, r.w - 0.9, 0, zf - 0.2, 0.9, 6, 0.45);
+  hit(S, r.w, 0, r.n, r.e - r.w, H, r.s - r.n); hit(S, r.w - 0.9, 0, zf - 0.5, 0.9, 6, 0.45);
   lamp(S, PS, r.w + 0.25, 2.6);
 }
 
