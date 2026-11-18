@@ -213,8 +213,8 @@ function materials() {
     // the same pane seen from outside (it mirrors the sky and glows after dusk) and from inside (clear)
     glassOut: G('glass-north', 0xffffff, 0.8), glassG: G('glass-ground', 0x8e969a, 0.88),
     glassIn: std('lite-inner', { color: 0xd6e6ea, roughness: 0.08, metalness: 0, transparent: true, opacity: 0.1, depthWrite: false }),
-    TZ: terrazzo('terrazzo', [201, 196, 182], 2.4, 2, 0.24), TR: terrazzo('terrazzo-step', [186, 181, 170], 1.6, 0, 0.36),
-    CT: pbr('tiles', [0xd9cdb4, 2, 1.2, 0.32], { envMapIntensity: 0.45 }), CB: pbr('tiles', [0x8d5f4d, 4, 0.72, 0.3], { envMapIntensity: 0.45 }), WT: pbr('tiles', [0xf3f4f0, 3, 0.6, 0.18], { envMapIntensity: 0.5 }), FT: pbr('tiles', [0xa9aba6, 2, 0.6, 0.5], { envMapIntensity: 0.4 }),
+    TZ: terrazzo('terrazzo', [212, 203, 181], 2.4, 2, 0.24), TR: terrazzo('terrazzo-step', [186, 181, 170], 1.6, 0, 0.36),
+    CT: pbr('tiles', [0xe2d3b2, 2, 1.2, 0.32], { envMapIntensity: 0.45 }), CB: pbr('tiles', [0x8d5f4d, 4, 0.72, 0.3], { envMapIntensity: 0.45 }), WT: pbr('tiles', [0xf3f4f0, 3, 0.6, 0.18], { envMapIntensity: 0.5 }), FT: pbr('tiles', [0xa9aba6, 2, 0.6, 0.5], { envMapIntensity: 0.4 }),
     ROOF: pbr('asphalt', [0x4a4c4e]), PINK: P('pink', 0xb89490, 0.9), WALK: pbr('paving', [0xbdb7ab, 0xa8a297, 2, 2, [1.0, 1.0], 31, false]),
     COP: pbr('concrete', [0xd4d1c8]), KERB: pbr('concrete', [0xa9a69e]), BED: pbr('hedge', [0x35532c]), HEDGE: pbr('hedge', [0x3f6b34]),
     SS: pbr('steel'), AL: keep(P('alu', 0xc6cacd, 0.36, 0.8)), BRASS: keep(P('brass', 0xb39a5c, 0.4, 0.85)), GLOSS: keep(P('gloss-dark', 0x101316, 0.12, 0.35)),
@@ -245,7 +245,7 @@ let skyLight = null;
 function followDaylight(renderer, scene) {
   if (!skyLight || skyLight.parent !== scene) skyLight = scene.children.find(o => o.isHemisphereLight) || null;
   const day = skyLight ? Math.min(1, Math.max(0, skyLight.intensity)) : 1, night = 1 - Math.min(1, Math.max(0, (day - 0.06) / 0.5));
-  MT.CE.emissiveIntensity = 0.16 + 0.5 * night; MT.PL.emissiveIntensity = 0.05 + 0.27 * night; MT.CO.emissiveIntensity = 0.03 + 0.25 * night; MT.FROST.emissiveIntensity = 0.06 + 0.34 * day;
+  MT.CE.emissiveIntensity = 0.16 + 0.38 * night; MT.PL.emissiveIntensity = 0.05 + 0.27 * night; MT.CO.emissiveIntensity = 0.03 + 0.25 * night; MT.FROST.emissiveIntensity = 0.06 + 0.34 * day;
 }
 
 // Draw-call saver: all plain-coloured, matt, opaque parts of a group become ONE mesh with vertex colours.
@@ -560,7 +560,7 @@ export function build(item, ctx) {
         }
       });
     }
-    for (const x of cols.slice(1, -1)) F(ex, W, x - 0.12, cy - 0.4, zc, 0.24, 0.4, zS - 0.25 - zc, 'EWD');                       // beams across the corridor
+    for (const x of cols.slice(1, -1)) F(ex, CE, x - 0.12, cy - 0.4, zc, 0.24, 0.4, zS - 0.25 - zc, 'EWD');                      // beams across the corridor, painted like the ceiling
     for (const xl of [(xW + x0) / 2, ...bays.map(b => (b.a + b.b) / 2)]) { ex.cyl(WH, xl, cy - 0.06, zl0, 0.2, 0.06, 12); ex.cyl(LAMP, xl, cy - 0.076, zl0, 0.165, 0.016, 12); }   // ceiling lamps
     // glazed-tile dado on the corridor side and the painted one inside, between the door openings
     let xs = x0 - 0.1;
