@@ -1,5 +1,5 @@
-// Furniture of the athletics field (the track surface itself is drawn by world/index.js): football goals, the long-jump
-// runway and sand pits beside the west straight, high-jump mats in the south D, a railing along the east straight, the
+// Things beside the athletics field (the track, the pitch, goals and field-event areas are in extras/athletics.js):
+// a railing along the east straight, the
 // retired fighter jet displayed outside the south-west bend (2022 sports-day frames 79-81) and the flag-raising platform.
 // ASSUMED: the jet's type and exact shape (a generic delta-wing jet about 15 m long), its heading (nose toward the
 // east-north-east as it appears in frame 81) and its position to within several metres (read off a video frame); the
@@ -12,14 +12,6 @@ export function build(ctx) {
   const t = ctx.campus.track, f = t.infield, R = t.outerRadius, v = new Batch(), c = new Batch();
   const jet = new THREE.MeshStandardMaterial({ color: 0xb9c0c4, roughness: 0.45, metalness: 0.35, side: THREE.DoubleSide });
   const sand = new THREE.MeshStandardMaterial({ color: 0xd9c9a0, roughness: 1 });
-  // football goals on the goal lines
-  for (const end of [-1, 1]) { const z = f.cz + end * (f.sizeZ / 2 - 2.2);
-    v.frame(f.cx, z).box('white', -3.66, 1.22, 0, 0.12, 2.44, 0.12).box('white', 3.66, 1.22, 0, 0.12, 2.44, 0.12).box('white', 0, 2.44, 0, 7.44, 0.12, 0.12).box('white', 0, 1.22, end * 1.6, 7.3, 0.03, 0.03); }
-  // long-jump runway with two sand pits, between the west straight and the stand
-  const lx = t.cx - R - 5.2;
-  v.frame(lx, t.cz).box('trackRed', 0, 0.035, 0, 1.4, 0.03, 46).box(sand, 0, 0.05, -27.5, 3, 0.06, 9).box(sand, 0, 0.05, 27.5, 3, 0.06, 9);
-  // high-jump mats in the south D
-  for (const dx of [-7, 7]) { v.frame(t.cx + dx, t.cz + t.straight / 2 + 14).box('seatBlue', 0, 0.35, 0, 5, 0.7, 3); c.frame(t.cx + dx, t.cz + t.straight / 2 + 14).box('generic', 0, 0.35, 0, 5, 0.7, 3); }
   // railing along the east straight (visual only, so it does not fence the player out)
   const railX = t.cx + R + 1.0;                                         // at the kerb: the road starts right beside the track here
   for (let z = -40; z <= 40; z += 2.5) v.frame(railX, t.cz + z).box('steel', 0, 0.55, 0, 0.05, 1.1, 0.05);

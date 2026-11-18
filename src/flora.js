@@ -218,6 +218,30 @@ export function broadleafTrees(list, { seed = 1, low = false, hue = 100 } = {}) 
   });
   return { group, trunks: list.map(([x, z, h]) => [x, z, 0.3 + 0.02 * h]) };
 }
+/**
+ * Many broadleaf trees over a large area. list: [[x, z, height, crownRadius]...]. The trees are split into square cells
+ * so that whole cells outside the view (or outside a shadow map) are skipped. Two leaf tints, three shapes.
+ */
+export function forest(list, { seed = 11, low = false, cell = 64 } = {}) {
+  const group = new THREE.Group(), r = rng(seed * 419 + 7), bark = pbr('bark');
+  const kinds = [0, 1, 2, 3, 4, 5].map(k => ({ shape: broadleafShape(seed * 37 + k * 11, { cards: low ? 140 : 280 }), leaves: foliage(leafCluster(k % 2 ? 86 : 104), 'leaves' + (k % 2 ? 86 : 104), 0.05) }));
+  const cells = new Map();
+  for (const [x, z, h, cr = 4.6] of list) {
+    const cx = Math.floor(x / cell), cz = Math.floor(z / cell), key = cx + ',' + cz + ',' + (((cx * 7 + cz * 13) % kinds.length + kinds.length) % kinds.length);   // one shape per cell: fewer meshes to draw
+    if (!cells.has(key)) cells.set(key, []);
+    cells.get(key).push([x, z, h / 11 * (0.94 + 0.12 * r()), Math.max(0.7, Math.min(1.45, cr / 4.4)), r() * 6.283]);
+  }
+  const M = new THREE.Matrix4(), q = new THREE.Quaternion(), up = new THREE.Vector3(0, 1, 0);
+  for (const [key, inst] of cells) {
+    const kind = kinds[+key.split(',')[2]];
+    for (const [geo, material, name] of [[kind.shape.trunk, bark, 'hifi-tree-trunks'], [kind.shape.crown, kind.leaves, 'hifi-tree-crowns']]) {
+      const m = new THREE.InstancedMesh(geo, material, inst.length);
+      inst.forEach(([x, z, sy, sw, rot], i) => m.setMatrixAt(i, M.compose(new THREE.Vector3(x, 0, z), q.setFromAxisAngle(up, rot), new THREE.Vector3(sy * sw, sy, sy * sw))));
+      m.castShadow = true; m.receiveShadow = true; m.name = name; m.computeBoundingSphere(); m.computeBoundingBox(); group.add(m);
+    }
+  }
+  return group;
+}
 /** Royal palms. list: [[x, z, height]...]. */
 export function royalPalms(list, { seed = 2 } = {}) {
   const group = new THREE.Group(), r = rng(seed * 911 + 3), variants = 2, per = Array.from({ length: variants }, () => []);

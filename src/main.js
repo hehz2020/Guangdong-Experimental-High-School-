@@ -4,7 +4,7 @@ import { buildWorld } from './world/index.js';
 import { createLighting } from './lighting.js';
 import { createPlayer } from './player.js';
 import { initUI } from './ui.js';
-import { setTextureQuality } from './hifi.js';
+import { setTextureQuality, addSurfaceGrain } from './hifi.js';
 
 const params = new URLSearchParams(location.search);
 const view = params.get('view');                       // null = walk, 'top', 'overview'
@@ -39,6 +39,8 @@ const tryExtras = (params.get('tryx') || '').split(',').filter(Boolean).map(f =>
 setTextureQuality({ anisotropy: renderer.capabilities.getMaxAnisotropy() });
 const { root, colliders, report, details, updaters, places } = await buildWorld(CAMPUS, only, tryBuilders, tryExtras, { lowPower, extras: params.get('extras') === '1', safe });
 scene.add(root);
+// Fine grain and patchy gloss on every flat-coloured material (desktop only; not in safe mode: it edits shaders). ?grain=0 turns it off.
+if (!lowPower && !safe && params.get('grain') !== '0') addSurfaceGrain(root);
 
 let lighting = null;
 if (flatCheck) {

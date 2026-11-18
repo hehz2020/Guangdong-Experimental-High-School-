@@ -1,5 +1,6 @@
 // Shared helpers for everything that builds geometry. Coordinates: x east, y up, z south, metres.
 import * as THREE from 'three';
+import { SURFACES, waterNormals } from './hifi.js';
 
 const cache = new Map();
 // name: [colour, roughness, texture kind, tile size in metres]
@@ -46,17 +47,40 @@ function canvasTexture(kind, hex, tile) {
   t.wrapS = t.wrapT = THREE.RepeatWrapping; t.repeat.set(1 / tile, 1 / tile); t.colorSpace = THREE.SRGBColorSpace; t.anisotropy = 8;
   return t;
 }
-/** Shared material by palette name. Textured ones tile in real metres (texture coordinates must be in metres). */
+/**
+ * Shared material by palette name. Textured ones tile in real metres (texture coordinates must be in metres).
+ * The surfaces come from hifi.js: colour, normal and roughness maps computed in code. Glass carries a painted reflection
+ * and a slight tilt per pane; its names are kept because the lighting module lights windows by name after dusk.
+ */
 export function mat(name) {
   if (!cache.has(name)) {
     const [color, roughness, kind, tile] = PALETTE[name] || PALETTE.generic;
-    const m = new THREE.MeshStandardMaterial({ color, roughness, metalness: name === 'steel' ? 0.7 : GLASS.has(name) ? 0.35 : 0 });
-    if (kind && typeof document !== 'undefined') { m.map = canvasTexture(kind, color, tile); m.color.set(0xffffff); }
-    if (name === 'glassClear') { m.transparent = true; m.opacity = 0.32; m.depthWrite = false; }
+    let m;
+    if (typeof document === 'undefined') m = new THREE.MeshStandardMaterial({ color, roughness });
+    else if (GLASS.has(name) && name !== 'water') {
+      const s = SURFACES.glazing(name === 'glassDark' ? 0x4c6672 : name === 'glassTeal' ? 0x3f9a8e : name === 'glassGreen' ? 0x6fb59c : 0xa9cdd4, 3, 3, [3.6, 3.6], name.length);
+      m = new THREE.MeshStandardMaterial({ map: s.map, normalMap: s.normalMap, roughness: 0.06, metalness: name === 'glassClear' ? 0.2 : 0.55, envMapIntensity: 1.4 });
+      if (name === 'glassClear') { m.transparent = true; m.opacity = 0.34; m.depthWrite = false; }
+    } else if (name === 'water') {
+      m = new THREE.MeshStandardMaterial({ color: 0x24504c, roughness: 0.06, metalness: 0.45, normalMap: waterNormals(), envMapIntensity: 1.5 });
+      m.normalMap = m.normalMap.clone(); m.normalMap.repeat.set(1 / 5, 1 / 5); m.normalMap.needsUpdate = true; m.normalScale.set(0.5, 0.5);
+    } else if (kind) {
+      const s = kind === 'tile' ? SURFACES.tiles(color, 6, tile, roughness - 0.3)
+        : kind === 'brick' ? SURFACES.brick(color)
+        : kind === 'paving' ? SURFACES.paving(color, shadeHex(color, 0.9), 3, 3, [tile, tile], color & 255, false)
+        : kind === 'panel' ? SURFACES.cladding(color, tile / 2, tile / 2, 0.7)
+        : kind === 'wood' ? SURFACES.boards(color, tile)
+        : kind === 'grass' ? SURFACES.turf(color, tile)
+        : name === 'asphalt' ? SURFACES.asphalt(color)
+        : /track|apron|court/.test(name) ? SURFACES.rubber(color, tile)
+        : SURFACES.concrete(color);
+      m = new THREE.MeshStandardMaterial({ map: s.map, normalMap: s.normalMap || null, roughnessMap: s.roughnessMap || null, roughness: s.roughness, metalness: s.metalness });
+    } else m = new THREE.MeshStandardMaterial({ color, roughness, metalness: name === 'steel' ? 0.85 : name === 'gold' ? 0.9 : 0 });
     m.name = name; cache.set(name, m);
   }
   return cache.get(name);
 }
+const shadeHex = (hex, k) => ((Math.round((hex >> 16 & 255) * k) << 16) | (Math.round((hex >> 8 & 255) * k) << 8) | Math.round((hex & 255) * k));
 export const MATERIAL_NAMES = Object.keys(PALETTE);
 
 /** Prism over a ground polygon [[x,z],...] from y0 to y1. */

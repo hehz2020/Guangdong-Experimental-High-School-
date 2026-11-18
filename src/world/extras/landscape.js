@@ -45,6 +45,8 @@
 // blob of 80 triangles: about 66,000 and 42,000.
 import { FOOTPRINTS } from './context.js';
 import { GATE_AREA } from './gate.js';
+import { forest } from '../../flora.js';
+import { fieldKeepOut } from './athletics.js';
 import { THREE, mat } from '../../kit.js';
 import { Batch } from '../../batch.js';
 
@@ -157,29 +159,10 @@ function buildTrees(ctx, low) {
   };
   const decks = ((ctx.campus && ctx.campus.items) || []).filter(i => i.style === 'walkway' && i.points).map(i => i.points);
   // The gate and pool area (gate.js) brings its own planting.
-  const blocked = (x, z) => onRoad(x, z) || FOOTPRINTS.some(q => near(q, x, z, 1.8)) || decks.some(q => near(q, x, z, 2.5)) || near(GATE_AREA, x, z, 1.5);
+  const blocked = (x, z) => onRoad(x, z) || FOOTPRINTS.some(q => near(q, x, z, 1.8)) || decks.some(q => near(q, x, z, 2.5)) || near(GATE_AREA, x, z, 1.5) || near(fieldKeepOut(ctx.campus.track), x, z, 2.5);
   const list = DATA.trees.list.filter(([x, z]) => !blocked(x, z));
-  const crownGeo = crownGeometry(low), trunkGeo = new THREE.CylinderGeometry(0.62, 1, 1, 5, 1, true).translate(0, 0.5, 0);
-  const crownMat = new THREE.MeshStandardMaterial({ vertexColors: true, roughness: 0.95 });
-  const trunkMat = new THREE.MeshStandardMaterial({ color: 0x6b5a45, roughness: 0.95 });
-  const m = new THREE.Matrix4(), q = new THREE.Quaternion(), up = new THREE.Vector3(0, 1, 0), c = new THREE.Color();
-  const trunks = new THREE.InstancedMesh(trunkGeo, trunkMat, list.length); trunks.name = 'tree-trunks'; trunks.receiveShadow = true;
-  list.forEach(([x, z, h, r], i) => {
-    const tr = 0.16 + 0.022 * h;
-    trunks.setMatrixAt(i, m.compose(new THREE.Vector3(x, 0, z), q.setFromAxisAngle(up, rnd(x, z, 1) * 6.283), new THREE.Vector3(tr, h * 0.52, tr)));
-  });
-  ctx.add(trunks);
-  for (const casts of [1, 0]) {
-    const part = list.filter(t => t[5] === casts); if (!part.length) continue;
-    const crowns = new THREE.InstancedMesh(crownGeo, crownMat, part.length); crowns.name = casts ? 'tree-crowns' : 'tree-crowns-far';
-    crowns.castShadow = !!casts; crowns.receiveShadow = true;
-    part.forEach(([x, z, h, r], i) => {
-      const ry = 0.36 * h;                                           // crown from about a third of the height to the top
-      crowns.setMatrixAt(i, m.compose(new THREE.Vector3(x, h - ry, z), q.setFromAxisAngle(up, rnd(x, z, 2) * 6.283), new THREE.Vector3(r, ry, r)));
-      crowns.setColorAt(i, c.setHSL(0.27 + 0.06 * rnd(x, z, 3), 0.38 + 0.14 * rnd(x, z, 4), 0.17 + 0.08 * rnd(x, z, 5)));
-    });
-    ctx.add(crowns);
-  }
+  // Trees are leaf-card trees from flora.js (they replaced one-blob crowns): split into cells so that hidden cells are skipped.
+  const woods = forest(list.map(([x, z, h, r]) => [x, z, h, r]), { seed: 11, low }); woods.name = 'trees'; ctx.add(woods);
   // trunk colliders: thin five-sided posts, only for the trees flagged in the data (near paving or a road)
   const col = new Batch();
   for (const [x, z, h, r, solid] of list) if (solid) col.cyl('generic', x, 0, z, 0.2 + 0.018 * h, 2.4, 5, false);

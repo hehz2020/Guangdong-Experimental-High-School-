@@ -28,6 +28,7 @@ export const BUILDERS = {
 
 // Modules that add things not tied to one data item (track furniture, courts, landscape...). Each exports build(ctx).
 export const EXTRAS = [
+  './extras/athletics.js',
   './extras/gate.js',
   './extras/context.js',
   './extras/landscape.js',
@@ -59,22 +60,7 @@ export async function buildWorld(campus, only = null, tryBuilders = {}, tryExtra
   ground.rotation.x = -Math.PI / 2; ground.position.set(13.7, -0.05, 21.3); ground.receiveShadow = true; root.add(ground);
   const floor = box(0, 0, 1400, 1400, -1, 0, mat('earth')); colliders.add(floor);
 
-  // running track: standard geometry from the data file
-  const t = campus.track;
-  const outer = stadium(t.cx, t.cz, t.straight, t.outerRadius), inner = stadium(t.cx, t.cz, t.straight, t.innerRadius);
-  // Green apron round the track. On the east side a paved road runs right along the kerb (satellite image; 2018 footage shows a
-  // railing between track and road), so the apron is cut back to a narrow strip there.
-  root.add(flat(stadium(t.cx, t.cz, t.straight, t.outerRadius + 3.5).map(([x, z]) => [Math.min(x, t.cx + t.outerRadius + 0.9), z]), 0.02, mat('apronGreen')));
-  root.add(flat(outer, 0.04, mat('trackRed')));
-  const f = t.infield;
-  // Infield grass: the measured rectangle with its corners clipped by the inner edge of the bends (as seen in the 2022 overhead frames).
-  const clamp = (v, lo, hi) => Math.max(lo, Math.min(hi, v));
-  root.add(flat(stadium(t.cx, t.cz, t.straight, t.innerRadius - 0.4).map(([x, z]) => [clamp(x, f.cx - f.sizeX / 2, f.cx + f.sizeX / 2), clamp(z, f.cz - f.sizeZ / 2, f.cz + f.sizeZ / 2)]), 0.06, mat('grass')));
-  const lineMat = new THREE.LineBasicMaterial({ color: 0xffffff });
-  for (let i = 0; i <= t.lanes; i++) {
-    const pts = stadium(t.cx, t.cz, t.straight, t.innerRadius + i * t.laneWidth).map(([x, z]) => new THREE.Vector3(x, 0.07, z));
-    root.add(new THREE.LineLoop(new THREE.BufferGeometry().setFromPoints(pts), lineMat));
-  }
+  // (the running track, the pitch and their markings are drawn by extras/athletics.js)
 
   for (const item of campus.items) {
     if (only && !only.has(item.id)) continue;

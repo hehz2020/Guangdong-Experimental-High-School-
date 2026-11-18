@@ -177,6 +177,36 @@ export const SURFACES = {
   }),
 };
 
+// small glazed facade tiles (the usual finish of school buildings in Guangdong): n by n tiles per repeat
+SURFACES.tiles = (hex = 0xf1efe8, n = 6, tile = 0.6, rough = 0.5) => once(`tl${hex}${n}${tile}${rough}`, () => {
+  const S = 512, base = rgbOf(hex), j = joints(S, n, n, 1.8), r = rng(hex ^ 77), tone = Array.from({ length: n * n }, () => 0.94 + 0.1 * r()), big = fbm(S, 3, 3, hex & 255);
+  const height = new Float32Array(S * S); for (let i = 0; i < height.length; i++) height[i] = 1 - j.m[i];
+  return { ...surface(S, { tile, strength: 2.4, height, col: i => mix(mul(base, tone[j.id[i]] * (0.95 + 0.08 * big[i])), mul(base, 0.72), j.m[i] * 0.85), rough: i => rough + 0.1 * big[i] + 0.35 * j.m[i] }), roughness: 1, metalness: 0 };
+});
+// facing brick, 4 bricks by 12 courses per metre, staggered, with recessed mortar
+SURFACES.brick = (hex = 0xa5452f) => once('br' + hex, () => {
+  const S = 512, base = rgbOf(hex), j = joints(S, 4, 12, 2.6, true), r = rng(hex ^ 91), tone = Array.from({ length: 48 }, () => 0.82 + 0.34 * r()), n = fbm(S, 12, 3, 93), sp = white(S, 94);
+  const height = new Float32Array(S * S); for (let i = 0; i < height.length; i++) height[i] = (1 - j.m[i]) * (0.8 + 0.2 * n[i]);
+  return { ...surface(S, { tile: 1, strength: 3.4, height, col: i => mix(mul(base, tone[j.id[i]] * (0.92 + 0.14 * n[i] + 0.06 * (sp[i] - 0.5))), [176, 168, 156], j.m[i] * 0.85), rough: i => 0.82 + 0.12 * n[i] }), roughness: 1, metalness: 0 };
+});
+// granular sports surface: running track, court paint
+SURFACES.rubber = (hex = 0x9c4235, tile = 2) => once('rb' + hex + tile, () => {
+  const S = 512, base = rgbOf(hex), fine = valueNoise(S, 256, 121), n = fbm(S, 5, 4, hex & 1023), sp = white(S, 123);
+  return { ...surface(S, { tile, strength: 1.3, height: fine, col: i => mul(base, 0.84 + 0.2 * n[i] + 0.22 * (fine[i] - 0.5) + (sp[i] > 0.97 ? 0.12 : 0)), rough: i => 0.82 + 0.14 * fine[i] }), roughness: 1, metalness: 0 };
+});
+// turf of any green
+SURFACES.turf = (hex = 0x5f9a4a, tile = 3.5) => once('tf' + hex + tile, () => {
+  const S = 512, base = rgbOf(hex), fine = white(S, 131), n1 = fbm(S, 10, 4, 132), n2 = fbm(S, 3, 3, 133), blades = valueNoise(S, 256, 134);
+  return { ...surface(S, { tile, strength: 2.4, height: blades, col: i => { const k = 0.66 + 0.46 * n1[i] + 0.3 * (blades[i] - 0.5) + 0.1 * (fine[i] - 0.5), y = (n2[i] - 0.5) * 0.3; return [base[0] * k * (1 + y), base[1] * k, base[2] * k * (1 - y)]; }, rough: () => 0.93 }), roughness: 1, metalness: 0 };
+});
+// wide floor or deck boards
+SURFACES.boards = (hex = 0xc9a878, tile = 1.2) => once('bd' + hex + tile, () => {
+  const S = 512, base = rgbOf(hex), r = rng(hex ^ 141), n = fbm(S, 4, 4, 142), j = joints(S, 2, 8, 1.3, true), tone = Array.from({ length: 16 }, () => 0.88 + 0.24 * r());
+  const grain = new Float32Array(S * S); for (let y = 0; y < S; y++) for (let x = 0; x < S; x++) grain[y * S + x] = Math.sin((y * 0.05 + n[y * S + x] * 5 + x * 0.004) * 6.283) * 0.5 + 0.5;
+  const height = new Float32Array(S * S); for (let i = 0; i < height.length; i++) height[i] = (1 - j.m[i]) + 0.04 * grain[i];
+  return { ...surface(S, { tile, strength: 1.6, height, col: i => mix(mul(base, tone[j.id[i]] * (0.9 + 0.16 * grain[i])), mul(base, 0.45), j.m[i]), rough: i => 0.42 + 0.14 * grain[i] }), roughness: 1, metalness: 0 };
+});
+
 /**
  * Tinted curtain-wall glass. Real panes are never quite in one plane and they mirror what stands opposite, so every pane
  * gets its own slight tilt (in the normal map) and the colour carries a painted reflection: sky above, a dark band of
@@ -210,6 +240,65 @@ export function waterNormals() {
     const t = surface(S, { tile: 1, strength: 1.4, height: h, col: () => [128, 128, 255] }).normalMap;
     t.repeat.set(1, 1); return t;
   });
+}
+
+// ---- fine surface grain for every plain material ----------------------------------------------------------------------
+// Most of the campus is built from flat-coloured materials. This adds what a real surface has: a fine grain that catches
+// the light and a patchy unevenness of tone and gloss. It is applied in world space (three projections blended by the
+// surface direction), so it needs no texture coordinates and never stretches.
+let detailTex = null;
+function detailTexture() {
+  if (detailTex) return detailTex;
+  const S = 512, h = fbm(S, 48, 4, 201, 0.6), tone = fbm(S, 5, 5, 203, 0.55);
+  detailTex = new THREE.CanvasTexture(canvasOf(S, d => {
+    for (let y = 0, i = 0; y < S; y++) for (let x = 0; x < S; x++, i++) {
+      const nx = (h[y * S + (x + S - 1) % S] - h[y * S + (x + 1) % S]) * 6, ny = (h[((y + 1) % S) * S + x] - h[((y + S - 1) % S) * S + x]) * 6;
+      d[i * 4] = Math.max(0, Math.min(255, (nx * 0.5 + 0.5) * 255)); d[i * 4 + 1] = Math.max(0, Math.min(255, (ny * 0.5 + 0.5) * 255)); d[i * 4 + 2] = tone[i] * 255; d[i * 4 + 3] = 255;
+    }
+  }));
+  detailTex.wrapS = detailTex.wrapT = THREE.RepeatWrapping; detailTex.anisotropy = Math.min(ANISO, 4);
+  return detailTex;
+}
+const GRAIN_VERT = `
+  { vec4 grainW = vec4( transformed, 1.0 ); vec3 grainN = objectNormal;
+    #ifdef USE_INSTANCING
+      grainW = instanceMatrix * grainW; grainN = mat3( instanceMatrix ) * grainN;
+    #endif
+    vGrainPos = ( modelMatrix * grainW ).xyz; vGrainNrm = mat3( modelMatrix ) * grainN; }`;
+const GRAIN_FRAG = `
+  { vec3 gw = abs( normalize( vGrainNrm ) ); gw = gw * gw; gw /= ( gw.x + gw.y + gw.z + 1e-4 );
+    vec3 gq = vGrainPos * uGrain.x;
+    vec2 gx = texture2D( uGrainMap, gq.zy ).rg - 0.5, gy = texture2D( uGrainMap, gq.xz ).rg - 0.5, gz = texture2D( uGrainMap, gq.xy ).rg - 0.5;
+    vec3 gp = gw.x * vec3( 0.0, gx.y, gx.x ) + gw.y * vec3( gy.x, 0.0, gy.y ) + gw.z * vec3( gz.x, gz.y, 0.0 );
+    normal = normalize( normal + ( viewMatrix * vec4( gp * 2.0 * uGrain.y, 0.0 ) ).xyz );
+    vec3 gs = vGrainPos * 0.173;
+    float gt = gw.x * texture2D( uGrainMap, gs.zy ).b + gw.y * texture2D( uGrainMap, gs.xz ).b + gw.z * texture2D( uGrainMap, gs.xy ).b - 0.5;
+    diffuseColor.rgb *= 1.0 + gt * 2.0 * uGrain.z; roughnessFactor = clamp( roughnessFactor * ( 1.0 - gt * 0.7 ), 0.04, 1.0 ); }`;
+/**
+ * Adds the grain to every MeshStandardMaterial under `root` that has no normal map of its own and is not glass, foliage,
+ * a lamp or water. Call once after the world is built and before the lighting module looks at the materials.
+ */
+export function addSurfaceGrain(root) {
+  const tex = detailTexture(), seen = new Set();
+  const apply = m => {
+    if (!m || seen.has(m) || !m.isMeshStandardMaterial) return; seen.add(m);
+    const name = m.name || '';
+    if (m.normalMap || m.transparent || m.alphaTest > 0 || m.userData.noGrain || /glass|water|sky|lamp|light|led|screen|flower|emblem/i.test(name)) return;
+    if (m.emissive && m.emissiveIntensity * (m.emissive.r + m.emissive.g + m.emissive.b) > 0.5) return;
+    const P = m.metalness > 0.5 ? [6, 0.1, 0.03] : m.roughness >= 0.8 ? [1.1, 0.5, 0.11] : m.roughness >= 0.5 ? [1.9, 0.3, 0.07] : [2.6, 0.12, 0.04];
+    const before = m.onBeforeCompile, key = m.customProgramCacheKey ? m.customProgramCacheKey() : '';
+    m.onBeforeCompile = (shader, renderer) => {
+      if (before) before.call(m, shader, renderer);
+      shader.uniforms.uGrainMap = { value: tex }; shader.uniforms.uGrain = { value: new THREE.Vector3(...P) };
+      shader.vertexShader = shader.vertexShader.replace('#include <common>', '#include <common>\nvarying vec3 vGrainPos;\nvarying vec3 vGrainNrm;').replace('#include <project_vertex>', '#include <project_vertex>' + GRAIN_VERT);
+      shader.fragmentShader = shader.fragmentShader.replace('#include <common>', '#include <common>\nvarying vec3 vGrainPos;\nvarying vec3 vGrainNrm;\nuniform sampler2D uGrainMap;\nuniform vec3 uGrain;')
+        .replace('#include <normal_fragment_maps>', '#include <normal_fragment_maps>' + GRAIN_FRAG);
+    };
+    m.customProgramCacheKey = () => key + '|grain';
+    m.needsUpdate = true;
+  };
+  root.traverse(o => { if (Array.isArray(o.material)) o.material.forEach(apply); else apply(o.material); });
+  return seen.size;
 }
 
 const mats = new Map();
