@@ -37,7 +37,7 @@ const only = params.get('only') ? new Set(params.get('only').split(',')) : null;
 const tryBuilders = Object.fromEntries((params.get('try') || '').split(',').filter(Boolean).map(s => { const i = s.indexOf(':'); return [s.slice(0, i), './builders/' + s.slice(i + 1)]; }));
 const tryExtras = (params.get('tryx') || '').split(',').filter(Boolean).map(f => './extras/' + f);
 setTextureQuality({ anisotropy: renderer.capabilities.getMaxAnisotropy() });
-const { root, colliders, report, details, updaters, places } = await buildWorld(CAMPUS, only, tryBuilders, tryExtras, { lowPower, extras: params.get('extras') === '1' });
+const { root, colliders, report, details, updaters, places } = await buildWorld(CAMPUS, only, tryBuilders, tryExtras, { lowPower, extras: params.get('extras') === '1', safe });
 scene.add(root);
 
 let lighting = null;

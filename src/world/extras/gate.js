@@ -25,7 +25,7 @@ import { mat } from '../../kit.js';
 import { Batch } from '../../batch.js';
 import { emblemTexture } from '../../signs.js';
 import { pbr, plain, waterNormals, rng } from '../../hifi.js';
-import { broadleafTrees, royalPalms, conifers, shrubs, flowers, WIND } from '../../flora.js';
+import { broadleafTrees, royalPalms, conifers, shrubs, flowers, WIND, useStockShaders } from '../../flora.js';
 
 // Local frame: origin on the gate line at the middle of the driveway; +Z runs into the campus (west), +X to the south
 // (the left-hand side for someone walking in), Y up.
@@ -160,7 +160,8 @@ function pavilion(v, c) {
 }
 
 export function build(ctx) {
-  const low = !!ctx.lowPower, R = rng(20261);
+  const low = !!ctx.lowPower, safe = !!ctx.safe, R = rng(20261);
+  useStockShaders(safe);                                // safe mode (?safe=1): no shader of our own; the pool is a plain glossy surface and the fountain is left out
   const G = new THREE.Group(); G.name = 'gate'; G.position.set(GX, 0, GZ); G.rotation.y = YAW; ctx.add(G);
   const add = o => { G.add(o); return o; };
   const v = new Batch(), c = new Batch();
@@ -265,9 +266,9 @@ export function build(ctx) {
   // pool: dark polished coping, tiled inside, water with reflections
   add(lathe([[PR, 0], [PR, 0.44], [PR - 0.05, 0.5], [PR - 0.75, 0.5], [PR - 0.8, 0.46], [PR - 0.8, 0.1]], 0, PZ, M.black(), 72));
   add(lathe([[PR - 0.8, 0.46], [PR - 0.8, 0.1]], 0, PZ, pbr('mosaic'), 72));
-  const WL = 0.34, water = new Water(new THREE.CircleGeometry(PR - 0.79, 64), { textureWidth: low ? 256 : 512, textureHeight: low ? 256 : 512, waterNormals: waterNormals(),
+  const WL = 0.34, water = safe ? new THREE.Mesh(new THREE.CircleGeometry(PR - 0.79, 64), Object.assign(new THREE.MeshStandardMaterial({ color: 0x1c5f5c, roughness: 0.08, metalness: 0.35, normalMap: waterNormals() }), { name: 'hifi-poolwater' })) : new Water(new THREE.CircleGeometry(PR - 0.79, 64), { textureWidth: low ? 256 : 512, textureHeight: low ? 256 : 512, waterNormals: waterNormals(),
     sunDirection: new THREE.Vector3(0.4, 0.8, 0.3), sunColor: 0xffffff, waterColor: 0x0b3b3c, distortionScale: 1.1, fog: true });
-  water.rotation.x = -Math.PI / 2; water.position.set(0, WL, PZ); water.material.uniforms.size.value = 24; water.name = 'pool-water'; add(water);
+  water.rotation.x = -Math.PI / 2; water.position.set(0, WL, PZ); if (!safe) water.material.uniforms.size.value = 24; water.name = 'pool-water'; add(water);
   for (let i = 0; i < 24; i++) { const a = i / 24 * Math.PI * 2; c.frame(Math.cos(a) * (PR - 0.4), PZ + Math.sin(a) * (PR - 0.4), -a).slab('generic', -0.45, 0, -1.25, 0.9, 0.95, 2.5); }
   c.frame(0, 0, 0);
   // the rock with the motto
@@ -297,7 +298,7 @@ export function build(ctx) {
         vec4 mv = modelViewMatrix * vec4(p, 1.0); gl_Position = projectionMatrix * mv; gl_PointSize = uScale * (0.06 + 0.07 * fract(aPhase * 7.0)) / -mv.z; }`,
     fragmentShader: `uniform float uLight; varying float vA;
       void main() { vec2 q = gl_PointCoord - 0.5; float d = length(q); if (d > 0.5) discard; gl_FragColor = vec4(vec3(0.93, 0.97, 1.0) * uLight, vA * 0.7 * smoothstep(0.5, 0.08, d)); }` }));
-  fountain.frustumCulled = false; fountain.name = 'fountain'; fountain.renderOrder = 5; add(fountain);
+  fountain.frustumCulled = false; fountain.name = 'fountain'; fountain.renderOrder = 5; if (!safe) add(fountain);
   for (const j of jets) v.cyl(steel, j.o[0], WL - 0.1, j.o[2], 0.035, 0.2, 8);
 
   // ================= furniture =================
@@ -348,7 +349,7 @@ export function build(ctx) {
   // trigger it again) and without the parts of the campus that are too far away to show in the pool.
   let frameNo = 0, lastMirror = -1, far = null;
   const mirror = water.onBeforeRender, pool = new THREE.Vector3(...toWorld(0, PZ).flatMap((q, i) => (i ? [0, q] : [q]))), box = new THREE.Box3(), centre = new THREE.Vector3();
-  water.onBeforeRender = function (renderer, scene, camera) {
+  if (!safe) water.onBeforeRender = function (renderer, scene, camera) {
     if (frameNo === lastMirror) return; lastMirror = frameNo;
     if (!far) { far = []; const root = G.parent && G.parent.parent; if (root) for (const g of root.children) { if (g === G.parent || !g.visible) continue; box.setFromObject(g); if (box.isEmpty()) continue; box.getCenter(centre); if (box.distanceToPoint(pool) > 130) far.push(g); } }
     for (const g of far) g.visible = false;
@@ -359,7 +360,8 @@ export function build(ctx) {
     const dir = new THREE.Vector3(), tmp = new THREE.Vector3(), size = new THREE.Vector2();
     ctx.animate((dt, t, env) => {
       frameNo++;
-      water.material.uniforms.time.value = t * 0.55; fountain.material.uniforms.uTime.value = t; WIND.value = t;
+      WIND.value = t; if (safe) return;
+      water.material.uniforms.time.value = t * 0.55; fountain.material.uniforms.uTime.value = t;
       const L = env && env.lighting, sun = L && (L.suns ? L.suns[0] : L.sun);
       if (sun) {
         dir.copy(sun.position).sub(sun.target.position).normalize(); if (dir.y < 0.02) dir.set(0.3, 0.6, 0.2).normalize();

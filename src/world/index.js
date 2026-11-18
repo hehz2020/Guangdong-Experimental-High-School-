@@ -102,7 +102,7 @@ export async function buildWorld(campus, only = null, tryBuilders = {}, tryExtra
   for (const path of [...(only && !env.extras ? [] : EXTRAS), ...tryExtras]) {
     const group = new THREE.Group(); group.name = path; root.add(group);
     const ctx = {
-      campus, detail, lowPower: !!env.lowPower,
+      campus, detail, lowPower: !!env.lowPower, safe: !!env.safe,
       add: obj => { group.add(obj); return obj; },
       collide: mesh => { mesh.updateWorldMatrix(true, false); const c = new THREE.Mesh(mesh.geometry); c.matrixAutoUpdate = false; c.matrix.copy(mesh.matrixWorld); colliders.add(c); return mesh; },
       animate: fn => { updaters.push(fn); },

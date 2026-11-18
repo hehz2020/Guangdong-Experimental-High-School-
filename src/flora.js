@@ -6,6 +6,9 @@ import { rng, pbr, plain } from './hifi.js';
 
 /** Shared clock for the gentle sway of leaves (seconds); the page advances it. */
 export const WIND = { value: 0 };
+let STOCK = false;
+/** Safe mode: leave the foliage shaders as three.js ships them (no sway, back faces lit the ordinary way). */
+export function useStockShaders(on) { STOCK = !!on; }
 
 // ---- textures -----------------------------------------------------------------------------------------------------
 /** RGBA texture from a canvas whose transparent pixels are given the average colour, so cut-out edges do not turn dark in the mipmaps. */
@@ -53,7 +56,7 @@ function foliage(map, name, sway = 0.05) {
   if (matCache.has(name)) return matCache.get(name);
   const m = new THREE.MeshStandardMaterial({ map, alphaTest: 0.42, side: THREE.DoubleSide, vertexColors: true, roughness: 0.82, metalness: 0 });
   m.name = 'hifi-' + name; m.alphaToCoverage = true;
-  m.onBeforeCompile = shader => {
+  if (!STOCK) m.onBeforeCompile = shader => {
     shader.uniforms.uWind = WIND;
     shader.vertexShader = shader.vertexShader.replace('#include <common>', '#include <common>\nuniform float uWind;')
       .replace('#include <begin_vertex>', `#include <begin_vertex>
@@ -64,7 +67,7 @@ function foliage(map, name, sway = 0.05) {
           transformed += vec3(sin(uWind * 1.3 + ph), 0.35 * sin(uWind * 1.9 + ph * 1.7), cos(uWind * 1.1 + ph * 1.3)) * ${sway.toFixed(3)}; }`);
     shader.fragmentShader = shader.fragmentShader.replace('#include <normal_fragment_begin>', THREE.ShaderChunk.normal_fragment_begin.replace('gl_FrontFacing ? 1.0 : - 1.0', '1.0'));
   };
-  m.customProgramCacheKey = () => 'foliage' + sway;
+  if (!STOCK) m.customProgramCacheKey = () => 'foliage' + sway;
   matCache.set(name, m); return m;
 }
 
