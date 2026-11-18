@@ -6,7 +6,7 @@ set -e
 cd "$(dirname "$0")"
 rm -rf site dist && mkdir -p site dist
 cp ../index.html site/ && cp -r ../src ../vendor site/
-build() { GOOS=$1 GOARCH=$2 CGO_ENABLED=0 go build -trimpath -ldflags "-s -w" -o "dist/$3" . && echo "built dist/$3"; }
+build() { GOOS=$1 GOARCH=$2 CGO_ENABLED=0 go build -trimpath -buildvcs=false -ldflags "-s -w" -o "dist/$3" . && echo "built dist/$3"; }
 build windows amd64 gdsy-campus-3d.exe
 build windows arm64 gdsy-campus-3d-arm64.exe
 build darwin arm64 gdsy-campus-3d-mac-arm64

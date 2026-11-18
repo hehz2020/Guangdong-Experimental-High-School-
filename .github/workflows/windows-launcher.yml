@@ -1,0 +1,81 @@
+name: Windows launcher
+
+# Builds the one-file launcher on a real Windows machine, runs it there, and loads the whole page from it in the
+# machine's own Edge or Chrome. Everything else in this project is only ever run on Linux, so this is the one check that
+# the program handed to Windows users starts and serves a page that builds without errors there.
+# It runs when the launcher or this file changes; a new build of the site needs a change under launcher/ (bump
+# launcher/BUILD) to run it again.
+on:
+  push:
+    paths:
+      - 'launcher/**'
+      - '.github/workflows/windows-launcher.yml'
+  workflow_dispatch:
+
+permissions:
+  contents: read
+
+jobs:
+  windows:
+    runs-on: windows-latest
+    timeout-minutes: 30
+    steps:
+      - name: Keep line endings as committed (the embedded files must be byte-identical to a Linux build)
+        run: git config --global core.autocrlf false
+
+      - uses: actions/checkout@v4
+
+      - uses: actions/setup-go@v5
+        with:
+          go-version: '1.24.7'
+          cache: false
+
+      - name: Build the launchers
+        shell: bash
+        run: |
+          sh launcher/build.sh
+          sha256sum launcher/dist/*
+
+      - name: Start the Windows launcher and check what it serves
+        shell: pwsh
+        run: |
+          Start-Process -FilePath launcher\dist\gdsy-campus-3d.exe -ArgumentList '-open=false','-port=18080' -RedirectStandardOutput launcher-out.txt
+          Start-Sleep 3
+          foreach ($path in '', 'src/main.js', 'src/world/extras/city.js', 'vendor/three/three.module.js') {
+            $r = Invoke-WebRequest -UseBasicParsing "http://127.0.0.1:18080/$path"
+            $type = "$($r.Headers['Content-Type'])"
+            "{0,-34} {1} {2} {3} bytes" -f "/$path", $r.StatusCode, $type, $r.RawContentLength
+            if ($path -like '*.js' -and $type -notlike 'text/javascript*') { throw "wrong content type for $path" }
+          }
+          Get-Content -Encoding utf8 launcher-out.txt
+
+      - name: Load the whole page from it in this machine's browser (headless) and take a picture
+        shell: pwsh
+        run: |
+          npm init -y | Out-Null
+          npm install --no-save --no-audit --no-fund playwright-core | Out-Null
+          node launcher/ci-load.mjs http://127.0.0.1:18080/ windows-first-view.png
+
+      - name: Start it the way a double click does and look for the window it opens
+        shell: pwsh
+        continue-on-error: true
+        run: |
+          Start-Process -FilePath launcher\dist\gdsy-campus-3d.exe -RedirectStandardOutput doubleclick-out.txt
+          Start-Sleep 12
+          Get-Content -Encoding utf8 doubleclick-out.txt
+          $url = (Select-String -Path doubleclick-out.txt -Pattern 'http://127\.0\.0\.1:\d+/').Matches[0].Value
+          "page address: $url  ->  $((Invoke-WebRequest -UseBasicParsing $url).StatusCode)"
+          $w = Get-CimInstance Win32_Process | Where-Object { $_.CommandLine -like "*--app=$url*" }
+          if ($w) { $w | Select-Object -First 1 Name, CommandLine | Format-List; "a browser window in app mode was started for the page" }
+          else { "NO app-mode browser process found for $url"; Get-CimInstance Win32_Process | Where-Object { $_.Name -match 'chrome|msedge|rundll32' } | Select-Object Name, CommandLine | Format-List; exit 1 }
+
+      - uses: actions/upload-artifact@v4
+        if: always()
+        with:
+          name: gdsy-campus-3d-windows
+          path: |
+            launcher/dist/gdsy-campus-3d.exe
+            windows-first-view.png
+            launcher-out.txt
+            doubleclick-out.txt
+          if-no-files-found: warn
