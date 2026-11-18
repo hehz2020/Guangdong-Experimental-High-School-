@@ -241,7 +241,7 @@ export const CAMPUS = {
       "measuredBy": "main session, gridded 2x crops; independent second reading (measurement agent, 2026-11), checked by the main session on its overlay",
       "positionAccuracyM": 1.9,
       "correctedForObliqueView": true,
-      "notes": "CORRECTED after an independent second reading (rectPx was [1244, 1162, 1391, 1299]): the striped white roof continues uniformly to y 1306.5 between x 1245 and 1365; the first south edge (1299) cut across the stripes 2.1 m short. The south-east corner (x above 1366, y above 1283) is covered by a blue-grey patch with a ragged edge (shadow or a different sheet; not resolved). | Earlier note: Pale ribbed roof, ribs run north-south. Irregular notch at the south-east corner, roughly pixels 1370-1391 x 1270-1299, not modelled in this rectangle.",
+      "notes": "CORRECTED after an independent second reading (rectPx was [1244, 1162, 1391, 1299]): the striped white roof continues uniformly to y 1306.5 between x 1245 and 1365; the first south edge (1299) cut across the stripes 2.1 m short. The blue-grey patch over the south-east corner (x above 1366, y above 1283) is the clock tower's shadow (tower-location agent: the sun azimuth calibrated on the south slab's shadow puts the shadow of a 41 m tower exactly there). | Earlier note: Pale ribbed roof, ribs run north-south. Irregular notch at the south-east corner, roughly pixels 1370-1391 x 1270-1299, not modelled in this rectangle.",
       "shape": "polygon",
       "points": [
         [
@@ -415,26 +415,26 @@ export const CAMPUS = {
       "solid": true,
       "walkUnder": false,
       "confidence": "position from one satellite reading; identified as the glass stair tower from the 2018 footage by a modelling agent",
-      "measuredBy": "main session, gridded 2x crops",
-      "positionAccuracyM": 2.5,
+      "measuredBy": "main session, gridded 2x crops; re-read by the main session on a 7x enlargement after the slab was corrected",
+      "positionAccuracyM": 2.2,
       "correctedForObliqueView": true,
-      "notes": "Pale roof. Possibly a stair or entrance block; function not established. CORRECTION: this was first recorded as a low two-storey annex and the stair tower was put at the slab's east end. Every 2018 frame of this slab (43, 53, 58, 67-69) is taken from the west or south-west and shows the glazed stair tower with a white fin at the west end on the south side, which is this block.",
+      "notes": "NORTH EDGE RE-READ (rectPx was [1003, 1300, 1035, 1342]): the pale roof of this block runs from about y 1312 to a white edge strip at y 1338-1343 and from x 1004 to a white line at x 1035; the first north edge (1300) fitted the slab as first measured, 17 m deep. | Earlier note: Pale roof. Possibly a stair or entrance block; function not established. CORRECTION: this was first recorded as a low two-storey annex and the stair tower was put at the slab's east end. Every 2018 frame of this slab (43, 53, 58, 67-69) is taken from the west or south-west and shows the glazed stair tower with a white fin at the west end on the south side, which is this block.",
       "shape": "polygon",
       "points": [
         [
-          83.8,
-          -75.8
+          84.1,
+          -72.5
         ],
         [
           92.6,
-          -75.8
+          -72.5
         ],
         [
           92.6,
           -64.3
         ],
         [
-          83.8,
+          84.1,
           -64.3
         ]
       ]
@@ -834,7 +834,7 @@ export const CAMPUS = {
       "measuredBy": "measurement agent (east-slabs), single reading, recheck pending",
       "positionAccuracyM": 1.4,
       "correctedForObliqueView": true,
-      "notes": "Long narrow strip about 12 px (3.3 m) wide and 205 px (56 m) long. NOT exactly north-south: it runs NNE-SSW (about 10 degrees off, parallel to the canal road), passing between the block north-east of the canopy (east edge x 1444) and the north slab (west edge 1461), then between the tower/glass block and the south slab's west end. Bright white where sunlit (y 1145-1230), grey where shaded by the slabs (y 1088-1145 and 1230-1292). Low structure; frames 7-8 show a white elevated walkway with parapets leaving the south slab's north-west corner toward the north, which I take to be this. Height, and whether it is roofed or an open deck, not established.",
+      "notes": "Long narrow strip about 12 px (3.3 m) wide and 205 px (56 m) long. NOT exactly north-south: it runs NNE-SSW (about 10 degrees off, parallel to the canal road), passing between the block north-east of the canopy (east edge x 1444) and the north slab (west edge 1461), then between the tower/glass block and the south slab's west end. Bright white where sunlit (y 1145-1230), grey where shaded by the slabs (y 1088-1145 and 1230-1292). Low structure; frames 7-8 show a white elevated walkway with parapets leaving the south slab's north-west corner toward the north, which I take to be this. Height, and whether it is roofed or an open deck, not established. | NOT YET APPLIED: the tower-location agent calibrated the sun on the mosaic (azimuth about 142.5 degrees, elevation 47 to 52 degrees) and finds that the shading beside both slabs puts this roof at about 7 to 8 m, not the assumed 4 m; the 2018 frames show an elevated white walkway with parapets leaving the slab's north-west corner.",
       "shape": "polygon",
       "points": [
         [
@@ -950,32 +950,32 @@ export const CAMPUS = {
       "name": "Clock tower (plan position, in the same roof-level frame as the south slab outline)",
       "kind": "building",
       "style": "clock-tower",
-      "height": 40,
-      "heightBasis": "top about twice the 5-storey slab height in frame 8 of the 2018 video; rough estimate, +/- 5 m",
+      "height": 41,
+      "heightBasis": "cap top 40.7 to 41.9 m from a camera resection of a 2018 frame (t = 27.5 s), tied to the south slab parapet taken as 20.7 m, so it scales with that assumption; the head panel on the mosaic gives 41 to 45 m. 41 +/- 3 m. Platform about 32 to 33 m, fins from about 26.5 m, mast top about 46 to 47 m",
       "solid": true,
       "walkUnder": false,
-      "confidence": "confirmed in video; POSITION DISPUTED",
-      "measuredBy": "measurement agent (east-slabs), single reading, recheck pending",
-      "positionAccuracyM": 3.2,
+      "confidence": "confirmed in video; position from three agreeing lines of evidence (camera resection of a 2018 frame, the leaning image on the mosaic, the shadow on the canopy roof)",
+      "measuredBy": "measurement agent (east-slabs), single reading, recheck pending; tower-location agent (2026-11), overlay checked by the main session",
+      "positionAccuracyM": 2.3,
       "correctedForObliqueView": true,
-      "notes": "POSITION DISPUTED by the second reading: no shaft is visible where a 40 m tower at this position would lean, and frames 8 to 10 of the 2018 video show the tower directly behind the west end of the south slab within the slab's width, with the glass core on its north side. A candidate (dark-red patch at x 1418-1437, y 1299-1346, low confidence) lies about 6 m east of this position on the ground. Being re-examined. | Identified with moderate-to-good confidence, but NOT as a clean square in plan: because the image is oblique the tower shows as a leaning strip (see clock-tower-leaning-image) with its top displaced about 100 px SSW of its base. This rect is where the shaft sits relative to the south slab's roof outline as drawn (about 20 px = 5.5 m square, 19-39 px west of the slab's west end, level with the northern/central part of the slab's width), so it can be used directly next to the slab entries. True ground position is roughly centre (1413,1255) +/-12. The base is hidden behind the glass stair block. Rough height from video proportions (top is about 6 storey-heights above the slab roof): about 45 m, +/-5, an estimate not a measurement. Evidence: strip follows the lean direction of other vertical edges; sunlit white east-face sliver; teal shadow patch on the canopy's SE corner (x 1355-1390, y 1278-1310) pointing back to it; position matches frames 7-10 (west end of the south slab, glass block on its north side, canopy beyond).",
+      "notes": "RELOCATED (rectPx was [1398, 1292, 1418, 1312], about 6.4 m too far north: that rectangle is the pale roof element of the glass stair block, not the tower). The shaft, about 5.0 m east-west by 5.4 m north-south, stands directly south of the glass block and about 6.5 m west of the south slab's west end, with the link corridor in the gap. Evidence: (1) resection of the 2018 frame at t = 27.5 s puts the shaft between z -70.5 and -64.9, wholly south of the canopy's south-edge plane; (2) the bright sliver from (1414.5,1292) to (1409,1355) on the mosaic is the sunlit east face of the glass block's top and the tower's lower shaft, in the plane x 195.9 to 196.9; (3) with the sun at azimuth about 142.5 degrees the tower's shadow falls on the canopy roof at its south-east corner, where the mosaic shows a blue-grey patch. The east-west depth is the least certain part (about 1 m). The head is a thin north-south panel on a cantilevered platform, not a box. As before, this rectangle is where the shaft passes through the plane of the slab roofs (20.7 m), hence leanReferenceHeightMetres. | Earlier note: EARLIER STATE: position disputed by the second reading: no shaft is visible where a 40 m tower at this position would lean, and frames 8 to 10 of the 2018 video show the tower directly behind the west end of the south slab within the slab's width, with the glass core on its north side. A candidate (dark-red patch at x 1418-1437, y 1299-1346, low confidence) lies about 6 m east of this position on the ground. Being re-examined. | Identified with moderate-to-good confidence, but NOT as a clean square in plan: because the image is oblique the tower shows as a leaning strip (see clock-tower-leaning-image) with its top displaced about 100 px SSW of its base. This rect is where the shaft sits relative to the south slab's roof outline as drawn (about 20 px = 5.5 m square, 19-39 px west of the slab's west end, level with the northern/central part of the slab's width), so it can be used directly next to the slab entries. True ground position is roughly centre (1413,1255) +/-12. The base is hidden behind the glass stair block. Rough height from video proportions (top is about 6 storey-heights above the slab roof): about 45 m, +/-5, an estimate not a measurement. Evidence: strip follows the lean direction of other vertical edges; sunlit white east-face sliver; teal shadow patch on the canopy's SE corner (x 1355-1390, y 1278-1310) pointing back to it; position matches frames 7-10 (west end of the south slab, glass block on its north side, canopy beyond).",
       "shape": "polygon",
       "points": [
         [
-          192.2,
-          -77
+          191.3,
+          -70.7
         ],
         [
-          197.7,
-          -77
+          196.3,
+          -70.7
         ],
         [
-          197.7,
-          -71.5
+          196.3,
+          -65.2
         ],
         [
-          192.2,
-          -71.5
+          191.3,
+          -65.2
         ]
       ]
     },
@@ -984,32 +984,32 @@ export const CAMPUS = {
       "name": "Glass stair block beside the clock tower (roof element as seen)",
       "kind": "building",
       "style": "stair-core",
-      "height": 22.5,
-      "heightBasis": "about 1.5 storeys above the slab roof per the measurement agent; estimate",
+      "height": 24,
+      "heightBasis": "glass top about 24 m and the roof box about 27 m, from the same resected 2018 frame as the tower; the first estimate was 22.5 m",
       "solid": true,
       "walkUnder": false,
       "confidence": "confirmed in video",
-      "measuredBy": "measurement agent (east-slabs), single reading, recheck pending",
-      "positionAccuracyM": 2.5,
+      "measuredBy": "measurement agent (east-slabs), single reading, recheck pending; tower-location agent (2026-11): extents from bearings in a resected 2018 frame, not read as an outline on the mosaic",
+      "positionAccuracyM": 2.8,
       "correctedForObliqueView": true,
-      "notes": "Small beige/white roof with parapet lines directly north of the tower strip; taken to be the white roof slab on top of the blue-green glass block in frames 8-10 (about 1.5 storeys above the slab roof). In the slab-roof frame it sits about 14 px further north (y 1279-1292), i.e. at and slightly north of the south slab's north-west corner. Full extent of the glass block not resolvable; only this roof element is seen.",
+      "notes": "REPLACED (rectPx was [1397, 1293, 1419, 1306], which is only the pale roof element on top of this block; the stored tower rectangle coincided with the same element). The block stands directly north of the tower and shares its east face: green glass east face from z -77.4 to -72.8, then a white wall to the tower's north face at -70.6; east-west about x 190 to 197, so its west end meets the canopy's east edge. It does not touch the south slab. This rectangle is the ground extent x 190 to 197, z -79 to -70.6 expressed as a roof at 24 m. | Earlier note: Small beige/white roof with parapet lines directly north of the tower strip; taken to be the white roof slab on top of the blue-green glass block in frames 8-10 (about 1.5 storeys above the slab roof). In the slab-roof frame it sits about 14 px further north (y 1279-1292), i.e. at and slightly north of the south slab's north-west corner. Full extent of the glass block not resolvable; only this roof element is seen.",
       "shape": "polygon",
       "points": [
         [
-          192,
-          -77.7
+          190,
+          -79
         ],
         [
-          198.1,
-          -77.7
+          197,
+          -79
         ],
         [
-          198.1,
-          -74.2
+          197,
+          -70.6
         ],
         [
-          192,
-          -74.2
+          190,
+          -70.6
         ]
       ]
     },

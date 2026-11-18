@@ -28,6 +28,7 @@
 //     the stair, the door, 3.6 m storeys to match the west slab, the fin's size and exact place;
 //   - both: the stair layout (dog-leg, flights 1.6-1.8 m wide), landings, handrails, the steepness of the flights.
 // Not enterable: one solid collider each (plus the fin). The stairs are visual only.
+import { plan as slabPlan } from './slab-wide.js';
 import { bbox, itemPolygon } from '../../kit.js';
 import { F, lm, shell, finish, hit, face, door, lamp, dogleg } from './plain-block.js';
 
@@ -69,7 +70,11 @@ function annex(S, r, H, ctx) {
   const FH = 3.6, floors = 5, W = 'wallWhite', WH = lm('white'), CO = lm('concrete');
   const slab = ctx.campus && ctx.campus.items.find(i => i.style === 'teaching-slab-wide');
   const sb = slab ? bbox(itemPolygon(slab)) : null;
-  const zf = sb && sb.s > r.n + 0.5 && sb.s < r.s - 3 ? sb.s : r.n + 0.5;    // where the slab's corridor face meets the tower: the fin stands here
+  // where the slab's corridor face meets the tower: the fin stands here. The slab's outline is its roof, which overhangs the
+  // corridors; the builder of the slab says where the corridor face is.
+  let face0 = sb ? sb.s : null;
+  try { if (slab) { const q = slabPlan(slab, ctx.campus); face0 = q.oz + q.zS; } } catch (e) { /* keep the outline's south edge */ }
+  const zf = face0 !== null && face0 > r.n + 0.5 && face0 < r.s - 3 ? face0 : r.n + 0.5;
   const PW = face('W', r.w), PS = face('S', r.s), PE = face('E', r.e), yT = H - 0.3;
   F(S.v, W, r.w, 0, r.n, r.e - r.w, yT, zf + 0.25 - r.n, 'NSEW');            // white north part
   for (const [x, z] of [[r.w, r.s - 0.5], [r.e - 0.5, r.s - 0.5]]) F(S.v, W, x, 0, z, 0.5, yT, 0.5, 'NSEW');   // corner piers
