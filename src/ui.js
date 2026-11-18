@@ -2,6 +2,7 @@
 // Everything is created here (DOM and CSS); index.html only provides the start panel (#start) and the notice (#notice).
 import { itemPolygon, stadium } from './kit.js';
 import { FOOTPRINTS } from './world/extras/context.js';
+import { CANAL, ROAD_LINES } from './world/extras/landscape.js';
 
 const CSS = `
 .hud{position:fixed;z-index:5;font-family:system-ui,"PingFang SC","Microsoft YaHei",sans-serif;color:#eef2f6;user-select:none;-webkit-user-select:none}
@@ -109,8 +110,11 @@ export function initUI({ player, lighting, campus, camera, renderer, view, place
     const poly = (pts, fill) => { b.beginPath(); pts.forEach(([x, z], i) => (i ? b.lineTo(X(x), Z(z)) : b.moveTo(X(x), Z(z)))); b.closePath(); b.fillStyle = fill; b.fill(); };
     const t = campus.track; poly(stadium(t.cx, t.cz, t.straight, t.outerRadius), '#a5483a'); poly(stadium(t.cx, t.cz, t.straight, t.innerRadius), '#5a9a4c');
     if (campus.courts) { const k = campus.courts.block; poly([[k.w, k.n], [k.e, k.n], [k.e, k.s], [k.w, k.s]], '#3d7f5c'); }
+    // the canal and the roads as the landscape module draws them (the data items that once stood for them are skipped)
+    poly([CANAL.westEdge[0], CANAL.eastEdge[0], CANAL.eastEdge[1], CANAL.westEdge[1]], '#3f6a78');
+    b.strokeStyle = '#6f716c'; b.lineCap = 'butt'; for (const r of ROAD_LINES) { b.lineWidth = Math.max(1.2, r.width * S); b.beginPath(); r.points.forEach(([x, z], i) => (i ? b.lineTo(X(x), Z(z)) : b.moveTo(X(x), Z(z)))); b.stroke(); }
     for (const q of FOOTPRINTS) poly(q, '#a9a79f');                       // surrounding buildings (context.js), a shade darker
-    for (const it of campus.items) poly(itemPolygon(it), it.height <= 0 ? (it.style === 'water' ? '#3f6a78' : '#77786f') : '#d8d5cc');
+    for (const it of campus.items) { if (it.style === 'none') continue; poly(itemPolygon(it), it.height <= 0 ? '#77786f' : '#d8d5cc'); }
   })();
   let tick = 0;
   function drawMap() {

@@ -101,7 +101,7 @@ export const FOOTPRINTS = DATA.flatMap(b => b.parts.map(p => outline(b, p, CAMPU
 // ---------------------------------------------------------------- colours (linear, for vertex colours)
 const C = hex => { const c = new THREE.Color(hex); return [c.r, c.g, c.b]; };
 const WALL = { white: C(0xf0eee6), cream: C(0xe7dcc0), redBrown: C(0x8f4a3a), pinkBrown: C(0xb4826c), grey: C(0xb4b1a8) };
-const GLASS = { dark: C(0x26343b), blue: C(0x3d6e96), teal: C(0x1f4b52), green: C(0x2b5a4b) };
+const GLASS = { dark: C(0x55707c), blue: C(0x6a9cc4), teal: C(0x4a8c92), green: C(0x5a9a84) };      // light: the glass is mirror-like and shows the sky
 const COPE = C(0xe3e0d6), DOOR = C(0x1d2a30), UNIT = C(0xd8d8d2), SLAT = C(0xf2f2ee), DECK = C(0x5c5a55);
 const roofColour = p => { const c = new THREE.Color(p.roofColourInImage || '#b9b6ad'); c.lerp(new THREE.Color(0xffffff), 0.12); return [c.r, c.g, c.b]; };
 
@@ -335,7 +335,7 @@ let flatMat = null, glassMat = null;
 export function build(ctx) {
   // One vertex-coloured material for all matt surfaces, one for all window glass ("glass" in the name: it glows at night).
   flatMat ??= Object.assign(new THREE.MeshStandardMaterial({ vertexColors: true, roughness: 0.86, metalness: 0.02 }), { name: 'context-flat' });
-  glassMat ??= Object.assign(new THREE.MeshStandardMaterial({ vertexColors: true, roughness: 0.12, metalness: 0.35 }), { name: 'context-window-glass' });
+  glassMat ??= Object.assign(new THREE.MeshStandardMaterial({ vertexColors: true, roughness: 0.05, metalness: 0.8, envMapIntensity: 1.3 }), { name: 'context-window-glass' });
   const groups = new Map();                           // one pair of meshes per group: core, south, north, west
   const soup = g => { if (!groups.has(g)) groups.set(g, { flat: new Soup(), glass: new Soup() }); return groups.get(g); };
   for (const b of DATA) {

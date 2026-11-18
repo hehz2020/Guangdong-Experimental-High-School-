@@ -538,6 +538,8 @@ export function createLighting(scene, renderer, opts = {}) {
   setTime(hours);
   const api = {
     sun, suns, hemi, sky, ambient, fill, setTime, follow, moveFill, render, resize, getTime: () => hours,
+    /** 0 by day, 1 once it is dark enough for lamps (the same measure the lit windows follow). */
+    night: () => night,
     /** Switch post-processing off or back on while running (the page does this when frames are slow). True if it was in use. */
     setPost: on => { const was = postEnabled && wantPost; postEnabled = !!on; return was; },
     info: () => ({ hours, elevationDeg: +elDeg.toFixed(1), cascades: N, cascadesPatched: cascadesOk, shadowRes: res, boxes: boxes.map(b => +b.r.toFixed(1)), scale, post: postEnabled ? postState : 'switched off', envBuilds, indoor: +indoor.toFixed(2),

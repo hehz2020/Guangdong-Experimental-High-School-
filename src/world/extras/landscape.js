@@ -1,54 +1,56 @@
-// Ground and vegetation of the campus: trees, lawns, paving, internal roads, the canal on the east side, two tennis
-// courts by the north-west wall, and a plain backdrop beyond the campus.
+// Ground and vegetation of the campus: trees, lawns, paving, the roads with their kerbs, markings and lights, the
+// boundary fence along the canal road, the canal with its stone walls and balustrades, two tennis courts by the
+// north-west wall, and the lamps, benches, notice boards and bicycle racks of the grounds. The city round the campus is
+// in extras/city.js.
 //
 // The numbers in the DATA block below are produced by scripts/make-landscape.py from the zoom-19 satellite mosaic
 // (which is not in the repository) and are also written, with their sources and methods, to data/landscape.json.
 // Regenerate with:  python3 -I scripts/make-landscape.py /path/to/campus_z19.jpg     (rewrites only the DATA block)
 //
-// What comes from where
+// MEASURED (roughly: one oblique image, positions good to a few metres at best)
 //   trees        crowns detected on the mosaic (dark green on a 1 m grid), one tree per crown-sized patch, trunk moved back
-//                by the lean of the oblique view; no trunk inside a building outline (grown 1.5 m), on the track, its apron,
-//                the courts, the seating or a digitised road
+//                by the lean of the oblique view
 //   lawn/paving  classified on the same 1 m grid inside the surveyed area only; outlines by marching squares
-//   roads        centrelines read by hand off gridded crops (each a single reading; see data/landscape.json)
+//   roads        centrelines and widths read by hand off gridded crops (each a single reading; see data/landscape.json)
 //   canal        water edges detected row by row and fitted by a straight line; drawn over the whole height of the mosaic
-//   backdrop     NOT MEASURED, see below
+//   tennis       the two blue playing areas as read off one crop
 //
-// ASSUMED (not shown by any reference, or simplified)
-//   - Tree heights (6 to 12 m by crown size) and the look of every tree: one generic broadleaf shape. Species, the palms
-//     seen in the footage and the real trunk positions under merged crowns are not known.
-//   - The ground hidden under tree crowns is drawn as lawn; so are both canal banks (the 2018 footage shows grass under
-//     the tree rows, frames 2 to 5).
-//   - Lawn and paving are a colour classification of one dark, oblique image: shaded ground takes the class of the nearest
+// ASSUMED OR IMAGINED (nothing below is shown closely by any reference; it is there so that the grounds look finished)
+//   - Tree heights (6 to 12 m by crown size) and the look of every tree: one generic broadleaf kind. Species and the real
+//     trunk positions under merged crowns are not known. Ground hidden under crowns is drawn as lawn.
+//   - GREEN BELT: the ground between the surveyed area and the city (along the main road, west of the stand, south-west
+//     of the track) had no data at all; it is grass with trees set out on a jittered grid.
+//   - Lawn and paving are a colour classification of one dark image: shaded ground takes the class of the nearest
 //     classified ground, and roofs of buildings that are not in campus-data.js come out as paving.
-//   - The mosaic is older than the new teaching building. Around it (the garden and plaza zones recorded in
-//     data/landscape.json) nothing is planted and the ground is plain lawn or plain paving: builders/new-building.js draws
-//     the garden and plaza of the 2022 footage on top.
-//   - The canal is a walled channel whose water lies below the banks (2018 footage). The model's ground is one flat plane,
-//     so the water is drawn at ground level between two low stone kerb walls. Wall height (0.5 m), width and the stone
-//     strip behind it are assumed; the footage does not show whether there is a railing.
+//   - CANAL: the 2018 footage shows a walled channel with the water below the banks and tree rows on both sides. Depth of
+//     the channel (water 1.45 m below the bank), the stone facing, the coping, the paved strip and the stone balustrade
+//     are imagined; the footage does not show whether there is a railing. The main road crosses the canal's north end.
+//   - ROADS: kerbs, pavements, painted lines, gutters and all lights are imagined. The division of the 40 m main road
+//     into a planted median, four lanes and a cycle lane each way is a guess, and the road is carried straight on to the
+//     edge of the model. The road along the canal is RE-ROUTED next to the gate: gate.js lays its own street further east
+//     than the measured centreline, and south of the gate the road swings back to the measured line over 50 m.
 //   - The road south of the courts is INFERRED from a gap between two rows of crowns; its surface is not visible.
-//   - The main road north-west of the campus is drawn flat on the ground; part of it may be elevated.
-//   - Tennis courts: outline and the two blue playing areas as read off one crop; white edge line and net line only.
-//   - BACKDROP, NOT MEASURED: housing towers north of the campus (rough positions and heights off a small overview of the
-//     mosaic; the 2022 footage, frames 18 to 20, shows such towers north and north-east), a second, freely placed row
-//     behind them, long depot sheds and a gravel yard east of the canal (rough positions off the same overview). Generic
-//     boxes, no collision.
+//   - BOUNDARY FENCE (brick piers, iron railings on a low wall) along the west side of the canal road, turning in to the
+//     ends of the gate's walls: imagined. Where the real boundary runs is not known; no fence is drawn on the other sides.
+//   - Tennis courts: two regulation courts with nets, an umpire's chair each and a chain-link fence, centred on the two
+//     readings; whether the courts belong to the school is not confirmed.
+//   - FURNITURE (street.js): garden lamps on a jittered 30 m grid, benches, litter bins, notice boards with made-up
+//     posters, a finger post, bicycle racks north of the first dormitory slab, tree pits round the trees that stand in
+//     paving. All imagined.
 //
-// Collision: the two canal walls (an invisible barrier 1.4 m high, so the water cannot be walked on) and the trunks of the
-// trees that stand within 3 m of paving or a road (flagged in the data). Other trunks can be walked through. Crowns never
-// collide.
-//
-// Cost, measured in the default overview with 700 trees (renderer totals with and without this module): 16 draw calls and
-// about 80,000 triangles in the main pass (77,000 of them trees: 100 per crown, 10 per trunk), plus 2 calls and about
-// 52,000 triangles in the shadow pass (crowns of the trees inside the surveyed area). With lowPower a crown is a single
-// blob of 80 triangles: about 66,000 and 42,000.
+// Collision: the canal's two banks (an invisible barrier 1.4 m high), the boundary fence, the tennis fence and nets, lamp
+// posts, benches, bins, boards, racks, and the trunks of the trees that stand within 3 m of paving or a road (flagged in
+// the data). Other trunks can be walked through. Crowns never collide.
 import { FOOTPRINTS } from './context.js';
 import { GATE_AREA } from './gate.js';
 import { forest } from '../../flora.js';
 import { fieldKeepOut } from './athletics.js';
+import { KEEP_OUT } from './track-field.js';
 import { THREE, mat } from '../../kit.js';
 import { Batch } from '../../batch.js';
+import { pbr, plain, waterNormals } from '../../hifi.js';
+import { strips, ribbon, stripMesh } from '../../shapes.js';
+import { FURNITURE, gardenLamp, streetLight, bench, bins, treePit, noticeBoard, bikeRack, fingerPost } from '../../street.js';
 
 /* <landscape-data> generated by scripts/make-landscape.py - do not edit by hand; readable copy with sources: data/landscape.json */
 const DATA = {
@@ -62,8 +64,14 @@ const DATA = {
 };
 /* </landscape-data> */
 
+/** The canal's two water edges (north end first): world/index.js cuts the ground open between them. */
+export const CANAL = DATA.canal;
+/** Rough readings kept from the earlier backdrop (towers, depot sheds): extras/city.js draws them. */
+export const BACKDROP = DATA.backdrop;
+
 const OFFSET_UNITS = -2;                              // depth-buffer units, see ground()
-const Y = { yard: 0.008, lawn: 0.012, paving: 0.014, road: 0.016, strip: 0.018, water: 0.02, court: 0.03, courtPaint: 0.045 };
+const Y = { yard: 0.008, lawn: 0.012, paving: 0.014, road: 0.016, strip: 0.018, walk: 0.02, paint: 0.024, court: 0.03, courtPaint: 0.045 };
+const WATER_Y = -1.45, BED_Y = -2.6;                 // the canal's water level and the foot of its walls
 const rnd = (a, b, k = 1) => { const s = Math.sin(a * 12.9898 + b * 78.233 + k * 37.719) * 43758.5453; return s - Math.floor(s); };
 
 // The ground layers lie only millimetres apart, and seen from far above the depth buffer cannot tell them from the ground
@@ -72,11 +80,11 @@ const rnd = (a, b, k = 1) => { const s = Math.sin(a * 12.9898 + b * 78.233 + k *
 const lifted = new Map();
 function ground(material) {
   const base = typeof material === 'string' ? mat(material) : material;
-  if (!lifted.has(base)) { const m = base.clone(); m.polygonOffset = true; m.polygonOffsetFactor = 0; m.polygonOffsetUnits = OFFSET_UNITS; lifted.set(base, m); }
+  if (!lifted.has(base)) { const m = base.clone(); m.name = base.name; m.polygonOffset = true; m.polygonOffsetFactor = 0; m.polygonOffsetUnits = OFFSET_UNITS; lifted.set(base, m); }
   return lifted.get(base);
 }
 /** One merged, upward-facing mesh from polygons [{ outer: [[x, z], ...], holes: [[[x, z], ...], ...] }], texture coordinates in metres. */
-function groundMesh(polys, y, material) {
+export function groundMesh(polys, y, material) {
   const pos = [], uv = [], idx = [];
   for (const poly of polys) {
     const base = pos.length / 3, rings = [poly.outer, ...(poly.holes || [])];
@@ -97,144 +105,378 @@ function groundMesh(polys, y, material) {
   g.setIndex(idx);
   const m = new THREE.Mesh(g, ground(material)); m.receiveShadow = true; m.renderOrder = 1 + Math.round(y * 1000); return m;
 }
-/** Polygon of a polyline widened to `width` (mitred, the mitre capped at twice the half width). */
-function band(points, width) {
-  const L = [], R = [], h = width / 2;
-  points.forEach((p, i) => {
+
+// ---- paths ---------------------------------------------------------------------------------------------------------
+/** A path moved sideways by d (mitred, the mitre capped at twice the distance). Positive d is to the left of someone looking along it on a map with north up... for a path running south that is the WEST side. */
+function offsetPath(points, d) {
+  return points.map((p, i) => {
     const a = points[Math.max(0, i - 1)], b = points[Math.min(points.length - 1, i + 1)];
     const d1 = i > 0 ? [p[0] - a[0], p[1] - a[1]] : [b[0] - p[0], b[1] - p[1]], d2 = i < points.length - 1 ? [b[0] - p[0], b[1] - p[1]] : d1;
     const n1 = Math.hypot(...d1) || 1, n2 = Math.hypot(...d2) || 1;
     let nx = -d1[1] / n1 - d2[1] / n2, nz = d1[0] / n1 + d2[0] / n2; const nn = Math.hypot(nx, nz) || 1; nx /= nn; nz /= nn;
     const k = Math.min(2, 1 / Math.max(0.2, nx * (-d1[1] / n1) + nz * (d1[0] / n1)));          // 1 / cos(half the turn)
-    L.push([p[0] + nx * h * k, p[1] + nz * h * k]); R.push([p[0] - nx * h * k, p[1] - nz * h * k]);
+    return [p[0] + nx * d * k, p[1] + nz * d * k];
   });
-  // one quad per segment, so a long bent road does not have to be triangulated as one polygon
-  const quads = [];
+}
+/** Quads of the strip of a path between two sideways offsets: one quad per segment, so a long bent road is not triangulated as one polygon. */
+function bandBetween(points, d0, d1) {
+  const L = offsetPath(points, d0), R = offsetPath(points, d1), quads = [];
   for (let i = 0; i < points.length - 1; i++) quads.push({ outer: [L[i], L[i + 1], R[i + 1], R[i]] });
   return quads;
 }
+const band = (points, width) => bandBetween(points, width / 2, -width / 2);
+/** Calls fn(x, z, ux, uz) every `step` metres along a path, the first `start` metres in. (ux, uz): unit direction of travel. */
+function walk(points, step, start, fn) {
+  let s = start, acc = 0;
+  for (let i = 0; i < points.length - 1; i++) {
+    const [ax, az] = points[i], [bx, bz] = points[i + 1], len = Math.hypot(bx - ax, bz - az); if (len < 1e-6) continue;
+    const ux = (bx - ax) / len, uz = (bz - az) / len;
+    while (s <= acc + len) { const t = s - acc; fn(ax + ux * t, az + uz * t, ux, uz); s += step; }
+    acc += len;
+  }
+}
+/** A painted line along a path moved sideways by d. gap 0: solid. */
+function paintLine(into, points, d, width, dash = 0, gap = 0) {
+  const path = d ? offsetPath(points, d) : points;
+  if (!gap) { ribbon(path, width, Y.paint, into); return; }
+  walk(path, dash + gap, gap / 2, (x, z, ux, uz) => ribbon([[x, z], [x + ux * dash, z + uz * dash]], width, Y.paint, into));
+}
+/** Boxes along a path (kerbs, low walls, hedges): one box per segment, in the visible batch and optionally the collider batch. */
+function wallAlong(v, material, points, d, width, height, y0 = 0, c = null, colliderHeight = 0) {
+  const path = d ? offsetPath(points, d) : points;
+  for (let i = 0; i < path.length - 1; i++) {
+    const [ax, az] = path[i], [bx, bz] = path[i + 1], len = Math.hypot(bx - ax, bz - az); if (len < 1e-6) continue;
+    const a = Math.atan2(-(bz - az), bx - ax);
+    v.frame((ax + bx) / 2, (az + bz) / 2, a).box(material, 0, y0 + height / 2, 0, len + width * 0.5, height, width);
+    if (c) c.frame((ax + bx) / 2, (az + bz) / 2, a).box('generic', 0, colliderHeight / 2, 0, len + width * 0.5, colliderHeight, Math.max(width, 0.3));
+  }
+  v.frame(); if (c) c.frame();
+}
+const near = (poly, x, z, margin) => {
+  let inside = false, d = Infinity;
+  for (let i = 0, j = poly.length - 1; i < poly.length; j = i++) {
+    const [ax, az] = poly[j], [bx, bz] = poly[i];
+    if ((az > z) !== (bz > z) && x < (bx - ax) * (z - az) / (bz - az) + ax) inside = !inside;
+    const dx = bx - ax, dz = bz - az, k = Math.max(0, Math.min(1, ((x - ax) * dx + (z - az) * dz) / (dx * dx + dz * dz || 1)));
+    d = Math.min(d, Math.hypot(x - ax - k * dx, z - az - k * dz));
+  }
+  return inside || d < margin;
+};
+const toPath = (points, x, z) => { let d = Infinity; for (let i = 0; i < points.length - 1; i++) { const [ax, az] = points[i], [bx, bz] = points[i + 1], dx = bx - ax, dz = bz - az, k = Math.max(0, Math.min(1, ((x - ax) * dx + (z - az) * dz) / (dx * dx + dz * dz || 1))); d = Math.min(d, Math.hypot(x - ax - k * dx, z - az - k * dz)); } return d; };
 
-/** Low-polygon crown: a lumpy unit blob (plus a smaller one on its shoulder), darker underneath. */
-function crownGeometry(low) {
-  const parts = [[0, 0, 0, 1, 1]];                                   // dx, dy, dz, scale, icosahedron detail
-  if (!low) parts.push([0.42, 0.36, -0.22, 0.6, 0]);
-  const pos = [], nor = [], col = [], v = new THREE.Vector3();
-  for (const [dx, dy, dz, s, detail] of parts) {
-    const p = new THREE.IcosahedronGeometry(1, detail).attributes.position;
-    for (let i = 0; i < p.count; i++) {
-      v.fromBufferAttribute(p, i).normalize();
-      const lump = 1 + 0.15 * Math.sin(v.x * 5.1 + v.y * 3.7) * Math.cos(v.z * 4.3 + v.y * 2.9) + 0.06 * Math.sin(v.x * 11 + v.z * 9);
-      const y = v.y < 0 ? v.y * 0.85 : v.y;                          // slightly flatter underside
-      pos.push(dx + v.x * lump * s, dy + y * lump * s, dz + v.z * lump * s); nor.push(v.x, v.y, v.z);
-      const shade = 0.5 + 0.5 * THREE.MathUtils.smoothstep(dy + y * s, -0.8, 0.9);
-      col.push(shade, shade, shade);
+// ---- what is drawn where -------------------------------------------------------------------------------------------
+// The road along the canal is re-routed where it meets the dressed gate area (gate.js lays its own street 18 to 30 m east
+// of the gate line): the measured centreline is followed north of the area, and south of it the road swings back from the
+// gate's street to the measured line over 50 m.
+const GATE_N = -58, GATE_S = 18;
+// outline of the surveyed area (data/landscape.json, surveyArea): lamps and benches are only set out inside it
+const SURVEY = [[-104.8, -68.9], [26.5, -159.0], [110.3, -215.9], [161.1, -250.8], [321.3, -250.8], [257.0, 150.8], [133.6, 150.8], [133.6, 101.4], [-61.4, 101.4], [-97.1, 35.4], [-104.8, 32.7]];
+const ROADS = (() => {
+  const out = [];
+  for (const r of DATA.roads) {
+    // the main road is one straight line: it is carried on to the edges of the modelled ground
+    if (r.id === 'road-context-north-west') { out.push({ ...r, kind: 'arterial', points: [[-736.6, 278.7], ...r.points, [763.4, -706.0]] }); continue; }
+    if (r.id !== 'road-canal') { out.push({ ...r, kind: 'lane' }); continue; }
+    const north = r.points.filter(p => p[1] < GATE_N - 6), south = r.points.filter(p => p[1] > 80);
+    out.push({ ...r, id: 'road-canal-north', kind: 'street', points: [...north, [271.2, GATE_N]] });
+    out.push({ ...r, id: 'road-canal-south', kind: 'street', points: [[271, GATE_S], [269.2, 30], [263, 44], [254.5, 57], [249.2, 69], ...south] });
+  }
+  return out;
+})();
+/** Centrelines and widths of the roads as drawn (the canal road in two parts, see above). */
+export const ROAD_LINES = ROADS.map(r => ({ id: r.id, kind: r.kind, points: r.points, width: r.widthM }));
+// The boundary fence: along the west side of the canal road, turning in to meet the ends of the gate's own walls.
+const FENCE_OFFSET = 6.4;
+const FENCES = (() => {
+  const n = ROADS.find(r => r.id === 'road-canal-north'), s = ROADS.find(r => r.id === 'road-canal-south');
+  const north = offsetPath(n.points, FENCE_OFFSET).filter(p => p[1] > -206 && p[1] < GATE_N - 3), south = offsetPath(s.points, FENCE_OFFSET).filter(p => p[1] > GATE_S + 16);
+  return [[...north, [264.6, GATE_N], [247.2, GATE_N]], [[247.2, GATE_S], [262.5, GATE_S], [262.4, 30], ...south]];
+})();
+
+function makeSite(ctx) {
+  const items = (ctx.campus && ctx.campus.items) || [], circle = i => Array.from({ length: 24 }, (_, k) => [i.cx + i.radius * Math.cos(k / 24 * 6.283), i.cz + i.radius * Math.sin(k / 24 * 6.283)]);
+  const outline = i => (i.shape === 'circle' ? circle(i) : i.points);
+  const built = [...items.filter(i => i.height > 0).map(outline), ...FOOTPRINTS];
+  const t = ctx.campus.track, k = ctx.campus.courts && ctx.campus.courts.block, tennis = DATA.tennisCourts && DATA.tennisCourts.surround;
+  const inside = (poly, x, z) => { let on = false; for (let i = 0, j = poly.length - 1; i < poly.length; j = i++) { const [ax, az] = poly[j], [bx, bz] = poly[i]; if ((az > z) !== (bz > z) && x < (bx - ax) * (z - az) / (bz - az) + ax) on = !on; } return on; };
+  const onTrack = (x, z, m) => { const hs = t.straight / 2, dz = Math.max(0, Math.abs(z - t.cz) - hs); return Math.hypot(x - t.cx, dz) < t.outerRadius + 2.2 + m; };
+  const { westEdge: w } = DATA.canal, canalX = z => w[0][0] + (w[1][0] - w[0][0]) * (z - w[0][1]) / (w[1][1] - w[0][1]);
+  return {
+    built,
+    /** True on ground classified as paving. */
+    paved: (x, z) => DATA.ground.paving.some(p => inside(p.outer, x, z) && !(p.holes || []).some(h => inside(h, x, z))),
+    /** Distance to the nearest building outline (0 inside one). */
+    clearance(x, z) { let best = Infinity; for (const poly of built) { if (near(poly, x, z, 0)) return 0; for (let i = 0, j = poly.length - 1; i < poly.length; j = i++) { const [ax, az] = poly[j], [bx, bz] = poly[i], dx = bx - ax, dz = bz - az, q = Math.max(0, Math.min(1, ((x - ax) * dx + (z - az) * dz) / (dx * dx + dz * dz || 1))); best = Math.min(best, Math.hypot(x - ax - q * dx, z - az - q * dz)); } } return best; },
+    /** True where a small thing can stand: clear of buildings by m, off the track, the courts, the roads, the gate area and the canal. */
+    free(x, z, m = 1.2, roads = true) {
+      if (onTrack(x, z, m) || near(GATE_AREA, x, z, m) || x > canalX(z) - 1.2 - m) return false;
+      if (k && x > k.w - m && x < k.e + m && z > k.n - m && z < k.s + m) return false;
+      if (tennis && near(tennis, x, z, m + 5)) return false;
+      if (near(fieldKeepOut(t), x, z, m) || KEEP_OUT.some(([kx, kz, kr]) => Math.hypot(x - kx, z - kz) < kr + m)) return false;
+      if (roads && ROADS.some(r => toPath(r.points, x, z) < r.widthM / 2 + m)) return false;
+      return this.clearance(x, z) > m;
+    },
+  };
+}
+
+// ---- roads ---------------------------------------------------------------------------------------------------------
+function buildRoads(ctx, v, c, low) {
+  const white = strips(), yellow = strips(), quads = { asphalt: [], concrete: [], walk: [] };
+  const kerb = FURNITURE.kerb(), hedge = pbr('hedge', [0x2a4a22]);
+  for (const r of ROADS) {
+    const p = r.points, h = r.widthM / 2;
+    if (r.kind === 'arterial') {
+      // 40 m between the walls: a planted median, four lanes and a cycle lane each way, pavements. The division is a guess.
+      quads.asphalt.push(...bandBetween(p, 16.5, -16.5)); quads.walk.push(...bandBetween(p, h, 16.5), ...bandBetween(p, -16.5, -h));
+      for (const s of [-1, 1]) {
+        wallAlong(v, kerb, p, s * 16.5, 0.24, 0.14); wallAlong(v, kerb, p, s * 1.0, 0.18, 0.2);
+        paintLine(white, p, s * 1.5, 0.15); paintLine(white, p, s * 12.3, 0.15);
+        for (const o of [5.1, 8.7]) paintLine(white, p, s * o, 0.15, 6, 9);
+      }
+      wallAlong(v, hedge, p, 0, 1.5, 0.75, 0.12);
+      walk(p, 45, 12, (x, z, ux, uz) => { streetLight(v, null, x, z, Math.atan2(-ux, -uz), 10, 2.8); streetLight(v, null, x, z, Math.atan2(ux, uz), 10, 2.8); });
+    } else if (r.kind === 'street') {
+      quads.asphalt.push(...band(p, r.widthM)); quads.walk.push(...bandBetween(p, h + 2.6, h + 0.2));
+      for (const s of [-1, 1]) { wallAlong(v, kerb, p, s * (h + 0.1), 0.22, 0.12); paintLine(white, p, s * (h - 0.3), 0.12); }
+      paintLine(yellow, p, 0, 0.14, 4, 6);
+      // lights on the campus side, leaning over the carriageway
+      walk(offsetPath(p, h + 0.9), 32, 8, (x, z, ux, uz) => streetLight(v, c, x, z, Math.atan2(ux, uz), 8, 2.0));
+    } else {
+      quads[r.surface === 'asphalt' ? 'asphalt' : 'concrete'].push(...band(p, r.widthM));
+      for (const s of [-1, 1]) wallAlong(v, kerb, p, s * (h + 0.09), 0.18, 0.06);
+      // a gutter with a cast-iron grating every 12 m on one side
+      walk(offsetPath(p, -(h - 0.35)), 12, 5, (x, z, ux, uz) => { v.frame(x, z, Math.atan2(-uz, ux)); const dr = plain('drain', 0x3b3d40, 0.7, 0.4); v.box(FURNITURE.kerb(), 0, 0.02, 0, 0.56, 0.012, 0.36); for (let q = -2; q <= 2; q++) v.box(dr, q * 0.1, 0.024, 0, 0.045, 0.012, 0.28); v.frame(); });
     }
   }
-  const g = new THREE.BufferGeometry();
-  g.setAttribute('position', new THREE.Float32BufferAttribute(pos, 3));
-  g.setAttribute('normal', new THREE.Float32BufferAttribute(nor, 3));
-  g.setAttribute('color', new THREE.Float32BufferAttribute(col, 3));
-  return g;
+  const pave = pbr('paving', [0xb9b3a7, 0x9c968c, 4, 8, [2.4, 2.4], 11, true]);
+  ctx.add(groundMesh(quads.asphalt, Y.road, 'asphalt')).name = 'roads-asphalt';
+  ctx.add(groundMesh(quads.concrete, Y.road, 'concrete')).name = 'roads-concrete';
+  ctx.add(groundMesh(quads.walk, Y.walk, pave)).name = 'pavements';
+  ctx.add(stripMesh(white, plain('roadpaint', 0xe9e6dc, 0.7, 0), { order: 40, offset: -3 })).name = 'road-lines';
+  ctx.add(stripMesh(yellow, plain('roadyellow', 0xd9a623, 0.7, 0), { order: 40, offset: -3 })).name = 'road-lines-yellow';
 }
 
-function buildTrees(ctx, low) {
-  // [x, z, height, crown radius, trunk collides, casts shadow]. The crowns were detected before the wide road beyond the
-  // north-west wall was recorded, so a few trunks stood on its carriageway: those are dropped here.
-  const wide = DATA.roads.find(r => r.id === 'road-context-north-west');
-  const onRoad = (x, z) => !!wide && wide.points.some((a, i) => { const b = wide.points[i + 1]; if (!b) return false;
-    const dx = b[0] - a[0], dz = b[1] - a[1], k = Math.max(0, Math.min(1, ((x - a[0]) * dx + (z - a[1]) * dz) / (dx * dx + dz * dz)));
-    return Math.hypot(x - a[0] - k * dx, z - a[1] - k * dz) < wide.widthM / 2 + 1; });
-  // The crowns were also detected before the surrounding buildings (context.js) existed and while the link corridors were
-  // taken for low canopies: trees standing in or within 1.8 m of those buildings, or within 2.5 m of an elevated walkway
-  // (its deck is about 8 m up, lower than most crowns), are dropped as well.
-  const near = (poly, x, z, margin) => {
-    let inside = false, d = Infinity;
-    for (let i = 0, j = poly.length - 1; i < poly.length; j = i++) {
-      const [ax, az] = poly[j], [bx, bz] = poly[i];
-      if ((az > z) !== (bz > z) && x < (bx - ax) * (z - az) / (bz - az) + ax) inside = !inside;
-      const dx = bx - ax, dz = bz - az, k = Math.max(0, Math.min(1, ((x - ax) * dx + (z - az) * dz) / (dx * dx + dz * dz || 1)));
-      d = Math.min(d, Math.hypot(x - ax - k * dx, z - az - k * dz));
+// ---- boundary fence ------------------------------------------------------------------------------------------------
+function picketMaterial() {
+  const W = 256, H = 256, cv = document.createElement('canvas'); cv.width = W; cv.height = H; const g = cv.getContext('2d');
+  g.clearRect(0, 0, W, H); g.fillStyle = '#20382c';
+  for (let i = 0; i < 8; i++) { const x = (i + 0.5) * W / 8; g.fillRect(x - 3.5, 22, 7, H - 22); g.beginPath(); g.moveTo(x - 8, 30); g.lineTo(x, 0); g.lineTo(x + 8, 30); g.closePath(); g.fill(); }
+  g.fillRect(0, 46, W, 9); g.fillRect(0, H - 34, W, 9);
+  for (let i = 0; i < 8; i++) { g.beginPath(); g.arc(i * W / 8, 100, 12, 0, 6.283); g.lineWidth = 4; g.strokeStyle = '#20382c'; g.stroke(); }
+  const t = new THREE.CanvasTexture(cv); t.colorSpace = THREE.SRGBColorSpace; t.wrapS = THREE.RepeatWrapping; t.repeat.set(1 / 1.1, 1 / 1.55); t.anisotropy = 8;
+  const m = new THREE.MeshStandardMaterial({ map: t, alphaTest: 0.35, side: THREE.DoubleSide, roughness: 0.5, metalness: 0.5 }); m.name = 'hifi-pickets'; return m;
+}
+/** Iron railings on a low wall between brick piers, along FENCES. Bays that would run into a building are left out. */
+function buildFence(ctx, v, c, site) {
+  const pickets = picketMaterial(), brick = mat('brickRed'), cap = FURNITURE.kerb(), base = pbr('cladding', [0xe9e4d8, 1.2, 0.6, 0.6]), BAY = 4.4;
+  for (const line of FENCES) {
+    for (let i = 0; i < line.length - 1; i++) {
+      const [ax, az] = line[i], [bx, bz] = line[i + 1], len = Math.hypot(bx - ax, bz - az), n = Math.max(1, Math.round(len / BAY)), bay = len / n, a = Math.atan2(-(bz - az), bx - ax);
+      for (let k = 0; k < n; k++) {
+        const t0 = k / n, mx = ax + (bx - ax) * (t0 + 0.5 / n), mz = az + (bz - az) * (t0 + 0.5 / n);
+        if (site.clearance(mx, mz) < 1.6) continue;
+        v.frame(mx, mz, a); c.frame(mx, mz, a);
+        v.box(base, 0, 0.3, 0, bay, 0.6, 0.3).box(cap, 0, 0.63, 0, bay, 0.06, 0.38);
+        v.quad(pickets, [-bay / 2 + 0.2, 0.66, 0], [bay / 2 - 0.2, 0.66, 0], [bay / 2 - 0.2, 2.21, 0], [-bay / 2 + 0.2, 2.21, 0]);
+        v.box(brick, -bay / 2, 1.2, 0, 0.48, 2.4, 0.48).box(cap, -bay / 2, 2.44, 0, 0.6, 0.08, 0.6).box(cap, -bay / 2, 2.54, 0, 0.36, 0.12, 0.36);
+        if (k === n - 1) v.box(brick, bay / 2, 1.2, 0, 0.48, 2.4, 0.48).box(cap, bay / 2, 2.44, 0, 0.6, 0.08, 0.6).box(cap, bay / 2, 2.54, 0, 0.36, 0.12, 0.36);
+        c.box('generic', 0, 1.2, 0, bay + 0.3, 2.4, 0.4);
+      }
     }
-    return inside || d < margin;
-  };
-  const decks = ((ctx.campus && ctx.campus.items) || []).filter(i => i.style === 'walkway' && i.points).map(i => i.points);
-  // The gate and pool area (gate.js) brings its own planting.
-  const blocked = (x, z) => onRoad(x, z) || FOOTPRINTS.some(q => near(q, x, z, 1.8)) || decks.some(q => near(q, x, z, 2.5)) || near(GATE_AREA, x, z, 1.5) || near(fieldKeepOut(ctx.campus.track), x, z, 2.5);
-  const list = DATA.trees.list.filter(([x, z]) => !blocked(x, z));
-  // Trees are leaf-card trees from flora.js (they replaced one-blob crowns): split into cells so that hidden cells are skipped.
-  const woods = forest(list.map(([x, z, h, r]) => [x, z, h, r]), { seed: 11, low }); woods.name = 'trees'; ctx.add(woods);
-  // trunk colliders: thin five-sided posts, only for the trees flagged in the data (near paving or a road)
-  const col = new Batch();
-  for (const [x, z, h, r, solid] of list) if (solid) col.cyl('generic', x, 0, z, 0.2 + 0.018 * h, 2.4, 5, false);
-  const cg = col.build(); ctx.add(cg).visible = false; cg.children.forEach(mesh => ctx.collide(mesh));
+  }
+  v.frame(); c.frame();
 }
 
-function buildCanal(ctx) {
+// ---- canal ---------------------------------------------------------------------------------------------------------
+function buildCanal(ctx, low) {
   const { westEdge: w, eastEdge: e } = DATA.canal;
-  ctx.add(groundMesh([{ outer: [w[0], e[0], e[1], w[1]] }], Y.water, 'water')).name = 'canal-water';
-  // a stone strip along each bank (0.5 to 2.1 m from the water) ...
-  const ax = e[0][0] - w[0][0], az = e[0][1] - w[0][1], an = Math.hypot(ax, az), off = (p, d) => [p[0] + ax / an * d, p[1] + az / an * d];
-  const strip = (edge, s) => ({ outer: [off(edge[0], s * 0.5), off(edge[0], s * 2.1), off(edge[1], s * 2.1), off(edge[1], s * 0.5)] });
-  ctx.add(groundMesh([strip(w, -1), strip(e, 1)], Y.strip, 'concrete')).name = 'canal-coping';
-  // ... and a low wall at the water's edge, as one long box per bank (the collider is taller: nobody jumps over it)
+  const stone = pbr('paving', [0x8f8a7f, 0x7c776d, 2, 5, [3.0, 3.0], 23, true]), coping = pbr('concrete', [0xd3cfc4]), slime = plain('algae', 0x39472f, 0.85, 0);
+  const rail = pbr('concrete', [0xcfcac0]);
+  // water: murky green, glossy, slowly drifting ripples. It lies below the banks, in a channel open in the ground.
+  const ripple = waterNormals().clone(); ripple.wrapS = ripple.wrapT = THREE.RepeatWrapping; ripple.repeat.set(1 / 7, 1 / 7); ripple.needsUpdate = true;
+  const water = new THREE.MeshStandardMaterial({ color: 0x33493a, roughness: 0.07, metalness: 0.4, normalMap: ripple, envMapIntensity: 1.5 }); water.normalScale.set(0.45, 0.45); water.name = 'canal-water';
+  const wm = groundMesh([{ outer: [w[0], e[0], e[1], w[1]] }], WATER_Y, water); wm.material = water; wm.renderOrder = 0; wm.name = 'canal-water'; ctx.add(wm);
+  if (ctx.animate) ctx.animate((dt, t) => { ripple.offset.set(t * 0.012, t * 0.021); });
+
   const dx = w[1][0] - w[0][0], dz = w[1][1] - w[0][1], len = Math.hypot(dx, dz), angle = Math.atan2(-dz, dx);
-  const v = new Batch(), c = new Batch();
-  for (const [edge, side] of [[w, 1], [e, -1]]) {                    // local +Z is to the right of the direction of travel (north to south): west
+  const v = new Batch(), c = new Batch(), W = (p, y) => [p[0], y, p[1]];
+  // channel walls (stone blocks), a dark band at the waterline, end walls
+  v.quad(stone, W(w[1], BED_Y), W(w[0], BED_Y), W(w[0], 0.02), W(w[1], 0.02)).quad(stone, W(e[0], BED_Y), W(e[1], BED_Y), W(e[1], 0.02), W(e[0], 0.02));
+  v.quad(stone, W(w[0], BED_Y), W(e[0], BED_Y), W(e[0], 0.02), W(w[0], 0.02)).quad(stone, W(e[1], BED_Y), W(w[1], BED_Y), W(w[1], 0.02), W(e[1], 0.02));
+  const inX = 0.03;
+  v.quad(slime, [w[1][0] + inX, WATER_Y, w[1][1]], [w[0][0] + inX, WATER_Y, w[0][1]], [w[0][0] + inX, WATER_Y + 0.38, w[0][1]], [w[1][0] + inX, WATER_Y + 0.38, w[1][1]]);
+  v.quad(slime, [e[0][0] - inX, WATER_Y, e[0][1]], [e[1][0] - inX, WATER_Y, e[1][1]], [e[1][0] - inX, WATER_Y + 0.38, e[1][1]], [e[0][0] - inX, WATER_Y + 0.38, e[0][1]]);
+  // coping, a paved strip behind it, and a stone balustrade. Local +X runs along the canal (north to south), local +Z is west.
+  const ax = e[0][0] - w[0][0], az = e[0][1] - w[0][1], an = Math.hypot(ax, az), off = (p, d) => [p[0] + ax / an * d, p[1] + az / an * d];
+  const strip = (edge, s) => ({ outer: [off(edge[0], s * 0.5), off(edge[0], s * 2.9), off(edge[1], s * 2.9), off(edge[1], s * 0.5)] });
+  ctx.add(groundMesh([strip(w, -1), strip(e, 1)], Y.strip, pbr('paving', [0xa8a39a, 0x9a958c, 2, 2, [1.6, 1.6], 17, false]))).name = 'canal-walk';
+  const HEAD = 14;                                       // the main road crosses the first metres of the canal on a bridge
+  const BAY = 2.2, ux = dx / len, uz = dz / len, near0 = (-330 - w[0][1]) / uz, near1 = (215 - w[0][1]) / uz;      // detailed between z -330 and 215
+  for (const [edge, side] of [[w, 1], [e, -1]]) {
     const mx = (edge[0][0] + edge[1][0]) / 2, mz = (edge[0][1] + edge[1][1]) / 2;
-    v.frame(mx, mz, angle).box('concrete', 0, 0.25, side * 0.25, len, 0.5, 0.5);
-    c.frame(mx, mz, angle).box('generic', 0, 0.7, side * 0.25, len, 1.4, 0.5);
+    v.frame(mx, mz, angle).box(coping, HEAD / 2, 0.11, side * 0.24, len - HEAD, 0.22, 0.64);
+    c.frame(mx, mz, angle).box('generic', HEAD / 2, 0.7, side * 0.3, len - HEAD, 1.4, 0.5);
+    // far stretches: a plain parapet
+    for (const [s0, s1] of [[HEAD, near0], [near1, len]]) v.box(rail, (s0 + s1) / 2 - len / 2, 0.22 + 0.5, side * 0.3, s1 - s0, 1.0, 0.2);
+    // near stretch: posts with caps, two rails and balusters, in runs of 30 bays so that hidden runs are skipped
+    const bays = Math.floor((near1 - near0) / BAY);
+    for (let k0 = 0; k0 < bays; k0 += 30) {
+      const run = new Batch(), z0 = side * 0.3;
+      for (let k = k0; k < Math.min(bays, k0 + 30); k++) {
+        const s = near0 + k * BAY, px = edge[0][0] + ux * s, pz = edge[0][1] + uz * s;
+        run.frame(px, pz, angle, 0.22);
+        run.box(rail, 0, 0.55, z0, 0.24, 1.1, 0.24).box(rail, 0, 1.13, z0, 0.31, 0.06, 0.31).box(rail, 0, 1.22, z0, 0.18, 0.12, 0.18);
+        run.box(rail, BAY / 2, 0.98, z0, BAY - 0.24, 0.12, 0.17).box(rail, BAY / 2, 0.14, z0, BAY - 0.24, 0.12, 0.15);
+        if (low) run.box(rail, BAY / 2, 0.56, z0, BAY - 0.24, 0.72, 0.07);
+        else for (let q = 0; q < 5; q++) run.box(rail, 0.12 + (q + 0.5) * (BAY - 0.24) / 5, 0.56, z0, 0.11, 0.72, 0.1);
+      }
+      const g = run.build({ name: 'canal-balustrade' }); ctx.add(g);
+    }
   }
   ctx.add(v.build({ name: 'canal-walls' }));
   const cg = c.build(); ctx.add(cg).visible = false; cg.children.forEach(mesh => ctx.collide(mesh));
 }
 
-function buildTennis(ctx) {
+// ---- tennis --------------------------------------------------------------------------------------------------------
+function tennisTexture() {
+  // 36.6 x 18.3 m playing area with run-off, 24 px per metre; the court itself is 23.77 x 10.97 m
+  const S = 24, L = 30, B = 15, cv = document.createElement('canvas'); cv.width = L * S; cv.height = B * S; const g = cv.getContext('2d');
+  g.fillStyle = '#2f6e4f'; g.fillRect(0, 0, cv.width, cv.height);
+  const cx = L / 2 * S, cy = B / 2 * S, hl = 23.77 / 2 * S, hw = 10.97 / 2 * S, sw = 8.23 / 2 * S, sv = 6.4 * S;
+  g.fillStyle = '#3a66a8'; g.fillRect(cx - hl, cy - hw, 2 * hl, 2 * hw);
+  g.strokeStyle = '#f4f2ec'; g.lineWidth = 0.06 * S * 1.3;
+  g.strokeRect(cx - hl, cy - hw, 2 * hl, 2 * hw);
+  const line = (x0, y0, x1, y1) => { g.beginPath(); g.moveTo(x0, y0); g.lineTo(x1, y1); g.stroke(); };
+  line(cx - hl, cy - sw, cx + hl, cy - sw); line(cx - hl, cy + sw, cx + hl, cy + sw);            // singles side lines
+  line(cx - sv, cy - sw, cx - sv, cy + sw); line(cx + sv, cy - sw, cx + sv, cy + sw);            // service lines
+  line(cx - sv, cy, cx + sv, cy);                                                                // centre service line
+  line(cx - hl, cy, cx - hl + 0.25 * S, cy); line(cx + hl, cy, cx + hl - 0.25 * S, cy);          // centre marks
+  const tex = new THREE.CanvasTexture(cv); tex.colorSpace = THREE.SRGBColorSpace; tex.anisotropy = 8; return tex;
+}
+function netMaterial() {
+  const S = 128, cv = document.createElement('canvas'); cv.width = S; cv.height = S; const g = cv.getContext('2d');
+  g.clearRect(0, 0, S, S); g.strokeStyle = 'rgba(20,20,22,1)'; g.lineWidth = 2;
+  for (let i = 0; i <= 8; i++) { g.beginPath(); g.moveTo(i * S / 8, 0); g.lineTo(i * S / 8, S); g.moveTo(0, i * S / 8); g.lineTo(S, i * S / 8); g.stroke(); }
+  const t = new THREE.CanvasTexture(cv); t.colorSpace = THREE.SRGBColorSpace; t.wrapS = t.wrapT = THREE.RepeatWrapping; t.repeat.set(1 / 0.4, 1 / 0.4); t.anisotropy = 4;
+  const m = new THREE.MeshStandardMaterial({ map: t, alphaTest: 0.3, side: THREE.DoubleSide, roughness: 0.8 }); m.name = 'hifi-tennisnet'; return m;
+}
+function buildTennis(ctx, v, c) {
   const t = DATA.tennisCourts; if (!t) return;
-  ctx.add(groundMesh([{ outer: t.surround }], Y.court, 'courtGreen')).name = 'tennis-surround';
-  const S = 16, cv = document.createElement('canvas'); cv.width = 24 * S; cv.height = 11 * S; const g = cv.getContext('2d');
-  g.fillStyle = '#3f5fa8'; g.fillRect(0, 0, cv.width, cv.height); g.strokeStyle = '#ffffff'; g.lineWidth = 3;
-  g.strokeRect(2, 2, cv.width - 4, cv.height - 4); g.beginPath(); g.moveTo(cv.width / 2, 0); g.lineTo(cv.width / 2, cv.height); g.stroke();
-  const tex = new THREE.CanvasTexture(cv); tex.colorSpace = THREE.SRGBColorSpace; tex.anisotropy = 8;
-  const paint = new THREE.MeshStandardMaterial({ map: tex, roughness: 0.9 });
-  const pos = [], uv = [], idx = [];
-  t.courts.forEach((q, k) => {                                       // four corners as read; the first edge is a long side
-    for (const [x, z] of q) pos.push(x, Y.courtPaint, z);
+  // Two regulation courts (each 30 x 15 m with its run-off) side by side: centred on the two blue areas as read and turned
+  // their mean way. The green surround is the rectangle round both; it is a few metres larger than the outline as read.
+  const mid = q => [(q[0][0] + q[1][0] + q[2][0] + q[3][0]) / 4, (q[0][1] + q[1][1] + q[2][1] + q[3][1]) / 4], C = t.courts.map(mid);
+  let lx = 0, lz = 0; for (const q of t.courts) { const dx = q[1][0] - q[0][0], dz = q[1][1] - q[0][1], l = Math.hypot(dx, dz); lx += dx / l; lz += dz / l; }
+  { const l = Math.hypot(lx, lz); lx /= l; lz /= l; }
+  const ox = (C[0][0] + C[1][0]) / 2, oz = (C[0][1] + C[1][1]) / 2, P = (a, b) => [ox + lx * a - lz * b, oz + lz * a + lx * b];
+  const offs = C.map(([x, z]) => -(x - ox) * lz + (z - oz) * lx), b0 = Math.min(...offs) - 8.6, b1 = Math.max(...offs) + 8.6;
+  const surround = [P(-16.2, b0), P(16.2, b0), P(16.2, b1), P(-16.2, b1)];
+  ctx.add(groundMesh([{ outer: surround }], Y.court, 'courtGreen')).name = 'tennis-surround';
+  const paint = new THREE.MeshStandardMaterial({ map: tennisTexture(), roughness: 0.88 }); paint.name = 'hifi-tenniscourt';
+  const net = netMaterial(), post = FURNITURE.green(), white = FURNITURE.white(), pos = [], uv = [], idx = [], a = Math.atan2(-lz, lx);
+  offs.forEach((b, k) => {
+    const corners = [P(-15, b - 7.5), P(15, b - 7.5), P(15, b + 7.5), P(-15, b + 7.5)], o = 4 * k, [cx, cz] = P(0, b);
+    for (const [x, z] of corners) pos.push(x, Y.courtPaint, z);
     uv.push(0, 0, 1, 0, 1, 1, 0, 1);
-    const A = q[0], B = q[1], C = q[2], up = (B[1] - A[1]) * (C[0] - A[0]) - (B[0] - A[0]) * (C[1] - A[1]), o = 4 * k;
+    const A = corners[0], B = corners[1], Cc = corners[2], up = (B[1] - A[1]) * (Cc[0] - A[0]) - (B[0] - A[0]) * (Cc[1] - A[1]);
     idx.push(...(up >= 0 ? [o, o + 1, o + 2, o, o + 2, o + 3] : [o, o + 2, o + 1, o, o + 3, o + 2]));
+    // net across the middle with its posts, centre strap and white band; an umpire's chair at one end of the net
+    v.frame(cx, cz, a); c.frame(cx, cz, a);
+    v.quad(net, [0, 0.02, -6.4], [0, 0.02, 6.4], [0, 0.99, 6.4], [0, 0.99, -6.4]);
+    v.box(white, 0, 1.0, 0, 0.03, 0.06, 12.8).box(white, 0, 0.5, 0, 0.035, 0.96, 0.05);
+    for (const s of [-1, 1]) v.cyl(post, 0, 0, s * 6.4, 0.045, 1.07, 10);
+    c.box('generic', 0, 0.5, 0, 0.1, 1.0, 12.9);
+    v.box(post, 0, 0.9, -8.0, 0.5, 0.05, 0.5).box(post, 0, 1.25, -8.24, 0.5, 0.7, 0.04);
+    for (const [px, pz] of [[-0.23, -7.77], [0.23, -7.77], [-0.23, -8.23], [0.23, -8.23]]) v.box(post, px, 0.45, pz, 0.04, 0.9, 0.04);
+    for (let i = 0; i < 3; i++) v.box(post, 0, 0.25 + i * 0.25, -7.74, 0.46, 0.03, 0.05);
+    c.box('generic', 0, 0.8, -8.0, 0.6, 1.6, 0.6);
   });
+  v.frame(); c.frame();
   const g2 = new THREE.BufferGeometry();
   g2.setAttribute('position', new THREE.Float32BufferAttribute(pos, 3));
   g2.setAttribute('normal', new THREE.Float32BufferAttribute(pos.map((_, i) => (i % 3 === 1 ? 1 : 0)), 3));
   g2.setAttribute('uv', new THREE.Float32BufferAttribute(uv, 2));
   g2.setIndex(idx);
   const m = new THREE.Mesh(g2, ground(paint)); m.receiveShadow = true; m.renderOrder = 1 + Math.round(Y.courtPaint * 1000); m.name = 'tennis-courts'; ctx.add(m);
+  // chain-link fence round the surround, 4 m high, with a gate gap on one long side
+  const S = 128, cv = document.createElement('canvas'); cv.width = cv.height = S; const g = cv.getContext('2d'); g.clearRect(0, 0, S, S); g.strokeStyle = 'rgba(70,110,90,1)'; g.lineWidth = 2.2;
+  for (let i = -8; i <= 16; i++) { g.beginPath(); g.moveTo(i * S / 8, 0); g.lineTo(i * S / 8 + S, S); g.moveTo(i * S / 8, 0); g.lineTo(i * S / 8 - S, S); g.stroke(); }
+  const lt = new THREE.CanvasTexture(cv); lt.colorSpace = THREE.SRGBColorSpace; lt.wrapS = lt.wrapT = THREE.RepeatWrapping; lt.repeat.set(1 / 0.5, 1 / 0.5); lt.anisotropy = 4;
+  const link = new THREE.MeshStandardMaterial({ map: lt, alphaTest: 0.3, side: THREE.DoubleSide, roughness: 0.5, metalness: 0.5 }); link.name = 'hifi-tennisfence';
+  surround.forEach((p, i) => {
+    const q = surround[(i + 1) % surround.length], len = Math.hypot(q[0] - p[0], q[1] - p[1]), ang = Math.atan2(-(q[1] - p[1]), q[0] - p[0]), gate = i === 2;
+    v.frame(p[0], p[1], ang); c.frame(p[0], p[1], ang);
+    const spans = gate ? [[0, len / 2 - 1.2], [len / 2 + 1.2, len]] : [[0, len]];
+    for (const [s0, s1] of spans) { v.quad(link, [s0, 0, 0], [s1, 0, 0], [s1, 4, 0], [s0, 4, 0]).box(post, (s0 + s1) / 2, 4, 0, s1 - s0, 0.06, 0.06).box(post, (s0 + s1) / 2, 0.03, 0, s1 - s0, 0.05, 0.05); c.box('generic', (s0 + s1) / 2, 2, 0, s1 - s0, 4, 0.12); }
+    const n = Math.max(1, Math.round(len / 3.2)); for (let k = 0; k <= n; k++) v.box(post, k * len / n, 2, 0, 0.08, 4.05, 0.08);
+  });
+  v.frame(); c.frame();
+  return surround;
 }
 
-// NOT MEASURED: see the header. Towers [x, z, height] and sheds [x1, z1, x2, z2, width, height] are rough readings; the
-// second row of towers is placed freely.
-function buildBackdrop(ctx) {
-  const b = DATA.backdrop; if (!b) return;
-  const S = 64, cv = document.createElement('canvas'); cv.width = cv.height = S; const g = cv.getContext('2d');   // one 3 m storey by 3 m bay
-  g.fillStyle = '#c9c2b6'; g.fillRect(0, 0, S, S); g.fillStyle = '#5d6670'; g.fillRect(6, 14, S - 12, 30);
-  const tex = new THREE.CanvasTexture(cv); tex.wrapS = tex.wrapT = THREE.RepeatWrapping; tex.repeat.set(1 / 3, 1 / 3); tex.colorSpace = THREE.SRGBColorSpace;
-  const tower = new THREE.MeshStandardMaterial({ map: tex, roughness: 0.9 });
-  const v = new Batch();
-  const free = [[-250, -470, 96], [-190, -520, 102], [-60, -500, 90], [40, -470, 96], [130, -520, 102], [220, -480, 90], [300, -540, 96], [390, -470, 84], [460, -540, 102]];
-  for (const [x, z, h] of [...b.towers, ...free]) {
-    v.frame(x, z, 0.2 * (rnd(x, z, 7) - 0.5)).box(tower, 0, h / 2, 0, 30, h, 20).box(tower, 0, h / 2 - 3, 0, 14, h - 6, 32).box('concrete', 0, h + 1.5, 0, 10, 3, 10);
+// ---- trees ---------------------------------------------------------------------------------------------------------
+function buildTrees(ctx, low, site, v) {
+  // [x, z, height, crown radius, trunk collides, casts shadow]. The crowns were detected before the roads were drawn the way
+  // they are now, before the surrounding buildings (context.js) existed and while the link corridors were taken for low
+  // canopies: trees on a road or its pavement, in the gate's dressed area, on the field's keep-out, within 2.5 m of an
+  // elevated walkway (its deck is about 8 m up, lower than most crowns) or on the fence line are dropped.
+  const decks = ((ctx.campus && ctx.campus.items) || []).filter(i => i.style === 'walkway' && i.points).map(i => i.points);
+  const onRoad = (x, z) => ROADS.some(r => { const d = toPath(r.points, x, z), h = r.widthM / 2; return r.kind === 'arterial' ? d < 17.2 : d < h + 0.9; });
+  const blocked = (x, z) => onRoad(x, z) || decks.some(q => near(q, x, z, 2.5)) || near(GATE_AREA, x, z, 1.5) || near(fieldKeepOut(ctx.campus.track), x, z, 2.5) || FENCES.some(f => toPath(f, x, z) < 1.1) || KEEP_OUT.some(([kx, kz, kr]) => Math.hypot(x - kx, z - kz) < kr + 1.5);
+  const list = DATA.trees.list.filter(([x, z]) => !blocked(x, z));
+  // A crown must not reach into a building (a reviewer found one inside a classroom): each crown is held to the distance
+  // from its trunk to the nearest outline, and a tree closer than 1.8 m to a wall is left out.
+  const fitted = [], kept = [];
+  for (const t of list) { const [x, z, h, r] = t, d = site.clearance(x, z); if (d < 1.8) continue; kept.push(t); fitted.push([x, z, h, Math.min(r, (d - 0.5) * 4.4 / (5.6 * h / 11))]); }
+  // IMAGINED green belt: the ground between the surveyed area and the city (a strip along the main road, the land west of
+  // the stand and south-west of the track, the banks north of the survey) carried no trees in the data. It is planted on a
+  // jittered 13 m grid wherever the ground is free.
+  const belt = (x, z) => x > -127 && x < CANAL.westEdge[0][0] + (CANAL.westEdge[1][0] - CANAL.westEdge[0][0]) * (z - CANAL.westEdge[0][1]) / (CANAL.westEdge[1][1] - CANAL.westEdge[0][1]) - 4 && z < (x < 10 ? 158 : 150.4)
+    && !near(SURVEY, x, z, 4) && (x - -193.2) * -0.5488 + (z - -78.0) * -0.8360 < -22.5;
+  let planted = 0;
+  for (let gx = -124; gx < 330; gx += 13) for (let gz = -420; gz < 158; gz += 13) {
+    const x = gx + (rnd(gx, gz, 21) - 0.5) * 9, z = gz + (rnd(gx, gz, 22) - 0.5) * 9;
+    if (!belt(x, z) || blocked(x, z) || rnd(gx, gz, 23) < 0.18) continue;
+    const d = site.clearance(x, z); if (d < 3) continue;
+    const h = 7.5 + rnd(gx, gz, 24) * 5; fitted.push([x, z, h, Math.min(2.6 + h * 0.22, (d - 0.5) * 4.4 / (5.6 * h / 11))]); planted++;
   }
-  for (const [x1, z1, x2, z2, w, h] of b.sheds) {
-    const len = Math.hypot(x2 - x1, z2 - z1), a = Math.atan2(-(z2 - z1), x2 - x1);
-    v.frame((x1 + x2) / 2, (z1 + z2) / 2, a).box('concrete', 0, (h - 0.6) / 2, 0, len, h - 0.6, w).box('roofPale', 0, h - 0.3, 0, len + 1, 0.6, w + 1.2);
+  // Trees are leaf-card trees from flora.js: split into cells so that hidden cells are skipped.
+  const woods = forest(fitted, { seed: 11, low }); woods.name = 'trees'; ctx.add(woods);
+  // trunk colliders: thin five-sided posts, only for the trees flagged in the data (near paving or a road); those trees
+  // also get a tree pit, a granite frame round bare soil
+  const col = new Batch();
+  for (const [x, z, h, r, solid] of kept) if (solid) { col.cyl('generic', x, 0, z, 0.2 + 0.018 * h, 2.4, 5, false); if (site.paved(x, z)) treePit(v, x, z, 1.5 + 0.03 * h, rnd(x, z, 3) * 0.3); }
+  const cg = col.build(); ctx.add(cg).visible = false; cg.children.forEach(mesh => ctx.collide(mesh));
+  return kept.length;
+}
+
+// ---- lamps, benches, boards ----------------------------------------------------------------------------------------
+function buildFurniture(ctx, v, c, site, low) {
+  const lane = ROADS.find(r => r.id === 'road-track-east'), south = ROADS.find(r => r.id === 'road-south-of-courts');
+  // along the lane between the track and the gymnasium: lamps on the east side, benches facing the track, a row of boards
+  if (lane) {
+    const x = lane.points[0][0] + lane.widthM / 2 + 0.75;
+    for (let z = lane.points[0][1] + 6, i = 0; z < lane.points[1][1] - 2; z += 19, i++) if (site.free(x, z, 0.3, false)) gardenLamp(v, c, x, z);
+    for (const z of [-104, -86, -68]) if (site.free(x + 0.9, z, 0.8, false)) { bench(v, c, x + 0.9, z, -Math.PI / 2); if (z === -86) bins(v, c, x + 0.9, z + 2.2, -Math.PI / 2); }
+    for (const [z, k] of [[-56, 0], [-49.5, 3]]) if (site.free(x + 1.0, z, 1.0, false)) noticeBoard(v, c, x + 1.0, z, -Math.PI / 2, 3, k, k ? '学生风采' : '校务公开');
+    fingerPost(v, c, x + 0.4, lane.points[1][1] - 3.5, -Math.PI / 2, [['体育馆', -1], ['田径场', 1], ['宿舍区', -1]]);
   }
-  const bd = ctx.add(v.build({ name: 'backdrop', castShadow: false }));
-  bd.traverse(o => { if (o.isMesh) ctx.collide(o); });                 // plain boxes, so the visible meshes serve as colliders: the towers could be walked through
-  // gravel yard between the east bank and the sheds
-  const { westEdge: w, eastEdge: e } = DATA.canal, ax = e[0][0] - w[0][0], az = e[0][1] - w[0][1], an = Math.hypot(ax, az);   // across the canal, eastward
-  const off = (p, d) => [p[0] + ax / an * d, p[1] + az / an * d];
-  const gravel = new THREE.MeshStandardMaterial({ color: 0x9a907c, roughness: 1 });
-  ctx.add(groundMesh([{ outer: [off(e[0], 7), off(e[0], 110), off(e[1], 110), off(e[1], 7)] }], Y.yard, gravel));
+  if (south) {
+    const z = south.points[0][1] + south.widthM / 2 + 0.7;
+    for (let x = south.points[0][0] + 9; x < south.points[1][0] - 2; x += 19) if (site.free(x, z, 0.3, false)) gardenLamp(v, c, x, z);
+    for (const x of [72, 98, 118]) if (site.free(x, z - south.widthM - 1.6, 0.6, false)) bench(v, c, x, z - south.widthM - 1.6, 0);
+  }
+  // bicycle parking in the lane north of the first dormitory slab
+  for (const [x, n, seed] of [[166, 12, 1], [180, 12, 2], [194, 12, 3], [208, 10, 4]]) if (site.free(x, 21.2, 0.9)) bikeRack(v, c, x, 21.2, 0, n, seed);
+  // garden lamps over the grounds: a jittered 30 m grid, kept where the ground is free and within 60 m of a building
+  let lamps = 0;
+  for (let gx = -100; gx <= 300; gx += 30) for (let gz = -240; gz <= 150; gz += 30) {
+    const x = gx + (rnd(gx, gz, 5) - 0.5) * 12, z = gz + (rnd(gx, gz, 6) - 0.5) * 12;
+    if (!near(SURVEY, x, z, 0) || !site.free(x, z, 2.2)) continue;
+    const d = site.clearance(x, z); if (d > 60) continue;
+    gardenLamp(v, c, x, z); lamps++;
+    if (rnd(gx, gz, 8) < 0.45 && site.free(x + 1.6, z + 0.4, 1.2)) { const a = Math.floor(rnd(gx, gz, 9) * 4) * Math.PI / 2; bench(v, c, x + 1.6, z + 0.4, a); if (rnd(gx, gz, 10) < 0.5 && site.free(x + 3.4, z + 0.4, 1)) bins(v, c, x + 3.4, z + 0.4, a); }
+  }
+  return lamps;
 }
 
 export function build(ctx) {
@@ -242,14 +484,16 @@ export function build(ctx) {
   // Phones get the cheaper crown (one blob). world/index.js passes lowPower; the fallback repeats the rule of main.js for an index.js without it.
   const p = new URLSearchParams(location.search);
   const low = ctx.lowPower ?? (p.get('quality') ? p.get('quality') === 'low' : matchMedia('(pointer: coarse)').matches);
+  const site = makeSite(ctx), v = new Batch(), c = new Batch();
 
   ctx.add(groundMesh(DATA.ground.lawn, Y.lawn, 'lawn')).name = 'lawn';
   ctx.add(groundMesh(DATA.ground.paving, Y.paving, 'paving')).name = 'paving';
-  const bySurface = {};
-  for (const r of DATA.roads) (bySurface[r.surface] ||= []).push(...band(r.points, r.widthM));
-  for (const [surface, quads] of Object.entries(bySurface)) ctx.add(groundMesh(quads, Y.road, surface === 'asphalt' ? 'asphalt' : 'concrete')).name = 'roads-' + surface;
-  buildCanal(ctx);
-  buildTennis(ctx);
-  buildTrees(ctx, low);
-  buildBackdrop(ctx);
+  buildRoads(ctx, v, c, low);
+  buildFence(ctx, v, c, site);
+  buildCanal(ctx, low);
+  buildTennis(ctx, v, c);
+  buildTrees(ctx, low, site, v);
+  buildFurniture(ctx, v, c, site, low);
+  ctx.add(v.build({ name: 'grounds-furniture' }));
+  const cg = c.build(); ctx.add(cg).visible = false; cg.children.forEach(mesh => ctx.collide(mesh));
 }

@@ -26,6 +26,7 @@ import { Batch } from '../../batch.js';
 import { emblemTexture } from '../../signs.js';
 import { pbr, plain, waterNormals, rng } from '../../hifi.js';
 import { broadleafTrees, royalPalms, conifers, shrubs, flowers, WIND, useStockShaders } from '../../flora.js';
+import { LIT } from '../../street.js';
 
 // Local frame: origin on the gate line at the middle of the driveway; +Z runs into the campus (west), +X to the south
 // (the left-hand side for someone walking in), Y up.
@@ -306,7 +307,7 @@ export function build(ctx) {
     v.slab(M.stoneGrey(), -0.95, 0, -0.2, 0.14, 0.42, 0.4).slab(M.stoneGrey(), 0.81, 0, -0.2, 0.14, 0.42, 0.4); for (let i = 0; i < 4; i++) v.slab(timber, -1.05, 0.42, -0.24 + i * 0.125, 2.1, 0.045, 0.105);
     c.slab('generic', -1.05, 0, -0.24, 2.1, 0.5, 0.5); v.frame(0, 0, 0); c.frame(0, 0, 0); };
   for (const a of [0.42, 1.0, 2.14, 2.72]) { bench(Math.cos(a) * (RING - 1.2), PZ + Math.sin(a) * (RING - 1.2), -a + Math.PI / 2); }
-  const lampPost = (x, z) => { v.cyl(M.dark(), x, 0, z, 0.07, 3.9, 10).cyl(M.dark(), x, 0, z, 0.12, 0.5, 10).cyl(M.lamp(), x, 3.9, z, 0.16, 0.42, 12).cyl(M.dark(), x, 4.32, z, 0.2, 0.05, 12); c.slab('generic', x - 0.1, 0, z - 0.1, 0.2, 4, 0.2); };
+  const lampPost = (x, z) => { v.cyl(M.dark(), x, 0, z, 0.07, 3.9, 10).cyl(M.dark(), x, 0, z, 0.12, 0.5, 10).cyl(M.lamp(), x, 3.9, z, 0.16, 0.42, 12).cyl(M.dark(), x, 4.32, z, 0.2, 0.05, 12); c.slab('generic', x - 0.1, 0, z - 0.1, 0.2, 4, 0.2); LIT.push([...toWorld(x, z), 6]); };
   for (let i = 0; i < 8; i++) { const a = (i + 0.5) / 8 * Math.PI * 2; lampPost(Math.cos(a) * (RING + 0.45), PZ + Math.sin(a) * (RING + 0.45)); }
   for (let z = PZ + RING + 6; z < DEPTH - 4; z += 14) for (const s of [-1, 1]) lampPost(s * 6.6, z);
   for (let x = -HALF + 5; x < HALF; x += 14) lampPost(x, CANAL(x) + 1.6);

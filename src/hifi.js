@@ -146,11 +146,17 @@ export const SURFACES = {
     const S = 256, base = rgbOf(hex), cells = valueNoise(S, 48, 81), fine = valueNoise(S, 128, 82);
     return { ...surface(S, { tile: 1.1, strength: 5, height: cells, col: i => mul(base, 0.45 + 1.0 * cells[i] + 0.3 * (fine[i] - 0.5)), rough: () => 0.85 }), roughness: 1, metalness: 0 };
   }),
+  // fissured bark: wavy vertical ridges broken into plates by short cross cracks, with pale lichen in patches
   bark: (hex = 0x6a5a4a) => once('bk' + hex, () => {
-    const S = 256, base = rgbOf(hex), r = rng(91), cols = new Float32Array(S); for (let x = 0; x < S; x++) cols[x] = r();
-    const n = fbm(S, 6, 4, 92), height = new Float32Array(S * S);
-    for (let y = 0; y < S; y++) for (let x = 0; x < S; x++) height[y * S + x] = 0.55 * (cols[x] * 0.5 + cols[(x + 1) % S] * 0.5) + 0.45 * n[y * S + x];
-    return { ...surface(S, { tile: [1.2, 2.4], strength: 4, height, col: i => mul(base, 0.55 + 0.9 * height[i]), rough: () => 0.95 }), roughness: 1, metalness: 0 };
+    const S = 256, base = rgbOf(hex), n = fbm(S, 6, 4, 92), m = valueNoise(S, 10, 93), fine = valueNoise(S, 96, 94), big = fbm(S, 3, 3, 96), height = new Float32Array(S * S);
+    for (let y = 0; y < S; y++) for (let x = 0; x < S; x++) {
+      const i = y * S + x, ridge = 1 - Math.pow(Math.abs(Math.sin((x / S * 14 + 2.4 * n[i]) * Math.PI)), 0.55);          // 0 in a fissure, toward 1 on a ridge
+      const cross = Math.abs(((y / S * 9 + 1.8 * m[i]) % 1) - 0.5) < 0.035 ? 0.45 : 1;                                   // a crack across the plate
+      height[i] = Math.min(1, ridge * 1.7) * cross * (0.82 + 0.18 * fine[i]);
+    }
+    const lichen = [150, 158, 138];
+    return { ...surface(S, { tile: [1.1, 1.6], strength: 5, height, col: i => { const k = 0.34 + 0.86 * height[i], c = mul(base, k), l = Math.max(0, (big[i] - 0.6) * 3.2) * height[i];
+      return [c[0] + (lichen[0] - c[0]) * l * 0.55, c[1] + (lichen[1] - c[1]) * l * 0.55, c[2] + (lichen[2] - c[2]) * l * 0.55]; }, rough: () => 0.95 }), roughness: 1, metalness: 0 };
   }),
   // ringed grey trunk of a royal palm
   palmTrunk: () => once('palm', () => {

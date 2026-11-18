@@ -8,6 +8,7 @@
 //   group.add(b.build());                 // THREE.Group, one Mesh per material
 import * as THREE from 'three';
 import { mat } from './kit.js';
+import { broadleafTrees, royalPalms } from './flora.js';
 
 const FACES = [ // normal, then the two in-plane axes (u, v) used for texture coordinates
   { n: [1, 0, 0], u: [0, 0, -1], v: [0, 1, 0] }, { n: [-1, 0, 0], u: [0, 0, 1], v: [0, 1, 0] },
@@ -93,6 +94,11 @@ export class Batch {
       g.setIndex(p.idx);
       const mesh = new THREE.Mesh(g, p.material); mesh.castShadow = castShadow && !p.material.transparent; mesh.receiveShadow = receiveShadow;
       group.add(mesh);
+    }
+    // plants asked for through plants.js stand in the same coordinates as the batch
+    if (this.plants) {
+      if (this.plants.trees.length) group.add(broadleafTrees(this.plants.trees, { seed: 5 }).group);
+      if (this.plants.palms.length) group.add(royalPalms(this.plants.palms, { seed: 6 }).group);
     }
     return group;
   }

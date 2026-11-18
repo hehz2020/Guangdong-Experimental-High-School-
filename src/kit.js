@@ -9,9 +9,9 @@ const PALETTE = {
   brickRed: [0xa5452f, 0.9, 'brick', 1.0], terracotta: [0xb5563a, 0.85, 'panel', 1.2], concrete: [0xb9b6ad, 0.92, 'noise', 3],
   roofGrey: [0x6f7173, 0.95, 'noise', 4], roofPale: [0xdcdad2, 0.8, 'noise', 4], metalWhite: [0xf4f4f2, 0.45], steel: [0xb8bcc0, 0.35],
   glassTeal: [0x2f7d78, 0.08], glassDark: [0x1f2a30, 0.06], glassGreen: [0x5fa590, 0.08], glassClear: [0x9fc3cc, 0.05],
-  trackRed: [0x9c4235, 0.95, 'noise', 2], apronGreen: [0x2f8a6a, 0.95, 'noise', 2], grass: [0x5f9a4a, 1.0, 'grass', 4], lawn: [0x6aa552, 1.0, 'grass', 4],
+  trackRed: [0x9c4235, 0.95, 'noise', 2], apronGreen: [0x2f8a6a, 0.95, 'noise', 2], grass: [0x5f9a4a, 1.0, 'grass', 4], lawn: [0x6aa552, 1.0, 'grass', 2.6],
   paving: [0xc9c3b6, 0.9, 'paving', 1.2], pavingRed: [0xb98a78, 0.9, 'paving', 1.2], asphalt: [0x55585c, 0.95, 'noise', 3], water: [0x3d5a55, 0.15],
-  earth: [0x77805f, 1.0, 'grass', 6], generic: [0xd9d6cf, 0.9], courtGreen: [0x2f7a55, 0.9, 'noise', 2], courtRed: [0xa9483d, 0.9, 'noise', 2],
+  earth: [0x62994b, 1.0, 'grass', 2.9], generic: [0xd9d6cf, 0.9], courtGreen: [0x2f7a55, 0.9, 'noise', 2], courtRed: [0xa9483d, 0.9, 'noise', 2],
   seatBlue: [0x2f5fb3, 0.6], seatRed: [0xc0392b, 0.6], seatGreen: [0x2e9c6b, 0.6], wood: [0xc9a878, 0.7, 'wood', 1.2], woodDark: [0x8a5a34, 0.7, 'wood', 1.2],
   floorGrey: [0x8f8f8b, 0.6, 'paving', 0.8], black: [0x18181a, 0.6], white: [0xffffff, 0.6], red: [0xc8201c, 0.6], gold: [0xd9a520, 0.4], granite: [0x7a2f2a, 0.35, 'noise', 1],
 };

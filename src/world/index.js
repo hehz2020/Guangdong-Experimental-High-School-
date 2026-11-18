@@ -2,6 +2,8 @@
 // items without one fall back to plain massing.
 import { THREE, mat, flat, prism, stadium, box } from '../kit.js';
 import { build as generic } from './builders/generic.js';
+import { CANAL } from './extras/landscape.js';
+import { lightPools } from '../street.js';
 
 export const BUILDERS = {
   // style -> module path, filled in as dedicated builders are written
@@ -32,9 +34,38 @@ export const EXTRAS = [
   './extras/gate.js',
   './extras/context.js',
   './extras/landscape.js',
+  './extras/city.js',
   './extras/track-field.js',
   './extras/courts.js',
 ];
+
+/**
+ * The ground: 1500 m square, tessellated, facing up, texture coordinates in metres. canal: { westEdge, eastEdge } (two
+ * points each, north end first) or null; between the two edges, over their length, the ground is left open.
+ */
+function groundGeometry(canal) {
+  const X0 = -736.3, X1 = 763.7, Z0 = -728.7, Z1 = 771.3, pos = [], idx = [];
+  const rows = []; for (let i = 0; i <= 30; i++) rows.push(Z0 + (Z1 - Z0) * i / 30);
+  let zc0 = Infinity, zc1 = -Infinity, xw = () => 0, xe = () => 0;
+  if (canal) {
+    const { westEdge: w, eastEdge: e } = canal; zc0 = w[0][1]; zc1 = w[1][1]; rows.push(zc0, zc1); rows.sort((a, b) => a - b);
+    xw = z => w[0][0] + (w[1][0] - w[0][0]) * (z - w[0][1]) / (w[1][1] - w[0][1]); xe = z => e[0][0] + (e[1][0] - e[0][0]) * (z - e[0][1]) / (e[1][1] - e[0][1]);
+  }
+  const strip = (za, zb, xa0, xa1, xb0, xb1, n) => {     // a band between two rows, from x0 to x1 on each, in n columns
+    const base = pos.length / 3;
+    for (let i = 0; i <= n; i++) { pos.push(xa0 + (xa1 - xa0) * i / n, 0, za, xb0 + (xb1 - xb0) * i / n, 0, zb); }
+    for (let i = 0; i < n; i++) { const q = base + i * 2; idx.push(q, q + 1, q + 3, q, q + 3, q + 2); }
+  };
+  for (let i = 0; i < rows.length - 1; i++) {
+    const za = rows[i], zb = rows[i + 1]; if (zb - za < 1e-6) continue;
+    if (za >= zc0 - 1e-6 && zb <= zc1 + 1e-6) { strip(za, zb, X0, xw(za), X0, xw(zb), 22); strip(za, zb, xe(za), X1, xe(zb), X1, 8); }
+    else strip(za, zb, X0, X1, X0, X1, 30);
+  }
+  const g = new THREE.BufferGeometry(), n = pos.length / 3, nor = new Float32Array(pos.length), uv = new Float32Array(n * 2);
+  for (let i = 0; i < n; i++) { nor[i * 3 + 1] = 1; uv[i * 2] = pos[i * 3]; uv[i * 2 + 1] = -pos[i * 3 + 2]; }
+  g.setAttribute('position', new THREE.Float32BufferAttribute(pos, 3)); g.setAttribute('normal', new THREE.Float32BufferAttribute(nor, 3)); g.setAttribute('uv', new THREE.Float32BufferAttribute(uv, 2));
+  g.setIndex(idx); return g;
+}
 
 /**
  * only: optional Set of item ids to build (others are skipped), for close-up checks of one building.
@@ -56,8 +87,10 @@ export async function buildWorld(campus, only = null, tryBuilders = {}, tryExtra
   // layers lying a few millimetres above it at some window sizes and from the air. The collision floor stays at 0.
   // The grid is shifted by an odd amount: with a vertex exactly under the eye and a level view (the centre of the track was
   // one) the software renderer drew the whole ground in the earth colour.
-  const ground = new THREE.Mesh(new THREE.PlaneGeometry(1500, 1500, 30, 30), mat('earth'));
-  ground.rotation.x = -Math.PI / 2; ground.position.set(13.7, -0.05, 21.3); ground.receiveShadow = true; root.add(ground);
+  // The canal is a channel below ground level (extras/landscape.js lines it and fills it with water), so the ground is
+  // open between its two edges. Without the extras (a close-up of chosen items) the ground is whole.
+  const ground = new THREE.Mesh(groundGeometry(only && !env.extras ? null : CANAL), mat('earth'));
+  ground.position.y = -0.05; ground.receiveShadow = true; ground.name = 'ground'; root.add(ground);
   const floor = box(0, 0, 1400, 1400, -1, 0, mat('earth')); colliders.add(floor);
 
   // (the running track, the pitch and their markings are drawn by extras/athletics.js)
@@ -97,5 +130,7 @@ export async function buildWorld(campus, only = null, tryBuilders = {}, tryExtra
     try { (await import(path)).build(ctx); report.built.push(path); }
     catch (err) { console.error('extra module failed:', path, err); group.clear(); report.failed.push(path); }
   }
+  // pools of light under every lamp the modules recorded, after dusk (not in safe mode: it is a custom shader)
+  if (!env.safe) { const pools = lightPools(); if (pools) { root.add(pools.mesh); updaters.push((dt, t, e) => pools.update(e)); } }
   return { root, colliders, report, details, updaters, places };
 }

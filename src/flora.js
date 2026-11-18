@@ -209,7 +209,7 @@ function instanced(geo, material, list, name, { cast = true } = {}) {
  */
 export function broadleafTrees(list, { seed = 1, low = false, hue = 100 } = {}) {
   const group = new THREE.Group(), r = rng(seed * 977 + 5), variants = 3, per = Array.from({ length: variants }, () => []);
-  list.forEach(([x, z, h], i) => per[i % variants].push([x, z, (h / 11) * (0.92 + 0.16 * r()), r() * 6.283]));
+  list.forEach(([x, z, h, y0 = 0], i) => per[i % variants].push([x, z, (h / 11) * (0.92 + 0.16 * r()), r() * 6.283, y0]));
   const bark = pbr('bark'), leaves = foliage(leafCluster(hue), 'leaves' + hue, 0.05);
   per.forEach((inst, v) => {
     if (!inst.length) return;
@@ -229,7 +229,7 @@ export function forest(list, { seed = 11, low = false, cell = 64 } = {}) {
   for (const [x, z, h, cr = 4.6] of list) {
     const cx = Math.floor(x / cell), cz = Math.floor(z / cell), key = cx + ',' + cz + ',' + (((cx * 7 + cz * 13) % kinds.length + kinds.length) % kinds.length);   // one shape per cell: fewer meshes to draw
     if (!cells.has(key)) cells.set(key, []);
-    cells.get(key).push([x, z, h / 11 * (0.94 + 0.12 * r()), Math.max(0.7, Math.min(1.45, cr / 4.4)), r() * 6.283]);
+    cells.get(key).push([x, z, h / 11 * (0.94 + 0.12 * r()), Math.max(0.35, Math.min(1.45, cr / 4.4)), r() * 6.283]);
   }
   const M = new THREE.Matrix4(), q = new THREE.Quaternion(), up = new THREE.Vector3(0, 1, 0);
   for (const [key, inst] of cells) {
@@ -245,7 +245,7 @@ export function forest(list, { seed = 11, low = false, cell = 64 } = {}) {
 /** Royal palms. list: [[x, z, height]...]. */
 export function royalPalms(list, { seed = 2 } = {}) {
   const group = new THREE.Group(), r = rng(seed * 911 + 3), variants = 2, per = Array.from({ length: variants }, () => []);
-  list.forEach(([x, z, h], i) => per[i % variants].push([x, z, (h / 10.5) * (0.95 + 0.1 * r()), r() * 6.283]));
+  list.forEach(([x, z, h, y0 = 0], i) => per[i % variants].push([x, z, (h / 10.5) * (0.95 + 0.1 * r()), r() * 6.283, y0]));
   const fr = foliage(frondTexture(), 'fronds', 0.07), trunkMat = pbr('palmTrunk'), shaftMat = plain('crownshaft', 0x6a8f44, 0.5, 0);
   per.forEach((inst, v) => {
     if (!inst.length) return;
