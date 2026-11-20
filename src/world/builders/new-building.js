@@ -118,8 +118,8 @@ const ribbonTexture = low => canvasTexture(low ? 512 : 1024, low ? 256 : 512, (g
   g.strokeStyle = '#e4e6e3'; g.lineWidth = 2.5 * k;
   for (let x = 0; x < 512; x += 26) { g.beginPath(); g.arc((x + 13) * k, 238 * k, 11 * k, Math.PI, 0); g.stroke(); }
   g.fillStyle = '#e4e6e3'; g.fillRect(0, 198 * k, W, 3 * k); g.fillRect(0, 238 * k, W, 3 * k);
-  g.fillStyle = '#c9cdd0'; for (let i = 0; i <= 4; i++) g.fillRect(i * W / 4 - 4 * k, 0, 8 * k, Hc); g.fillRect(0, 0, W, 7 * k); g.fillRect(0, Hc - 9 * k, W, 9 * k);
-  g.fillStyle = '#8d9397'; for (let i = 0; i <= 4; i++) g.fillRect(i * W / 4 - 1 * k, 0, 2 * k, Hc); for (let i = 0; i < 4; i++) g.fillRect((i + 0.5) * W / 4 - 1.5 * k, 7 * k, 3 * k, Hc - 16 * k);
+  g.fillStyle = '#343a3e'; for (let i = 0; i <= 4; i++) g.fillRect(i * W / 4 - 4 * k, 0, 8 * k, Hc); g.fillRect(0, 0, W, 7 * k); g.fillRect(0, Hc - 9 * k, W, 9 * k);
+  g.fillStyle = '#1e2225'; for (let i = 0; i <= 4; i++) g.fillRect(i * W / 4 - 1 * k, 0, 2 * k, Hc); for (let i = 0; i < 4; i++) g.fillRect((i + 0.5) * W / 4 - 1.5 * k, 7 * k, 3 * k, Hc - 16 * k);
 }, 3.2, 1.5);
 // book spines: four bands of spines, each 3.2 m of shelf; a run of books is a quad that shows a piece of one band
 const BOOK_BANDS = 4, BOOK_U = 3.2;
@@ -208,7 +208,7 @@ function lm(name) {
   const pane = (color, opacity, metalness = 0.3, extra = {}) => { const s = SURFACES.glazing(0x8fb0b8, 8, 1, [8, 2], 41); return S(color, 0.05, metalness, { map: s.map, normalMap: s.normalMap, opacity, envMapIntensity: 1.3, ...see, ...extra }); };
   const make = {
     // surfaces from hifi.js (maps computed in code)
-    terr: () => pbr('paving', [0xb85c3e, 0x9f4b33, 2, 8, [2.4, 2.4], 31, true], { normalScale: 0.7 }),       // terracotta tiles 1.2 x 0.3 m, staggered, two tones
+    terr: () => pbr('cladding', [0xa5503c, 1.2, 0.3, 0.72]),                                                  // terracotta panels 1.2 x 0.3 m with open joints
     mosaic: () => pbr('tiles', [0xa94a30, 8, 0.8, 0.5]),                                                      // small square tiles of the podium, 0.1 m
     stone: () => pbr('cladding', [0xd3d2cd, 1.2, 0.6, 0.62]),                                                 // honed pale stone, 1.2 x 0.6 m
     plaza: () => pbr('paving', [0xd9d6cf, 0xc8c3b7, 4, 8, [2.4, 2.4], 23, true]),                             // pale granite pavers 0.6 x 0.3 m
@@ -813,6 +813,225 @@ export function build(item, ctx) {
   for (const [X, Z, yaw] of [[54.6, -17.6, Math.PI], [54.6, -16.0, Math.PI], [26.3, -13.2, 0]]) chair(X, Z, yaw, 'chairCream', F2, 1.25);
   plant(fx, 55.2, -15.6, F2, 1.4); plant(fx, 24.8, -20.0, F2, 1.4);
 
+  // ================================================================= STAIR CORE, HALLS AND CORRIDORS (all imagined)
+  // Plan: the stair stands behind the western stack of balconies of the north-west face and comes out in the western roof
+  // pavilion; its landings open onto those balconies. A lobby with two lifts lies inside of it. On the two library storeys
+  // the lobby has a door from the garden (ground) and a door into the library hall (both levels). On storeys 3 to 6 the
+  // lobby widens into a hall from which a corridor runs round the light well; rooms lie between the corridor and the faces.
+  const uf = new Batch(); home(uf);                                   // fittings of halls, corridors and stair (shown within about 100 m)
+  const WU = lm('wallUp'), CEU = lm('ceilUp'), TILE = lm('tile'), DADO = pbr('tiles', [0xe6e2d4, 4, 1.2, 0.36]), GD = lm('glassDoor'), GRL = lm('glassRail'), FRM = C(0x3a3f44, 'metal'), DOORC = C(0xb07a48, 'gloss'), DOORF = C(0x76502f, 'gloss'), LAMP = lm('lamp');
+  const TRIM = [C(0x4f7396, 'gloss'), C(0x4f8a62, 'gloss'), C(0xc27a2c, 'gloss'), C(0x8a5aa0, 'gloss')];             // one colour per upper storey
+  /**
+   * Wall on P-Q (L coordinates) from y0 to y1 with rectangular holes [[a0, a1, h0, h1]...] (metres along it from P, heights above y0).
+   * Face A looks toward the point `toward` and stands on the line; face B, if mB is given, stands `thick` behind it. Returns 1 if A looks to the right of P-Q.
+   */
+  const panelWall = (b, P, Q, y0, y1, holes, toward, mA, mB = null, thick = 0.2) => {
+    const len = dist(P, Q), d = unit(sub(Q, P)), rt = [-d[1], d[0]], sg = dot(sub(toward, P), rt) > 0 ? 1 : -1, cuts = [0, len];
+    for (const h of holes) cuts.push(Math.max(0, h[0]), Math.min(len, h[1]));
+    cuts.sort((a, e) => a - e);
+    const face = (m, a, e, ya, yb, off, s) => { if (e - a < 0.01 || yb - ya < 0.01) return; const p = add(add(P, mul(d, a)), mul(rt, off)), q = add(add(P, mul(d, e)), mul(rt, off));
+      if (s > 0) b.quad(m, [p[0], ya, p[1]], [q[0], ya, q[1]], [q[0], yb, q[1]], [p[0], yb, p[1]]); else b.quad(m, [q[0], ya, q[1]], [p[0], ya, p[1]], [p[0], yb, p[1]], [q[0], yb, q[1]]); };
+    for (let i = 0; i < cuts.length - 1; i++) {
+      const a = cuts[i], e = cuts[i + 1], mid = (a + e) / 2, h = holes.find(q => mid > q[0] && mid < q[1]);
+      for (const [m, off, s] of mB ? [[mA, 0, sg], [mB, -sg * thick, -sg]] : [[mA, 0, sg]]) { if (!h) face(m, a, e, y0, y1, off, s); else { face(m, a, e, y0, y0 + h[2], off, s); face(m, a, e, y0 + h[3], y1, off, s); } }
+    }
+    return sg;
+  };
+  /** Door set in the frame of b: x along the wall, the public side at +z * sg, the wall 0.2 m thick behind the line. type 'shut', 'open' (leaf swung into the room), 'lift', 'gap' (a cased opening). */
+  const doorSet = (b, x, w, sg, type, uv) => {
+    const hD = type === 'gap' ? 2.3 : 2.1, zc = -sg * 0.1, FM = type === 'lift' ? STL : type === 'gap' ? MW : DOORF;
+    b.box(FM, x - 0.035, hD / 2, zc, 0.07, hD, 0.25, 'D'); b.box(FM, x + w + 0.035, hD / 2, zc, 0.07, hD, 0.25, 'D'); b.box(FM, x + w / 2, hD + 0.035, zc, w + 0.14, 0.07, 0.25);
+    if (type === 'lift') {
+      for (const i of [0, 1]) b.box(C(0xaeb4b9, 'metal'), x + w * (0.25 + 0.5 * i), hD / 2, zc, w / 2 - 0.006, hD, 0.04, 'D');
+      cardZ(b, U('liftind', 120, 44, (g, W, Hh) => { BX(g, 0, 0, W, Hh, '#101214'); TX(g, '▲', 28, Hh / 2 + 1, 26, '#ff9a3c', CJK, 'center'); TX(g, '1', 80, Hh / 2 + 2, 32, '#ff9a3c', CJK, 'center', 'bold'); }), x + w / 2 - 0.19, hD + 0.1, sg * 0.012, 0.38, 0.14, sg, true);
+      b.box(STL, x + w + 0.3, 1.15, sg * 0.01, 0.09, 0.22, 0.02); b.box(LAMP, x + w + 0.3, 1.19, sg * 0.022, 0.03, 0.03, 0.006);
+    } else if (type !== 'gap') {
+      const n = w > 1.3 ? 2 : 1, lw = w / n;
+      for (let i = 0; i < n; i++) {
+        const x0 = x + i * lw, latch = n === 2 ? (i ? x0 + 0.1 : x0 + lw - 0.1) : x0 + lw - 0.1;
+        if (type === 'shut') { b.box(DOORC, x0 + lw / 2, hD / 2, zc, lw - 0.012, hD - 0.01, 0.045, 'D'); b.quad('glassDark', ...(sg > 0 ? [[x0 + lw / 2 - 0.09, 1.05, zc + 0.024], [x0 + lw / 2 + 0.09, 1.05, zc + 0.024], [x0 + lw / 2 + 0.09, 1.8, zc + 0.024], [x0 + lw / 2 - 0.09, 1.8, zc + 0.024]] : [[x0 + lw / 2 + 0.09, 1.05, zc - 0.024], [x0 + lw / 2 - 0.09, 1.05, zc - 0.024], [x0 + lw / 2 - 0.09, 1.8, zc - 0.024], [x0 + lw / 2 + 0.09, 1.8, zc - 0.024]]));
+          b.box(STL, latch, 1.02, zc + sg * 0.05, 0.13, 0.025, 0.05); b.box(STL, x0 + lw / 2, 0.14, zc + sg * 0.024, lw - 0.05, 0.22, 0.004); }
+        else { const hx = i ? x0 + lw - 0.03 : x0 + 0.03; b.box(DOORC, hx, hD / 2, -sg * (0.2 + lw / 2), 0.045, hD - 0.01, lw - 0.012, 'D'); b.box(STL, hx + (i ? -0.04 : 0.04), 1.02, -sg * (0.1 + lw), 0.05, 0.025, 0.13); }
+      }
+    }
+    if (uv) cardZ(b, uv, x + w + 0.16, 1.42, sg * 0.012, 0.34, 0.116, sg);
+  };
+  /**
+   * Wall of a public room on P-Q with its doors: gaps [[start, width, type, plate]...] along it. The face toward `toward` gets a tiled dado with a
+   * coloured line; colliders run through shut doors and stop at open ones. b: the batch for the wall face (v, or uf on the two library storeys).
+   */
+  const wallU = (b, P, Q, y, toward, gaps = [], h = CU, trim = TRIM[0]) => {
+    const len = dist(P, Q), d = unit(sub(Q, P)), pt = a => add(P, mul(d, a)), G2 = gaps.slice().sort((a, e) => a[0] - e[0]);
+    const holes = G2.map(g => [g[0], g[0] + g[1], 0, g[2] === 'gap' ? 2.3 : 2.17]);
+    const sg = panelWall(b, P, Q, y, y + 1.1, holes, toward, DADO); panelWall(b, P, Q, y + 1.1, y + 1.14, holes, toward, trim); panelWall(b, P, Q, y + 1.14, y + h, holes.map(q => [q[0], q[1], 0, q[3] - 1.14]), toward, WU);
+    let c0 = 0;
+    for (const [a, w, type, uv] of G2) {
+      if (type === 'open' || type === 'gap') { if (a > c0 + 0.02) block(pt(c0), pt(a), y, y + h, 0.2); c0 = a + w; }
+      along(uf, P, Q, y); doorSet(uf, a, w, sg, type, uv); home(uf);
+    }
+    if (len > c0 + 0.02) block(pt(c0), pt(len), y, y + h, 0.2);
+    return sg;
+  };
+  /** Glazed screen on P-Q with an optional pair of glass doors standing open toward the outside; the inside is toward `toward`. */
+  const screen = (P, Q, y, toward, door = null, hG = 2.6) => {
+    const len = dist(P, Q), d = unit(sub(Q, P)), pt = a => add(P, mul(d, a)), sg = panelWall(v, P, Q, y, y + FH, [[0.3, len - 0.3, 0.06, hG]], toward, WU, TERR, 0.2);
+    const off = mul([-d[1], d[0]], -sg * 0.1), Pm = add(P, off), Qm = add(Q, off);
+    panelWall(v, add(Pm, mul(d, 0.3)), add(Qm, mul(d, -0.3)), y + 0.06, y + hG, door ? [[door[0] - 0.3, door[1] - 0.3, 0, 2.2]] : [], toward, GD);
+    along(v, P, Q, y); const zc = -sg * 0.1, n = Math.max(2, Math.round((len - 0.6) / 1.3));
+    for (let i = 0; i <= n; i++) { const x = 0.3 + (len - 0.6) * i / n; if (!door || x < door[0] - 0.2 || x > door[1] + 0.2) v.box(FRM, x, (hG + 0.06) / 2, zc, 0.06, hG - 0.06, 0.14, 'UD'); }
+    v.box(FRM, len / 2, 0.09, zc, len - 0.6, 0.06, 0.14); v.box(FRM, len / 2, hG - 0.03, zc, len - 0.6, 0.06, 0.14);
+    if (door) { for (const x of door) { v.box(FRM, x, 1.13, zc, 0.07, 2.26, 0.16, 'D'); const zl = -sg * 0.2, q = [[x, 0.04, zl], [x, 0.04, zl - sg * 0.78], [x, 2.2, zl - sg * 0.78], [x, 2.2, zl]]; v.quad(GRL, ...q); v.box(STL, x, 1.1, zl - sg * 0.68, 0.06, 0.5, 0.025); }
+      v.box(FRM, (door[0] + door[1]) / 2, 2.23, zc, door[1] - door[0], 0.07, 0.16); }
+    home(v);
+    if (door) { block(P, pt(door[0]), y, y + FH, 0.2); block(pt(door[1]), Q, y, y + FH, 0.2); } else block(P, Q, y, y + FH, 0.2);
+  };
+  // ---- the stair: seven levels, two flights between each pair (frame: x = metres from B along the face, z = -(metres in from the face))
+  { const FW = 1.4, T = 0.27, TRD = C(0xb9b6ac), NOS = C(0x2f3133), zo = [-SD0 - FW, -SD0], zi = [-SD1, -SD1 + FW], mid = Nf(38, 4);
+    along(uf, LB, LA); along(c, LB, LA);
+    for (let i = 0; i < LEVELS.length - 1; i++) {
+      const y0 = LEVELS[i], y1 = LEVELS[i + 1], n = Math.round((y1 - y0) / 0.15), m = n / 2, R = (y1 - y0) / n, ym = y0 + m * R, se = SS1 + m * T;
+      for (let j = 0; j < m; j++) {
+        uf.slab(TRD, SS1 + j * T, y0 + j * R - 0.03, zo[0], T, R + 0.03, FW, 'D'); uf.slab(NOS, SS1 + j * T - 0.01, y0 + (j + 1) * R - 0.012, zo[0], 0.05, 0.014, FW, 'D');
+        uf.slab(TRD, se - (j + 1) * T, ym + j * R - 0.03, zi[0], T, R + 0.03, FW, 'D'); uf.slab(NOS, se - j * T - 0.04, ym + (j + 1) * R - 0.012, zi[0], 0.05, 0.014, FW, 'D');
+      }
+      plate(uf, MW, [[SS1, y0 - 0.03, zo[0]], [SS1, y0 - 0.03, zo[1]], [se, ym - 0.03, zo[1]], [se, ym - 0.03, zo[0]]], 0.13);
+      plate(uf, MW, [[SS1, y1 - 0.03, zi[0]], [SS1, y1 - 0.03, zi[1]], [se, ym - 0.03, zi[1]], [se, ym - 0.03, zi[0]]], 0.13);
+      plate(c, G, [[SS1, y0, zo[0]], [SS1, y0, zo[1]], [se, ym, zo[1]], [se, ym, zo[0]]], 0.2);
+      plate(c, G, [[SS1, y1, zi[0]], [SS1, y1, zi[1]], [se, ym, zi[1]], [se, ym, zi[0]]], 0.2);
+      uf.slab(TRD, se, ym - 0.16, -SD1, SS2 - se, 0.16, SD1 - SD0); c.slab(G, se, ym - 0.2, -SD1, SS2 - se, 0.2, SD1 - SD0);       // half landing
+      rail(uf, [SS1, zo[0] - 0.03], [se, zo[0] - 0.03], y0, ym, 0.95, 'Grey'); rail(uf, [se, zi[1] + 0.03], [SS1, zi[1] + 0.03], ym, y1, 0.95, 'Grey'); rail(uf, [se + 0.03, zi[1] + 0.03], [se + 0.03, zo[0] - 0.03], ym, ym, 0.95, 'Grey');
+      bar(uf, STL, [SS1 + 0.1, y0 + 0.95, zo[1] - 0.06], [se, ym + 0.95, zo[1] - 0.06], 0.04); bar(uf, STL, [se, ym + 0.95, zi[0] + 0.06], [SS1 + 0.1, y1 + 0.95, zi[0] + 0.06], 0.04);     // handrails on the walls
+      uf.box(LAMP, SS2 - 0.02, ym + 2.3, -(SD0 + SD1) / 2, 0.03, 0.12, 0.9, 'E');                                                           // light over the half landing
+    }
+    LEVELS.forEach((y, i) => {                                         // floor landings: finish, number, exit sign; a floor of their own on the two library storeys
+      uf.quad(TILE, [SS0 - 0.15, y + 0.004, -5.7], [SS0 - 0.15, y + 0.004, -SD0 + 0.15], [SS1, y + 0.004, -SD0 + 0.15], [SS1, y + 0.004, -5.7]);
+      if (i < 2) { c.slab(G, SS0 - 0.15, y - 0.2, -5.7, SS1 - SS0 + 0.15, 0.2, 5.7 - SD0 + 0.15); uf.slab(MW, SS0 - 0.15, y - 0.2, -5.7, SS1 - SS0 + 0.15, 0.19, 5.7 - SD0 + 0.15, 'U'); }
+      cardX(uf, floorCard(i + 1 > 6 ? 'R' : i + 1), SS0 + 0.012, y + 1.5, -4.3, 0.5, 0.5, 1);
+      cardZ(uf, exitCard(), SS0 + 0.4, y + 2.42, -5.716, 0.6, 0.21, -1, true);
+      if (i >= 1 && i < 6) uf.quad(CEU, [SS0 - 0.15, LEVELS[i + 1] - 0.45, -5.7], [SS1, LEVELS[i + 1] - 0.45, -5.7], [SS1, LEVELS[i + 1] - 0.45, -SD0 + 0.15], [SS0 - 0.15, LEVELS[i + 1] - 0.45, -SD0 + 0.15]);
+      uf.box(LAMP, SS0 + 0.7, y + (i < 6 ? (LEVELS[i + 1] - y) - 0.48 : 3.46), -(SD0 + SD1) / 2, 0.16, 0.02, 1.2);
+    });
+    c.slab(G, SS1, F0, -SD0 - FW - 0.16, SS2 - 1.4 - SS1, H + 1.1 - F0, 0.12);                                                              // between the flights
+    c.slab(G, SS1, F0, zi[0], 0.1, 2.3, FW);                                                                                                // the foot of the stair: no way under the upper flight
+    uf.slab(WU, SS1, F0, zi[0], 0.1, 2.3, FW, 'D');
+    c.slab(G, SS1, H, zo[0], 0.1, 1.3, FW); rail(uf, [SS1 + 0.05, zo[0]], [SS1 + 0.05, zo[1]], H, H, 1.05, 'Grey');                         // guard at the top
+    home(uf);
+    // the walls of the stair well: one tall face each (always drawn: they show through the balcony glass)
+    panelWall(v, Nf(SS0, SD0), Nf(SS0, 5.7), F0, H + 3.5, [], mid, WU); panelWall(v, Nf(SS2, SD0), Nf(SS2, SD1), F0, H + 3.5, [], mid, WU); panelWall(v, Nf(SS1, SD1), Nf(SS2, SD1), F0, H + 3.5, [], mid, WU);
+    panelWall(v, Nf(SS0 - 0.15, SD0), Nf(SS2 + 0.15, SD0), F0, F3, [], mid, WU); panelWall(v, Nf(SS0 - 0.15, SD0), Nf(SS2 + 0.15, SD0), H, H + 3.5, [], mid, WU);
+    LEVELS.forEach((y, i) => panelWall(v, Nf(SS0, SD1), Nf(SS1, SD1), y + 2.3, i < 6 ? LEVELS[i + 1] : H + 3.5, [], mid, WU));                 // over the openings to the lobby
+    cap(v, CEU, [Nf(34.6, 2.3), Nf(41.2, 2.3), Nf(41.2, 8.3), Nf(34.6, 8.3)], H + 3.5, false);
+    c.slab(G, SS0 - 0.15, F0, -5.7, 0.15, H + 3.6 - F0, 5.7 - 2.4); c.slab(G, SS2, F0, -5.7, 0.15, H + 3.6 - F0, 5.7 - 2.4);                 // east and west walls
+    c.slab(G, SS0 - 0.15, F0, -SD0, 0.35, H + 3.6 - F0, 0.15); c.slab(G, 35.95, F0, -SD0, SS2 + 0.15 - 35.95, H + 3.6 - F0, 0.15);           // outer wall beside the balcony doors
+    c.slab(G, 34.95, F0, -SD0, 1.0, F3 - F0, 0.15); c.slab(G, 34.95, H, -SD0, 1.0, 3.6, 0.15);
+    // the balconies of storeys 3 to 6 (the western stack, frames 55-57): a glazed screen with a door from each landing
+    c.slab(G, 33.58, F3, -2.4, 0.12, H - F3, 2.05); c.slab(G, 40.1, F3, -2.4, 0.12, H - F3, 2.05);
+    for (const y of UPF) {
+      panelWall(v, Nf(33.7, 2.4), Nf(40.1, 2.4), y, y + FH, [[34.95 - 33.7, 35.95 - 33.7, 0, 2.15], [SS1 - 33.7, 39.6 - 33.7, 0.1, 2.4]], Nf(37, 0), TERR);
+      panelWall(v, Nf(SS0 - 0.15, SD0), Nf(SS2 + 0.15, SD0), y, y + FH, [[34.95 - 34.6, 35.95 - 34.6, 0, 2.15], [SS1 - 34.6, 39.6 - 34.6, 0.1, 2.4]], mid, WU);
+      panelWall(v, Nf(SS1, 2.47), Nf(39.6, 2.47), y + 0.1, y + 2.4, [], Nf(37, 0), GD);
+      along(v, LB, LA, y);
+      for (const s of [SS1, 37.3, 38.45, 39.6]) v.box(FRM, s, 1.25, -2.475, 0.06, 2.3, 0.17, 'UD'); v.box(FRM, (SS1 + 39.6) / 2, 0.1, -2.475, 39.6 - SS1, 0.06, 0.17); v.box(FRM, (SS1 + 39.6) / 2, 2.4, -2.475, 39.6 - SS1, 0.06, 0.17);
+      for (const s of [34.95, 35.95]) v.box(FRM, s, 1.08, -2.475, 0.06, 2.16, 0.19, 'D'); v.box(FRM, 35.45, 2.18, -2.475, 1.06, 0.06, 0.19);
+      v.quad(GRL, [34.98, 0.04, -2.38], [34.98, 0.04, -1.45], [34.98, 2.14, -1.45], [34.98, 2.14, -2.38]); v.box(STL, 34.98, 1.1, -1.55, 0.06, 0.5, 0.025);       // the door leaf stands open on the balcony
+      v.box(LAMP, 36.9, FH - 0.52, -1.2, 0.3, 0.03, 0.3);
+      home(v);
+    }
+    home(c);
+  }
+  // ---- lobby on the two library storeys: from the garden door (ground) and the library doors (both levels) to the stair and the lifts
+  const dWat = Z => (Z - LB[1] - uN[1] * 41.3) / inN[1];              // metres in from the face at which the line 41.3 m from B crosses a given Z
+  { const GL = [Nf(41.3, 5.7), Nf(34.6, 5.7), Nf(34.6, 0.35), Nf(32.5, 0.35), [XG0, -20.9], [XG0, -15.6], Nf(41.3, dWat(-15.6))], ctr = [19, -18.4], dW = dWat(-15.6);
+    [[F0, CEIL1 - F0], [F2, CEIL2 - F2]].forEach(([y, h], lv) => {
+      cap(uf, TILE, GL, y + 0.004, true); cap(uf, CEU, GL, y + h, false); cap(c, G, GL, y, true);
+      wallU(uf, GL[0], GL[1], y, ctr, [[41.3 - SS1, SS1 - SS0, 'gap']], h);
+      wallU(uf, GL[1], GL[2], y, ctr, [], h); wallU(uf, GL[3], GL[4], y, ctr, [], h); const sgS = wallU(uf, GL[5], GL[6], y, ctr, [], h);
+      wallU(uf, GL[6], GL[0], y, ctr, [[dW - 8.5, 1.1, 'lift'], [dW - 7.1, 1.1, 'lift']], h);
+      // the wall to the library (its collider is the hall's own): door hole, sign over it
+      const zd = [LDOOR[0] + 20.9, LDOOR[1] + 20.9]; panelWall(uf, GL[4], GL[5], y, y + h, [[zd[0], zd[1], 0, 2.2]], ctr, WU);
+      at(uf, XG0, 0, 0, y); for (const z of LDOOR) { uf.box(FRM, 0, 1.1, z, 0.34, 2.2, 0.06, 'D'); uf.quad(GRL, [-0.16, 0.04, z], [-0.95, 0.04, z], [-0.95, 2.16, z], [-0.16, 2.16, z]); uf.box(STL, -0.82, 1.1, z, 0.025, 0.5, 0.06); }
+      uf.box(FRM, 0, 2.23, (LDOOR[0] + LDOOR[1]) / 2, 0.34, 0.06, LDOOR[1] - LDOOR[0]);
+      cardX(uf, signCard('图书馆  LIBRARY', '#1d4f9c', '#ffffff', 360, 80), -0.012, 2.42, (LDOOR[0] + LDOOR[1]) / 2 - 0.55, 1.1, 0.245, -1);
+      cardX(uf, signCard('楼梯 · 电梯', '#f7f9fb', '#1d4f9c', 300, 80), 0.012, 2.42, (LDOOR[0] + LDOOR[1]) / 2 - 0.5, 1.0, 0.265, 1);
+      home(uf);
+      // the outer wall: the garden door on the ground, a window above it
+      if (lv === 0) panelWall(uf, GL[2], GL[3], y, y + h, [[34.6 - ND[1], 34.6 - ND[0], 0, 2.2]], ctr, WU); else panelWall(uf, GL[2], GL[3], y, y + h, [[0.9, 2.0, 0.7, 2.5]], ctr, WU);
+      along(uf, GL[5], GL[6], y); cardZ(uf, floorCard(lv + 1), 4.0, 1.6, sgS * 0.012, 0.6, 0.6, sgS); home(uf);
+      for (const [X, Z] of [[16.5, -17.6], [20.2, -18.6], [21.6, -22.6], [18.6, -25.0]]) uf.box(LAMP, X, y + h - 0.012, Z, 1.2, 0.02, 0.16);
+    });
+    // the garden door: a glazed pair standing open, a transom, a canopy, steps (frame: x from B along the face, z out of the building)
+    along(uf, LB, LA); along(c, LB, LA); along(v, LB, LA);
+    for (const s of ND) { uf.box(FRM, s, 1.22, -0.17, 0.07, 2.45, 0.36, 'D'); uf.quad(GRL, [s, F0 + 0.04, -0.36], [s, F0 + 0.04, -1.14], [s, 2.42, -1.14], [s, 2.42, -0.36]); uf.box(STL, s, 1.35, -1.02, 0.06, 0.5, 0.025); }
+    uf.box(FRM, (ND[0] + ND[1]) / 2, 2.42, -0.17, ND[1] - ND[0], 0.07, 0.36);
+    v.slab(lm('granite'), ND[0], 0.0, -0.36, ND[1] - ND[0], F0, 0.36, 'D'); c.slab(G, ND[0], 0, -0.4, ND[1] - ND[0], F0, 0.4);
+    v.slab(lm('stone'), 32, 0, 0, 3.2, F0, 1.5, 'DN'); v.slab(lm('stone'), 31.8, 0, 1.5, 3.6, 0.15, 0.4, 'DN'); c.slab(G, 32, 0, 0, 3.2, F0, 1.5); plate(c, G, [[32, F0, 1.5], [32, 0, 2.1], [35.2, 0, 2.1], [35.2, F0, 1.5]], 0.1);
+    v.slab(MW, 31.9, 2.72, 0, 3.4, 0.07, 1.5); for (const s of [32.2, 35.0]) bar(v, STL, [s, 2.76, 1.35], [s, 3.5, 0.02], 0.03);
+    v.slab(LAMP, 33.3, 2.69, 0.5, 0.6, 0.02, 0.2);
+    cardZ(v, signCard('综合楼 · 北门', '#2a2d30', '#e9c46a', 320, 80), 31.95, 1.45, 0.012, 0.72, 0.18, 1);
+    home(uf); home(c); home(v);
+  }
+  // ---- storeys 3 to 6: hall, corridor round the light well, the walls with all the doors
+  const ZS = -11.6, DN = 11.3, DE = 10.4, SLOB = 41.3, SHALL = 33.4;   // inner walls of the south, north-west and north-east wings; west wall of the hall; east wall of the lobby
+  const tipS = (DE - dot(sub(Nf(0, DN), LC), inE)) / dot(uN, inE), tSE = (ZS - LC[1] - inE[1] * DE) / uE[1];
+  const A1 = Nf(SLOB, 5.7), A2 = Nf(SHALL, 5.7), A3 = Nf(SHALL, DN), A4 = Nf(tipS, DN), A5 = Ef(tSE, DE), AW = Nf(SLOB, dWat(ZS));
+  const LWo = LWELL.map(p => add(p, mul(unit(sub(p, wellC)), 0.2)));   // the corridor side of the wall round the light well
+  const NAMES = [
+    { B2: '创客空间', B1: '通用技术教室', E3: '机器人实验室', E2: '物理探究实验室', E1: '数字化实验室', SE: '教具室', S4: '网络管理室', A: '计算机教室', S2: '信息技术教研组', S1: '储藏室' },
+    { B2: '音乐教室', B1: '琴房', E3: '舞蹈排练厅', E2: '合唱排练室', E1: '器乐排练室', SE: '乐器室', S4: '书法教室', A: '美术教室', S2: '陶艺工作室', S1: '画具室' },
+    { B2: '教师办公室', B1: '备课室', E3: '心理辅导室', E2: '团委 学生会', E1: '会议室', SE: '文印室', S5: '录播教室', S4: '多媒体教室', A: '阶梯教室', S1: '档案室' },
+    { B2: '校园电视台', B1: '广播站', E3: '天文社', E2: '模拟联合国', E1: '校史陈列室', SE: '器材室', S5: '社团活动室', S4: '录音室', A: '研讨阅览室', S1: '储藏室' }];
+  const Wf = (x, z) => { const u = unit(sub(LE, LA)); return [LA[0] + u[0] * x - u[1] * z, LA[1] + u[1] * x + u[0] * z]; };      // the frame of the west end (x from A toward E, z outward)
+  LWELL.forEach((p, i) => block(p, LWELL[(i + 1) % LWELL.length], F3, H, 0.2));
+  UPF.forEach((y, k) => {
+    const lo = k < 2, south = lo ? [[55.5, ZS], [55.5, -8.2], [47, -8.2], [47, ZS]] : [[28.9, ZS], [28.9, -5.2], [20.6, -5.2], [20.6, ZS]], PUB = [A1, A2, A3, A4, A5, ...south, AW];
+    const nm = NAMES[k], pl = (i, key) => plateCard(String((k + 3) * 100 + i), nm[key]), tr = TRIM[k], W = (P, Q, toward, gaps) => wallU(v, P, Q, y, toward, gaps, CU, tr), dW = dWat(ZS);
+    cap(v, TILE, PUB, y + 0.004, true, [LWo]); cap(v, CEU, PUB, y + CU, false, [LWo]);
+    cap(c, G, lo ? [LE, [VOID_S[0], 0], [VOID_S[0], -8], [VOID_S[1], -8], [VOID_S[1], 0], LD, LC, LB, Wf(nwX(-PE), -PE), Wf(PBACK, -PE), Wf(PBACK, -PW), Wf(nwX(-PW), -PW), LA] : [LE, LD, LC, LB, LA], y, true, [LWELL, STAIRHOLE]);
+    W(A1, A2, Nf(37, 8), [[SLOB - SS1, SS1 - SS0, 'gap']]); W(A2, A3, Nf(36, 9));
+    W(A3, A4, Nf(20, DN + 1.5), [[0.8, 1, 'shut'], [6.4, 1, 'open', pl(1, 'B2')], [9, 1, 'shut'], [14.75, 1, 'shut', pl(2, 'B1')], [19.2, 1.6, 'shut', signCard('楼梯间', '#0d8a4a', '#ffffff')], [SHALL - 10.3, 1.2, 'gap']]);
+    W(A4, A5, wellC, [[2.6, 1, 'shut', pl(3, 'E3')], [9.6, 1, 'shut', pl(4, 'E2')], [16.6, 1, 'shut', pl(5, 'E1')]]);
+    if (lo) {
+      W(A5, [55.5, ZS], wellC, [[0.42, 1, 'shut', pl(6, 'SE')]]); W([55.5, ZS], [55.5, -8.2], [51, -10]); W([47, -8.2], [47, ZS], [51, -10]);
+      screen([55.5, -8.2], [47, -8.2], y, [51, -10], k === 0 ? [3.5, 5.1] : null);                                     // foyer behind the two-storey void: the door to the terrace on storey 3
+      W([47, ZS], AW, [30, ZS - 1], [[4.5, 1, 'shut', pl(8, 'S4')], [9.1, 1, 'shut'], [16.2, 1, 'open', pl(9, 'A')], [22.5, 1, 'shut', pl(10, 'S2')], [28, 1, 'shut', pl(11, 'S1')]]);
+    } else {
+      W(A5, [28.9, ZS], wellC, [[0.42, 1, 'shut', pl(6, 'SE')], [A5[0] - 51, 1, 'shut', pl(7, 'S5')], [A5[0] - 42.5, 1, 'shut', pl(8, 'S4')], [A5[0] - 37.9, 1, 'shut'], [A5[0] - 30.8, 1, 'open', pl(9, 'A')]]);
+      W([28.9, ZS], [28.9, -5.2], [24.7, -8]); W([20.6, -5.2], [20.6, ZS], [24.7, -8]);
+      screen([28.9, -5.2], [20.6, -5.2], y, [24.7, -8], [3.3, 4.9]);                                                   // lounge behind the recessed terrace of the south face
+      blockBox(20.9, -5, 21, -0.3, y, y + FH); blockBox(28.5, -5, 28.6, -0.3, y, y + FH);
+      W([20.6, ZS], AW, [19, ZS - 1], [[1.6, 1, 'shut', pl(11, 'S1')]]);
+    }
+    W(AW, A1, Nf(38, 9), [[dW - 8.5, 1.1, 'lift'], [dW - 7.1, 1.1, 'lift']]);
+    // round the light well: sill, glass, head; terracotta toward the well
+    const SILL = C(0xe9e7e1, 'gloss');
+    LWELL.forEach((p, i) => { const j = (i + 1) % LWELL.length, q = LWELL[j], po = LWo[i], qo = LWo[j], mo = lerp(po, qo, 0.5), out = add(mo, sub(mo, wellC)), len = dist(p, q);
+      wallQuad(v, TERR, p, q, k ? y : 8.6, y + 0.9, wellC); wallQuad(v, TERR, p, q, y + 3.0, y + FH, wellC); wallQuad(v, lm('glassWell'), p, q, y + 0.9, y + 3.0, wellC);
+      wallQuad(v, DADO, po, qo, y, y + 0.9, out); wallQuad(v, WU, po, qo, y + 3.0, y + CU, out);
+      cap(v, SILL, [p, q, qo, po], y + 0.9, true); cap(v, WU, [p, q, qo, po], y + 3.0, false);
+      along(v, p, q, y); const n = Math.max(1, Math.round(len / 1.5)); for (let e = 0; e < n; e++) v.box(FRM, len * e / n, 1.95, 0, 0.06, 2.1, 0.12, 'UD');
+      v.box(FRM, len / 2, 0.93, 0, len, 0.06, 0.12); v.box(FRM, len / 2, 2.97, 0, len, 0.06, 0.12); home(v);
+    });
+    // lights in the ceiling, on a grid
+    for (let X = 14; X < 60; X += 3.2) for (let Z = -31; Z < -5; Z += 3.2) { const ok = q => inside(q, PUB) && !inside(q, LWo); if (ok([X, Z]) && ok([X + 0.9, Z]) && ok([X - 0.9, Z]) && ok([X, Z + 0.5]) && ok([X, Z - 0.5])) uf.box(LAMP, X, y + CU - 0.012, Z, 1.2, 0.02, 0.16); }
+    // signs of the hall: the storey, exit signs
+    along(uf, A2, A3, y); { const sg = dot(sub(Nf(36, 9), A2), [-(A3[1] - A2[1]), A3[0] - A2[0]]) > 0 ? 1 : -1; cardZ(uf, floorCard(k + 3), 2.3, 1.75, sg * 0.012, 0.7, 0.7, sg); } home(uf);
+  });
+  // ---- the western roof pavilion: the stair comes out here; a steel door leads out under the pergola
+  { panelWall(v, Nf(34.5, 2), Nf(34.5, 8.5), H, H + 3.6, [[4.1, 5.3, 0, 2.15]], Nf(30, 5), TERR, WU, 0.25);
+    panelWall(v, Nf(SS2, SD1), Nf(SS2, 8.25), H, H + 3.5, [], Nf(38, 7), WU); panelWall(v, Nf(34.75, 8.25), Nf(SS2, 8.25), H, H + 3.5, [], Nf(38, 7), WU); panelWall(v, Nf(SS1, 5.7), Nf(SS2, 5.7), H, H + 3.5, [], Nf(38, 7), WU);
+    panelWall(v, Nf(SS0, 5.7), Nf(SS1, 5.7), H + 2.3, H + 3.5, [], Nf(35.4, 7), WU);
+    cap(v, TILE, [Nf(34.75, SD0), Nf(SS1, SD0), Nf(SS1, 5.7), Nf(SS2, 5.7), Nf(SS2, 8.25), Nf(34.75, 8.25)], H + 0.006, true);
+    along(v, LB, LA, H); along(c, LB, LA, H);
+    for (const d of [6.1, 7.3]) v.box(FRM, 34.625, 1.08, -d, 0.27, 2.16, 0.06, 'D'); v.box(FRM, 34.625, 2.18, -6.7, 0.27, 0.06, 1.26);
+    v.box(C(0x8e9a94, 'metal'), 33.95, 1.07, -6.12, 1.1, 2.1, 0.045, 'D'); v.box(STL, 33.5, 1.05, -6.16, 0.12, 0.03, 0.05);          // the door leaf stands open against the wall
+    v.box(LAMP, 37.9, 3.48, -7, 1.2, 0.02, 0.16);
+    cardZ(v, exitCard(), 34.9, 2.5, -8.23, 0.6, 0.21, 1, true);
+    c.slab(G, SS2, 0, -8.5, 0.25, 3.6, 8.5 - SD1); c.slab(G, 34.5, 0, -8.5, 6.8, 3.6, 0.25); c.slab(G, 34.5, 0, -6.1, 0.25, 3.6, 0.4); c.slab(G, 34.5, 0, -8.25, 0.25, 3.6, 0.95);
+    c.slab(G, SS1, 0, -5.7, SS2 - SS1, 3.6, 0.15); c.slab(G, 34.5, 3.5, -8.5, 6.8, 0.22, 6.5);
+    c.slab(G, 11.6, 0, -8.5, 4.9, 3.6, 6.5);                                                                                        // the eastern pavilion is closed
+    home(v); home(c);
+  }
+
   // ================================================================= OUTSIDE: plaza, sculpture, aprons, garden, driveway
   home(v);
   const PZ = lm('plaza'), BAND = lm('band'), SG = lm('stone'), KERB = lm('kerb'), GRATE = C(0x3a3e42, 'metal'), LINE = C(0xf0f0ea);
@@ -916,6 +1135,7 @@ export function build(item, ctx) {
   finish(v, 'shell', true);
   const mid = toW([40, -12]);
   ctx.detail(finish(iv, 'interior', false), mid[0], mid[1], 140);
+  ctx.detail(finish(uf, 'fittings', false), mid[0], mid[1], 105);
   ctx.detail(finish(fu, 'furniture', false), mid[0], mid[1], 70);
   ctx.detail(finish(fx, 'fine', false), mid[0], mid[1], 45);
   const gxG = finish(gx, 'outdoor-detail', false);
