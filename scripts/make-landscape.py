@@ -374,7 +374,7 @@ def polygons_from_mask(mask, eps, min_area, min_hole, level=0.5):
 
 
 def new_building_zones():
-    """The new teaching building is newer than the mosaic, and its builder (src/world/builders/new-building.js) lays out
+    """The new teaching building's builder (src/world/builders/new-building.js) lays out
     its own plaza and garden from the 2022 footage around its own re-read footprint. Returns (footprint, garden zone,
     plaza zone) in metres, or None when that footprint cannot be read: nothing of the landscape goes into these zones.
       garden zone: from 30 m before corner A to 6 m past corner B along the north-west face, 2 m inside to 34 m outside it
@@ -856,12 +856,14 @@ def main():
         'window': {'west': X0, 'east': X1, 'north': Z0, 'south': Z1, 'cellSizeM': CELL},
         'caveats': [
             'Everything here comes from ONE oblique satellite image; positions are good to a few metres at best.',
-            'The image is older than the new teaching building: an earlier building stands on its site, so nothing near it (z < -190 m) is reliable.',
+            'This file was first made in the belief that the image is older than the new teaching building. A later comparison with 2022 '
+            "footage found that building's roof in the image (the image's date was never checked). Ground cover near it (z < -190 m) is "
+            "still not used: the building's own module lays out its surroundings.",
             'surveyArea is only the area in which ground cover was classified. It is not a surveyed campus boundary.',
         ],
         'surveyArea': ring(survey),
         'newBuildingSite': {
-            'note': 'The new teaching building is newer than the mosaic and its builder lays out its own plaza and garden (2022 footage) around its own '
+            'note': "The new teaching building's builder lays out its own plaza and garden (2022 footage) around its own "
                     're-read footprint. No tree is placed in these zones; the ground there is plain lawn (garden zone) and plain paving (plaza zone and '
                     'footprint grown 8 m) for the builder to draw on.',
             'gardenZone': ring(zones[1]) if zones else None, 'plazaZone': ring(zones[2]) if zones else None,

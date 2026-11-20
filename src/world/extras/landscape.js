@@ -66,6 +66,8 @@ const DATA = {
 
 /** The canal's two water edges (north end first): world/index.js cuts the ground open between them. */
 export const CANAL = DATA.canal;
+/** Length of canal, from its north end, that lies under the main road's bridge: the banks' barriers and the open channel start here. */
+export const CANAL_HEAD = 14;
 /** Rough readings kept from the earlier backdrop (towers, depot sheds): extras/city.js draws them. */
 export const BACKDROP = DATA.backdrop;
 
@@ -196,7 +198,7 @@ const FENCES = (() => {
 function makeSite(ctx) {
   const items = (ctx.campus && ctx.campus.items) || [], circle = i => Array.from({ length: 24 }, (_, k) => [i.cx + i.radius * Math.cos(k / 24 * 6.283), i.cz + i.radius * Math.sin(k / 24 * 6.283)]);
   const outline = i => (i.shape === 'circle' ? circle(i) : i.points);
-  const built = [...items.filter(i => i.height > 0).map(outline), ...FOOTPRINTS];
+  const built = [...items.filter(i => i.height > 0).map(outline), ...FOOTPRINTS, ...(ctx.occupied || [])];
   const t = ctx.campus.track, k = ctx.campus.courts && ctx.campus.courts.block, tennis = DATA.tennisCourts && DATA.tennisCourts.surround;
   const inside = (poly, x, z) => { let on = false; for (let i = 0, j = poly.length - 1; i < poly.length; j = i++) { const [ax, az] = poly[j], [bx, bz] = poly[i]; if ((az > z) !== (bz > z) && x < (bx - ax) * (z - az) / (bz - az) + ax) on = !on; } return on; };
   const onTrack = (x, z, m) => { const hs = t.straight / 2, dz = Math.max(0, Math.abs(z - t.cz) - hs); return Math.hypot(x - t.cx, dz) < t.outerRadius + 2.2 + m; };
@@ -321,12 +323,13 @@ function buildCanal(ctx, low) {
   const ax = e[0][0] - w[0][0], az = e[0][1] - w[0][1], an = Math.hypot(ax, az), off = (p, d) => [p[0] + ax / an * d, p[1] + az / an * d];
   const strip = (edge, s) => ({ outer: [off(edge[0], s * 0.5), off(edge[0], s * 2.9), off(edge[1], s * 2.9), off(edge[1], s * 0.5)] });
   ctx.add(groundMesh([strip(w, -1), strip(e, 1)], Y.strip, pbr('paving', [0xa8a39a, 0x9a958c, 2, 2, [1.6, 1.6], 17, false]))).name = 'canal-walk';
-  const HEAD = 14;                                       // the main road crosses the first metres of the canal on a bridge
+  const HEAD = CANAL_HEAD;                               // the main road crosses the first metres of the canal on a bridge
   const BAY = 2.2, ux = dx / len, uz = dz / len, near0 = (-330 - w[0][1]) / uz, near1 = (215 - w[0][1]) / uz;      // detailed between z -330 and 215
   for (const [edge, side] of [[w, 1], [e, -1]]) {
     const mx = (edge[0][0] + edge[1][0]) / 2, mz = (edge[0][1] + edge[1][1]) / 2;
     v.frame(mx, mz, angle).box(coping, HEAD / 2, 0.11, side * 0.24, len - HEAD, 0.22, 0.64);
-    c.frame(mx, mz, angle).box('generic', HEAD / 2, 0.7, side * 0.3, len - HEAD, 1.4, 0.5);
+    // the barrier along the bank, carried down to below the bed so that it is the channel wall as well
+    c.frame(mx, mz, angle).box('generic', HEAD / 2, (1.4 + BED_Y - 0.4) / 2, side * 0.3, len - HEAD, 1.4 - BED_Y + 0.4, 0.5);
     // far stretches: a plain parapet
     for (const [s0, s1] of [[HEAD, near0], [near1, len]]) v.box(rail, (s0 + s1) / 2 - len / 2, 0.22 + 0.5, side * 0.3, s1 - s0, 1.0, 0.2);
     // near stretch: posts with caps, two rails and balusters, in runs of 30 bays so that hidden runs are skipped
@@ -344,6 +347,12 @@ function buildCanal(ctx, low) {
       const g = run.build({ name: 'canal-balustrade' }); ctx.add(g);
     }
   }
+  // Collision in the channel (world/index.js leaves the floor open over it): the bed, and a wall across each end of the
+  // open stretch. Someone set down over the water stands on the bed, head above the surface, and leaves by flying.
+  const zn = w[0][1] + uz * HEAD, xn = (w[0][0] + e[0][0]) / 2 + ux * HEAD, xs = (w[1][0] + e[1][0]) / 2, span = e[0][0] - w[0][0] + 4;
+  c.frame((w[0][0] + w[1][0] + e[0][0] + e[1][0]) / 4, (w[0][1] + w[1][1]) / 2, angle).box('generic', 0, BED_Y - 0.6, 0, len + 12, 1.2, an + 6);
+  c.frame(xn, zn - 0.3, 0).box('generic', 0, (BED_Y - 0.5) / 2, 0, span, 0.3 - BED_Y, 0.6);      // tops 0.1 m under the floor
+  c.frame(xs, w[1][1] + 0.3, 0).box('generic', 0, (BED_Y - 0.5) / 2, 0, span, 0.3 - BED_Y, 0.6);
   ctx.add(v.build({ name: 'canal-walls' }));
   const cg = c.build(); ctx.add(cg).visible = false; cg.children.forEach(mesh => ctx.collide(mesh));
 }
@@ -470,6 +479,7 @@ function buildFurniture(ctx, v, c, site, low) {
     for (let z = lane.points[0][1] + 6, i = 0; z < lane.points[1][1] - 2; z += 19, i++) if (site.free(x, z, 0.3, false)) gardenLamp(v, c, x, z);
     for (const z of [-104, -86, -68]) if (site.free(x + 0.9, z, 0.8, false)) { bench(v, c, x + 0.9, z, -Math.PI / 2); if (z === -86) bins(v, c, x + 0.9, z + 2.2, -Math.PI / 2); }
     for (const [z, k] of [[-56, 0], [-49.5, 3]]) if (site.free(x + 1.0, z, 1.0, false)) noticeBoard(v, c, x + 1.0, z, -Math.PI / 2, 3, k, k ? '学生风采' : '校务公开');
+    // the plates are made up; "宿舍区" follows the use this project assumes for the long blocks, which is not established
     fingerPost(v, c, x + 0.4, lane.points[1][1] - 3.5, -Math.PI / 2, [['体育馆', -1], ['田径场', 1], ['宿舍区', -1]]);
   }
   if (south) {

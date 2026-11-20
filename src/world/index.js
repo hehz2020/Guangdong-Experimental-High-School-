@@ -2,7 +2,7 @@
 // items without one fall back to plain massing.
 import { THREE, mat, flat, prism, stadium, box } from '../kit.js';
 import { build as generic } from './builders/generic.js';
-import { CANAL } from './extras/landscape.js';
+import { CANAL, CANAL_HEAD } from './extras/landscape.js';
 import { lightPools } from '../street.js';
 
 export const BUILDERS = {
@@ -67,6 +67,20 @@ function groundGeometry(canal) {
   g.setIndex(idx); return g;
 }
 
+/** The collision floor at y 0, 1400 m square, with a slot over the canal south of CANAL_HEAD metres from its north end. */
+function floorWithChannel(canal) {
+  const H = 700, { westEdge: w, eastEdge: e } = canal, len = Math.hypot(w[1][0] - w[0][0], w[1][1] - w[0][1]), t = CANAL_HEAD / len;
+  const zn = w[0][1] + (w[1][1] - w[0][1]) * t, zs = w[1][1], wn = w[0][0] + (w[1][0] - w[0][0]) * t, en = e[0][0] + (e[1][0] - e[0][0]) * t;
+  const quads = [
+    [[-H, -H], [H, -H], [H, zn], [-H, zn]], [[-H, zs], [H, zs], [H, H], [-H, H]],                       // north and south of the slot
+    [[-H, zn], [wn, zn], [w[1][0], zs], [-H, zs]], [[en, zn], [H, zn], [H, zs], [e[1][0], zs]],         // west and east of it
+  ];
+  const pos = [], idx = [];
+  for (const q of quads) { const b = pos.length / 3; for (const [x, z] of q) pos.push(x, 0, z); idx.push(b, b + 3, b + 2, b, b + 2, b + 1); }
+  const g = new THREE.BufferGeometry(); g.setAttribute('position', new THREE.Float32BufferAttribute(pos, 3)); g.setIndex(idx); g.computeVertexNormals();
+  const m = new THREE.Mesh(g, mat('earth')); m.name = 'floor'; return m;
+}
+
 /**
  * only: optional Set of item ids to build (others are skipped), for close-up checks of one building.
  * tryBuilders: optional { style: './builders/file.js' } used on top of BUILDERS for this page load (testing a builder before it is registered).
@@ -81,6 +95,7 @@ export async function buildWorld(campus, only = null, tryBuilders = {}, tryExtra
   const updaters = [];       // functions (dt, seconds, { camera, lighting, renderer }) called every frame: water, fountains, leaves
   const places = [];         // extra entries for the places menu, offered by extras: { name, x, z, yaw, y, fly, pitch }
   const detail = (obj, x, z, range) => { details.push({ obj, x, z, range }); return obj; };
+  const occupied = [];       // outlines [[x, z]...] of solid parts that builders put outside their item's outline (the extras keep trees and lamps off them)
 
   // ground
   // Tessellated and 5 cm below zero: as two huge triangles at y 0 it won the depth test against the paving, lawn, road and water
@@ -91,7 +106,9 @@ export async function buildWorld(campus, only = null, tryBuilders = {}, tryExtra
   // open between its two edges. Without the extras (a close-up of chosen items) the ground is whole.
   const ground = new THREE.Mesh(groundGeometry(only && !env.extras ? null : CANAL), mat('earth'));
   ground.position.y = -0.05; ground.receiveShadow = true; ground.name = 'ground'; root.add(ground);
-  const floor = box(0, 0, 1400, 1400, -1, 0, mat('earth')); colliders.add(floor);
+  // The collision floor is open over the canal too, from where the main road's bridge ends: a walker set down over the
+  // water lands on the bed (extras/landscape.js puts the bed and the channel walls into the collision set).
+  colliders.add(only && !env.extras ? box(0, 0, 1400, 1400, -1, 0, mat('earth')) : floorWithChannel(CANAL));
 
   // (the running track, the pitch and their markings are drawn by extras/athletics.js)
 
@@ -104,6 +121,8 @@ export async function buildWorld(campus, only = null, tryBuilders = {}, tryExtra
       campus, item, detail, lowPower: !!env.lowPower, safe: !!env.safe,
       // per-frame hook, as the extras have: fn(dt, seconds, { camera, lighting, renderer })
       animate: fn => { updaters.push(fn); },
+      // tell the grounds about a solid part that stands outside item.points: outline [[x, z]...] in world coordinates
+      occupy: outline => { occupied.push(outline); },
       add: obj => { group.add(obj); return obj; },
       // register a mesh (in world coordinates) that the player cannot walk through
       // Call after ctx.add (the mesh needs its parents to know where it is). For an invisible barrier, add a mesh and set visible = false.
@@ -127,7 +146,7 @@ export async function buildWorld(campus, only = null, tryBuilders = {}, tryExtra
     if (env.progress) await env.progress('extra', ++k, extras.length);
     const group = new THREE.Group(); group.name = path; root.add(group);
     const ctx = {
-      campus, detail, lowPower: !!env.lowPower, safe: !!env.safe,
+      campus, detail, occupied, lowPower: !!env.lowPower, safe: !!env.safe,
       add: obj => { group.add(obj); return obj; },
       collide: mesh => { mesh.updateWorldMatrix(true, false); const c = new THREE.Mesh(mesh.geometry); c.matrixAutoUpdate = false; c.matrix.copy(mesh.matrixWorld); colliders.add(c); return mesh; },
       animate: fn => { updaters.push(fn); },

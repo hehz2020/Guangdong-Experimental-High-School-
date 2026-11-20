@@ -13,7 +13,7 @@
 //   drum with white ribs above, flat overhanging disc roof. Five columns in all (frame 39, 2022 still at 0:03).
 // - North end: lower white flat-roofed portal with glazing facing the track and a white screen wall at its north end.
 //
-// IMAGINED (the brief asks for a showpiece and says looks matter more than facts):
+// IMAGINED (looks were put before facts here):
 // - The east eave is drawn as a 5.2 m steel canopy over a concourse behind the seats (the measured roof outline is kept;
 //   the east wall is set back to make room): tapered beams on the pilasters with knee braces, purlins, tie rods in the
 //   roof plane, a ribbed sheet soffit, a fascia with a box gutter and downpipes. The other eaves are 2.0 m.
@@ -288,6 +288,7 @@ export function build(item, ctx) {
   const pt = (rho, th, y) => [cx + rho * Math.cos(th), y, cz + rho * Math.sin(th)];      // th: 0 east, a quarter turn south
   const wing = [[xWg - LEAF, zS], [xWg - LEAF, cz - 1.3], ...[-45, -75, -105, -135, -165, -180].map(d => { const p = pt(R - 0.1, d * Math.PI / 180, 0); return [p[0], p[2]]; }), [xW + 2.0, zS]];
   ctx.collide(ctx.add(prism(wing, 0, yWing, mat('brickRed'))));
+  if (ctx.occupy) ctx.occupy(wing);                                              // it stands outside the item's outline: no tree in it
   ctx.add(prism(wing, yWing, yWing + 0.06, mat('roofGrey')));
   const lenW = cz - 1.25 - zS, zc0 = zS - PW / 2, cols = [];                    // east wall up to where the tower takes over; columns continue the main bay rhythm
   for (let k = 1; zc0 + k * bay < cz - 3; k++) cols.push(zc0 + k * bay);

@@ -1,8 +1,8 @@
 // One-file launcher for the campus walk-through.
 //
 // The whole site (index.html, src/, vendor/) is embedded in the program by launcher/build.sh. Started with a double
-// click, it serves those files to THIS computer only (127.0.0.1) and opens the page in the default browser. Nothing is
-// installed, nothing is written to disk and no other machine can reach it. Closing its window stops it.
+// click, it serves those files to THIS computer only (127.0.0.1) and opens the page: on Windows in a Chrome or Edge
+// app window if one is found, otherwise in the default browser. Nothing is installed; closing its window stops it.
 package main
 
 import (

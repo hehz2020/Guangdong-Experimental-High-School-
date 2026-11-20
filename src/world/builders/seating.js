@@ -14,7 +14,7 @@
 // - Satellite image: aisle positions along the bank (fractions in AISLES); seat colours blue, red, green from north to
 //   south (the 2022 frames still show a red middle block and green between the tents on the south block).
 //
-// IMAGINED (the brief asks for a showpiece; none of this can be read off a reference):
+// IMAGINED (none of this can be read off a reference):
 // - Ten rows and every vertical size. The data height (5 m to the top tier) is used as given; the front walkway is at
 //   0.48 of it. The real stand looks about 1.5 times taller, so the rake here is flatter than the original.
 // - The seat itself (a moulded shell with a low back on a galvanised rail), its pitch, the painted seat numbers on the

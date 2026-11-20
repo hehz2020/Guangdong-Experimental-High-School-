@@ -9,7 +9,8 @@
 // IMAGINED: the aircraft itself. It is drawn as a single-engine delta-wing fighter of the kind schools in China are given
 // for display (round nose intake with a centre cone, bubble canopy, swept fin), about 15 m long, bare metal, standing on
 // its undercarriage on three low piers in a paved circle with posts and chains, a stone with a plate and two
-// floodlights. Its type, markings and mounting are not known; the number on the nose is made up. The flag platform is a
+// floodlights. Its type, markings and mounting are not known; the number on the nose, the red band on the fin and the
+// plate's text ("国防教育展品") are made up. The flag platform is a
 // stepped granite podium with three poles, the national flag between a school flag (a simplified emblem, see signs.js)
 // and a plain green one; the real platform was not seen. The railing and its length are imagined too.
 //

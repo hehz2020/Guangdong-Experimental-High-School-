@@ -54,7 +54,7 @@ export function initUI({ player, lighting, campus, camera, renderer, view, place
   // --- help ---
   const helpBtn = el('button', 'hud-help-btn', 'hud', '?'), help = el('div', 'hud-help', 'hud');
   help.hidden = true;
-  help.innerHTML = touch ? '左下摇杆：移动<br>右半屏滑动：转动视角<br>“跑”：切换奔跑　“跳”：跳跃<br>“地点”：直接前往某处<br>“航拍”：飞行模式，朝视线方向飞，“跳”为上升<br>卡在屋顶或围栏里：点“航拍”飞出来<br>上方滑块：调整时间<br>右上：小地图（北在上）'
+  help.innerHTML = touch ? '左下摇杆：移动<br>在画面上滑动：转动视角<br>“跑”：切换奔跑　“跳”：跳跃<br>“地点”：直接前往某处<br>“航拍”：飞行模式，朝视线方向飞，“跳”为上升<br>卡在屋顶或围栏里：点“航拍”飞出来<br>上方滑块：调整时间<br>右上：小地图（北在上）'
     : 'W A S D / 方向键：移动<br>鼠标：转动视角（先点击画面）<br>Shift：跑　空格：跳　Esc：释放鼠标<br>F：航拍模式（空格上升，C 下降）<br>卡在屋顶或围栏里：按 F 飞出来<br>下方“地点”：直接前往某处（先按 Esc）<br>上方滑块：调整时间<br>右上：小地图（北在上）';
   helpBtn.addEventListener('click', e => { e.stopPropagation(); help.hidden = !help.hidden; });
 
@@ -135,7 +135,7 @@ export function initUI({ player, lighting, campus, camera, renderer, view, place
     const notice = document.getElementById('notice'); if (notice) { notice.style.bottom = 'auto'; notice.style.top = '52px'; notice.style.left = '10px'; setTimeout(() => { notice.hidden = true; }, 15000); }
     const start = document.getElementById('start');
     if (start) {
-      const how = document.getElementById('start-how'); if (how) how.textContent = '点一下开始：左下摇杆移动，右半屏滑动转向';
+      const how = document.getElementById('start-how'); if (how) how.textContent = '点一下开始：左下摇杆移动，在画面上滑动转向';
       const go = e => { start.hidden = true; e.preventDefault(); };
       start.addEventListener('touchend', go); start.addEventListener('click', go);
     }
@@ -162,6 +162,5 @@ export function initUI({ player, lighting, campus, camera, renderer, view, place
       if (t.identifier === lookId) lookId = null; } };
     addEventListener('touchend', end); addEventListener('touchcancel', end);
   }
-  void view;
   return { update() { if (++tick % 6 === 0) drawMap(); }, input: () => state, touch };
 }

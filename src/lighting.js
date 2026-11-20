@@ -31,7 +31,7 @@
 //     the city glow on the night horizon, and the moon: its place in the sky is fixed (south-east, 48 degrees up) and
 //     has nothing to do with a date.
 //   - Which windows glow after dusk, and how brightly: every glass surface glows, modulated by a smooth random pattern
-//     per storey (3.9 m, the storey height assumed throughout the project). Nothing is known about which rooms are lit.
+//     per 3.9 m band (the storey height most buildings here are drawn with). Nothing is known about which rooms are lit.
 //   - Indoor light: there are no real room lights. One lamp follows the viewer under a roof (1.25 m above the eye, 2 m
 //     in the new teaching building), and in the gymnasium a lamp hangs in the middle of the hall. Colour and strength
 //     are chosen by eye. "Under a roof" means inside the outline of a solid item of campus-data.js and below its height,

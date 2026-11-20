@@ -1,5 +1,6 @@
-// The city round the campus: housing blocks and towers beyond the main road, to the west, south and east; the metro
-// depot east of the canal (sheds, sidings, trains); traffic on the main road; a hazy ring of far blocks.
+// The city round the campus: housing blocks and towers beyond the main road, to the west, south and east; a rail
+// depot east of the canal (sheds, sidings, trains); traffic on the main road; a hazy ring of far blocks. That the long
+// sheds across the canal are a metro depot is a guess from their look in the satellite image; nothing verifies it.
 //
 // IMAGINED, apart from three things read roughly off a small overview of the satellite mosaic and kept from the earlier
 // backdrop (data/landscape.json, "backdrop"): ten housing towers north of the campus, the four long depot sheds east of

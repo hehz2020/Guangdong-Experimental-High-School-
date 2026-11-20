@@ -833,7 +833,7 @@
   {
    "id": "south-tall-building",
    "group": "south",
-   "confidence": "seen in satellite only; NOT visible in the 2018 video where it should be (frames f_002 to f_006 from the north-east and f_049 from the field show open sky in its direction): either it was built after September 2018 (the mosaic is newer than that video and older than the new teaching building) or the reading is wrong. The least certain entry of this file",
+   "confidence": "seen in satellite only; NOT visible in the 2018 video where it should be (frames f_002 to f_006 from the north-east and f_049 from the field show open sky in its direction): either it was built after September 2018 (the mosaic is newer than that video) or the reading is wrong. The least certain entry of this file",
    "belongsToSchool": "not known",
    "measuredBy": "single reading on the zoom-19 mosaic (0.2747 m per pixel), not re-read",
    "height": 75,
@@ -1017,7 +1017,7 @@
   {
    "id": "north-wavy-parapet-block",
    "group": "north",
-   "confidence": "seen in satellite only (the image is older than the new teaching building just south of it: this block may no longer exist)",
+   "confidence": "seen in satellite only (first read in the belief that the image predates the new teaching building just south of it; whether this block still stands was not checked)",
    "belongsToSchool": "not known",
    "measuredBy": "single reading on the zoom-19 mosaic (0.2747 m per pixel), not re-read",
    "height": 8,

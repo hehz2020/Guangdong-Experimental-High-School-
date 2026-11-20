@@ -8,13 +8,13 @@
     "south": 150,
     "cellSizeM": 1.0
   },
-  "caveats": ["Everything here comes from ONE oblique satellite image; positions are good to a few metres at best.", "The image is older than the new teaching building: an earlier building stands on its site, so nothing near it (z < -190 m) is reliable.", "surveyArea is only the area in which ground cover was classified. It is not a surveyed campus boundary."],
+  "caveats": ["Everything here comes from ONE oblique satellite image; positions are good to a few metres at best.", "This file was first made in the belief that the image is older than the new teaching building. A later comparison with 2022 footage found that building's roof in the image (the image's date was never checked). Ground cover near it (z < -190 m) is still not used: the building's own module lays out its surroundings.", "surveyArea is only the area in which ground cover was classified. It is not a surveyed campus boundary."],
   "surveyArea": [
     [-104.8, -68.9], [26.5, -159.0], [110.3, -215.9], [161.1, -250.8], [321.3, -250.8], [257.0, 150.8], [133.6, 150.8], [133.6, 101.4], [-61.4, 101.4],
     [-97.1, 35.4], [-104.8, 32.7]
   ],
   "newBuildingSite": {
-    "note": "The new teaching building is newer than the mosaic and its builder lays out its own plaza and garden (2022 footage) around its own re-read footprint. No tree is placed in these zones; the ground there is plain lawn (garden zone) and plain paving (plaza zone and footprint grown 8 m) for the builder to draw on.",
+    "note": "The new teaching building's builder lays out its own plaza and garden (2022 footage) around its own re-read footprint. No tree is placed in these zones; the ground there is plain lawn (garden zone) and plain paving (plaza zone and footprint grown 8 m) for the builder to draw on.",
     "gardenZone": [[123.8, -187.7], [200.7, -237.5], [181.1, -267.7], [104.2, -217.9]],
     "plazaZone": [[145.3, -190.4], [227.8, -197.3], [230.2, -169.4], [147.6, -162.5]]
   },
