@@ -40,8 +40,9 @@
 //     or brick), sheds (grey). The tall building's reddish wall is the sunlit east face in the image; its other faces
 //     and its white floor bands are extended from that face.
 //   - core-pergola-block: five storeys; the north, south and west faces (white, punched windows; ribbon windows toward
-//     the plaza); how far the fins and the glazing run on the east end; the pergola as five framed panels of slats level
-//     with the parapet (the frame shows about five panels, their construction is not visible). Its outline is trimmed
+//     the plaza); how far the fins and the glazing run on the east end; the pergola as five framed panels of slats on
+//     short posts, their tops half a metre above the parapet (the frame shows about five panels, their construction is
+//     not visible). Its outline is trimmed
 //     to stay 0.3 m clear of the clock tower and the glass stair block and 0.5 m clear of the canopy edge.
 //     THE GROUND STOREY IS DRAWN OPEN ON COLUMNS between two solid end cores, with the column lines set half a bay
 //     either side of the canopy's axis: no reference shows the ground storey (trees hide it in frame 60). An open
@@ -104,6 +105,11 @@
 //   pavilion, the undercroft's structure), "mid" within about 190 m of a building (sills, air-conditioners, washing,
 //   pipes, streaks, lamps, the pergola's slats), "near" within about 75 m (furniture, plates, what stands in the rooms).
 //   ctx.lowPower: flush windows (no recess), half-size sheets, no pipes, streaks or roof units.
+//   After dusk the facade sheet lights itself (its emissive map; that is why it is NOT named "window" or "glass": the
+//   lighting module would add its own glow on top). The clear glass of the pavilion and of the glazed fronts is the
+//   palette's glassClear, which that module lights by name; lamps use the street furniture's lamp material, and every
+//   lamp that should throw a pool of light on the ground is entered in LIT (street.js). Only stock materials are used
+//   (no shader edits), so safe mode shows the same buildings.
 //
 // Collision: one prism per part from the ground to its roof plane (roof included, so a player leaving drone mode above
 // a building lands on it). Exceptions: the three parts of the courtyard complex with a passage (the storeys above the
@@ -330,7 +336,7 @@ const VAR = {
   home: [{ lit: 1, c: 3, a: 1 }, { lit: 0 }, { lit: 1, c: 4, a: 0.5, wash: 1 }, { lit: 4, c: 5, a: 1 }, { lit: 0, c: 1, a: 1 }, { lit: 1, plant: 1 }, { lit: 0, open: 0.5, wash: 1 }, { lit: 3, c: 2, a: 0.5, plant: 1 }],
   door: [{ lit: 1, c: 0, a: 0.5 }, { lit: 0 }, { lit: 1, open: 0.5 }, { lit: 4, c: 5, a: 1 }],
   gbay: [{ lit: 1, door: [150, 104, 62] }, { lit: 0, door: [150, 104, 62], c: 0 }, { lit: 2, door: [110, 134, 124] }, { lit: 0, door: [110, 134, 124], c: 1 }],
-  band: [{ lit: 2, blind: 0.3 }, { lit: 2 }, { lit: 0 }, { lit: 1, blind: 0.6 }],
+  band: [{ lit: 2, blind: 0.2 }, { lit: 2 }, { lit: 0 }, { lit: 1, blind: 0.38 }],
   stair: [{ lit: 3 }], cw: [{ lit: 2 }, { lit: 0 }], high: [{ lit: 3 }],
 };
 /** Drawing tools for one cell on one of the three canvases. */
@@ -795,7 +801,7 @@ function block(T, b, p, pts, others, low, ctx) {
     if (!shed) T.a.box(M.cope, E.L / 2, (yRoof + h) / 2, -0.13, E.L, h - yRoof, 0.26, keep('UN'));
     const plain = C.sides[f] !== 'loggia' && C.sides[f] !== 'gallery';
     if (E.L > 5 && !low) {                                                  // rainwater pipes with hoppers, streaks below the coping
-      for (const s of E.L > 30 ? [0.3, E.L / 2, E.L - 0.3] : [0.3, E.L - 0.3]) if ((plain && C.sides[f] !== 'apart') || s !== E.L / 2) T.m.box(M.pipe, s, top / 2, 0.06, 0.11, top, 0.11, keep('SEW')).box(M.pipe, s, top - 0.1, 0.09, 0.26, 0.28, 0.2, keep('SEWUD'));
+      for (const s of E.L > 30 ? [0.3, E.L / 2, E.L - 0.3] : [0.3, E.L - 0.3]) if (((plain && C.sides[f] !== 'apart') || s !== E.L / 2) && !mine.some(q => s > q.g[0] - 0.3 && s < q.g[1] + 0.3)) T.m.box(M.pipe, s, top / 2, 0.06, 0.11, top, 0.11, keep('SEW')).box(M.pipe, s, top - 0.1, 0.09, 0.26, 0.28, 0.2, keep('SEWUD'));
       const band = Math.min(1.4, sh - oo.sill - Math.min(oo.wh, sh - oo.sill - 0.4)) - 0.05;      // the wall between the top windows and the coping
       if (!shed && plain) T.m.wall(M.stain, 0, E.L, top - band, h - 0.05, 0.012, [0, 0, E.L / 2.4, 1]);
     }
