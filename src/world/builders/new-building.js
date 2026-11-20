@@ -953,7 +953,7 @@ export function build(item, ctx) {
     for (const X of [41.0, 42.1]) { at(fx, X, -7.3, 0, F0); fx.box(WHG, 0, 0.5, 0, 0.36, 1.0, 0.28, 'D'); fx.box(DK, 0, 1.2, 0.02, 0.44, 0.34, 0.04); cardZ(fx, cat, -0.2, 1.05, 0.045, 0.4, 0.3, 1, true); fx.box(DK, 0, 1.01, 0.2, 0.36, 0.02, 0.14); home(fx); } blockBox(40.75, -7.5, 42.35, -7.1, F0, F0 + 1.3);
     at(gx, 48.4, 0.9, 0.25, F0); for (const s of [-1, 1]) bar(gx, MW, [s * 0.3, 0, 0.12], [s * 0.3, 1.5, 0], 0.035); gx.box(MW, 0, 1.0, 0.035, 0.66, 0.9, 0.03);
     cardZ(gx, U('hours', 200, 280, (g, W, Hh) => { BX(g, 0, 0, W, Hh, '#ffffff'); BX(g, 0, 0, W, 50, '#1d4f9c'); TX(g, '图书馆开放时间', W / 2, 26, 22, '#fff', CJK, 'center', 'bold'); [['周一至周五', '7:30 — 21:30'], ['周六', '9:00 — 17:00'], ['周日', '14:00 — 21:30']].forEach(([a, e], i) => { TX(g, a, 20, 86 + i * 44, 19, '#222', CJK, 'left', 'bold'); TX(g, e, 20, 106 + i * 44, 16, '#555', CJK); }); TX(g, '请刷卡入馆  保持安静', W / 2, 236, 16, '#b3261e', CJK, 'center', 'bold'); TX(g, '饮料食品请勿带入', W / 2, 260, 14, '#555', CJK, 'center'); }, 0.8), -0.3, 0.58, 0.052, 0.6, 0.84, 1); home(gx);
-    home(v); cardZ(v, signCard('图 书 馆   LIBRARY', '#6f2a20', '#f1dfb0', 480, 80), 44.6, 3.71, ZG + 0.125, 3.6, 0.6, 1);
+    home(v); cardZ(v, signCard('图 书 馆   LIBRARY', '#6f2a20', '#f1dfb0', 480, 80), 44.7, 3.63, WZ1 + 0.106, 3.3, 0.55, 1);      // on the band of the walkway over the doors
     // newspapers on a rack, a wall of magazines, book trolleys, shelf marks on the ends of the tall cases, signs hanging over the service points
     at(fu, 29.2, -5.0, 0.4, F0); for (const s of [-0.45, 0.45]) { bar(fu, C(0x8a6a48), [s, 0, -0.3], [s, 1.45, 0], 0.04); bar(fu, C(0x8a6a48), [s, 0, 0.3], [s, 1.45, 0], 0.04); }
     for (let i = 0; i < 5; i++) { const y = 0.5 + i * 0.22, z = 0.19 - i * 0.045; bar(fu, STL, [-0.47, y, z], [0.47, y, z], 0.015); fu.box(C(0xf1ece0), 0, y - 0.17, z + 0.012, 0.8, 0.33, 0.012); fu.box(C(0x3a3d42), 0, y - 0.06, z + 0.02, 0.7, 0.05, 0.004); fu.box(C([0xb8322a, 0x1f5fa8, 0x2f8a55][i % 3]), -0.2, y - 0.2, z + 0.02, 0.3, 0.14, 0.004); } home(fu); blockBox(28.7, -5.4, 29.7, -4.6, F0, F0 + 1.4);
@@ -1632,7 +1632,7 @@ export function build(item, ctx) {
     // rainwater pipes with hoppers on the two faces the footage never shows, weathering under the coping and the ledges
     for (const [P, Q, xs] of [[LC, LB, [0.7, 11, 21.6, 31.8]], [LD, LC, [0.9, 16.5]]]) { along(v, P, Q); for (const x of xs) { v.slab(TANK, x - 0.055, 0.2, 0.72, 0.11, H - 0.6, 0.11, 'UD'); v.slab(TANK, x - 0.14, H - 0.45, 0.66, 0.28, 0.3, 0.24); for (let y = 2; y < H - 1; y += 3) v.slab(DKS, x - 0.08, y, 0.69, 0.16, 0.05, 0.16); } home(v); }
     const streak = (P, Q, x0, x1, y) => { along(v, P, Q); v.quad(STN, [x0, y - 1, 0.02], [x1, y - 1, 0.02], [x1, y, 0.02], [x0, y, 0.02]); home(v); };
-    streak(LE, LD, 0, FIN_S, H - 0.02); streak(LB, LA, 0, 40.1, H - 0.02); for (const k of [1, 2, 3]) { streak(LE, LD, 0, FIN_S, F3 + k * FH - 0.16); streak(LB, LA, 0, 40.1, F3 + k * FH - 0.16); } streak(LB, LA, 0, PORTAL[0], F3 - 0.16); streak(PF0, PF1, 0, xf(XS), 7.0);
+    streak(LE, LD, 0, FIN_S, H - 0.02); streak(LB, LA, 0, 40.1, H - 0.02); for (const k of [1, 2, 3]) { streak(LE, LD, 0, FIN_S, F3 + k * FH - 0.16); streak(LB, LA, 0, 40.1, F3 + k * FH - 0.16); } streak(LB, LA, 0, PORTAL[0], F3 - 0.16); streak(PF0, PF1, 0, xf(XS), 8.0);
   }
 
   // ================================================================= ASSEMBLY
