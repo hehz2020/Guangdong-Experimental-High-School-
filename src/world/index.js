@@ -147,6 +147,7 @@ export async function buildWorld(campus, only = null, tryBuilders = {}, tryExtra
     const group = new THREE.Group(); group.name = path; root.add(group);
     const ctx = {
       campus, detail, occupied, lowPower: !!env.lowPower, safe: !!env.safe,
+      occupy: outline => { occupied.push(outline); },       // as for builders; only modules that run before the grounds are heeded
       add: obj => { group.add(obj); return obj; },
       collide: mesh => { mesh.updateWorldMatrix(true, false); const c = new THREE.Mesh(mesh.geometry); c.matrixAutoUpdate = false; c.matrix.copy(mesh.matrixWorld); colliders.add(c); return mesh; },
       animate: fn => { updaters.push(fn); },
