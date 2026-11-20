@@ -907,7 +907,7 @@ export function build(item, ctx) {
     chair(F, X, tint(0x33373d, 0.6), cxn, cK + 0.45, y, [0, -1]);
     cD(cF, cK, cxn - cw, y, y + 1.2, -1); cD(cF, cK, cxn + cw, y, y + 1.2, 1); cX(cxn - cw, cxn + cw, cF, y, y + 1.2, -1); cX(cxn - cw, cxn + cw, cK, y, y + 1.2, 1);
     // behind the desk on the back wall: key board, clock, the day's notices on a screen
-    card(C, uvOf('keys'), cxn - 0.9, dB - 0.008, y + 1.55, 0, -1, 0.8, 0.6); card(C, uvOf('clock'), cxn + 0.1, dB - 0.008, y + 2.3, 0, -1, 0.36, 0.36); card(C, uvOf('tv'), cxn + 0.95, dB - 0.03, y + 1.75, 0, -1, 0.96, 0.6); box(F, m.dark, cxn + 0.45, cxn + 1.45, dB - 0.03, dB, y + 1.43, y + 2.07, 'FWEUD');
+    card(C, uvOf('keys'), cxn - 0.9, dB - 0.008, y + 1.55, 0, -1, 0.8, 0.6); card(C, uvOf('clock'), cxn + 0.1, dB - 0.008, y + 2.3, 0, -1, 0.36, 0.36); card(C, uvOf('tv'), cxn + 0.95, dB - 0.037, y + 1.75, 0, -1, 0.96, 0.6); box(F, m.dark, cxn + 0.45, cxn + 1.45, dB - 0.03, dB, y + 1.43, y + 2.07, 'FWEUD');
     // west wall: the notice board; east wall: the world map over a bench, the banner
     const nbw = Math.min(3.0, dB - dF - 2.2);
     box(F, tint(0xb58a55, 0.95), x0, x0 + 0.02, dm - nbw / 2, dm + nbw / 2, y + 0.95, y + 2.15, 'E'); frame(F, 'd', dm - nbw / 2 - 0.05, dm + nbw / 2 + 0.05, y + 0.9, y + 2.2, x0, x0 + 0.035, m.inox, 0, 0, 0.05);

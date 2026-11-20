@@ -778,16 +778,32 @@ export function build(item, ctx) {
   for (const [X, Z, yaw] of [[54.6, -17.6, Math.PI], [54.6, -16.0, Math.PI], [26.3, -13.2, 0]]) chair(X, Z, yaw, 'chairCream', F2, 1.25);
   plant(fx, 55.2, -15.6, F2, 1.4); plant(fx, 24.8, -20.0, F2, 1.4);
 
-  // ================================================================= OUTSIDE: plaza, sculpture, aprons, garden
+  // ================================================================= OUTSIDE: plaza, sculpture, aprons, garden, driveway
   home(v);
-  cap(v, lm('plaza'), [[-2, 0], [16, 0], [16, 7.6], [XG1, zf(XG1) + 0.02], [XG1, zf(XG1) + 2.0], [LD[0] + 1.6, zf(LD[0]) + 2.0], [LD[0] + 1.6, -1], [LC[0] + 5, LC[1] - 2], [74, 0], [74, 23.2], [-2, 23.2]], 0.06, true);
-  along(v, LC, LB); v.slab(lm('plaza'), -2, 0, 0, LNE + 6, 0.04, 5, 'D');                                               // pale walkway along the north-east face (satellite image)
-  along(v, LB, LA); v.slab(lm('plaza'), -4, 0, 0, PORTAL[0] + 4, 0.04, 4.5, 'D');                                       // paved strip along the north-west face (frame 55)
-  // sculpture (frames 29-30): black plinth, two red slabs, six curved red blades
+  const PZ = lm('plaza'), BAND = lm('band'), SG = lm('stone'), KERB = lm('kerb'), GRATE = C(0x3a3e42, 'metal'), LINE = C(0xf0f0ea);
+  // street furniture from street.js stands in world coordinates
+  const lampAt = (X, Z, h = 3.9) => { const w = toW([X, Z]); gx.frame(); c.frame(); gardenLamp(gx, c, w[0], w[1], h); home(gx); home(c); };
+  const benchAt = (X, Z, yaw, back = true) => { const w = toW([X, Z]); bench(gx, c, w[0], w[1], aS + yaw, back); home(gx); home(c); };
+  const binsAt = (X, Z, yaw, four = false) => { const w = toW([X, Z]); bins(gx, c, w[0], w[1], aS + yaw, four); home(gx); home(c); };
+  const greens = [], blooms = [], trees = [];                          // shrubs [x, z, radius], flower spots [x, z] and trees [x, z, height], world coordinates
+  const tripod = (w, hgt, seed) => { const k = hgt < 5.5 ? 0.7 : 1; for (let i = 0; i < 3; i++) { const a = i * 2.094 + seed; gx.strut(lm('pole'), [w[0] + 1.3 * k * Math.cos(a), 0, w[1] + 1.3 * k * Math.sin(a)], [w[0], 2.3 * k, w[1]], 0.06); } gx.strut(lm('pole'), [w[0] - 0.09, 2.2 * k, w[1]], [w[0] + 0.09, 2.2 * k, w[1]], 0.1); home(gx); };
+  // ---- plaza (frames 28-33): pale granite pavers, a grid of brown bands, drain gratings
+  cap(v, PZ, [[-2, 0], [16, 0], [16, 7.6], [XG1, zf(XG1) + 0.02], [XG1, zf(XG1) + 2.0], [LD[0] + 1.6, zf(LD[0]) + 2.0], [LD[0] + 1.6, -1], [LC[0] + 5, LC[1] - 2], [74, 0], [74, 23.2], [-2, 23.2]], 0.06, true);
+  { const top = X => (X < 16 ? 0.05 : X < XG1 ? zf(X) + 0.1 : X < LD[0] + 1.6 ? zf(X) + 2.05 : -6), xs = [], zs = [8.2, 13, 17.8, 22.6], yb = 0.066;
+    for (let X = 2.2; X < 73; X += 4.8) xs.push(X);
+    for (const X of xs) { const z0 = Math.max(top(X - 0.3), top(X + 0.3)); v.quad(BAND, [X - 0.3, yb, 23.2], [X + 0.3, yb, 23.2], [X + 0.3, yb, z0], [X - 0.3, yb, z0]); }
+    for (const Z of zs) for (let i = -1; i < xs.length; i++) { const x0 = i < 0 ? -2 : xs[i] + 0.3, x1 = i + 1 < xs.length ? xs[i + 1] - 0.3 : 74; if (Z - 0.3 > Math.max(top(x0), top(x1))) v.quad(BAND, [x0, yb, Z + 0.3], [x1, yb, Z + 0.3], [x1, yb, Z - 0.3], [x0, yb, Z - 0.3]); }
+    for (const [X, Z] of [[11.8, 10.6], [31, 15.4], [50.2, 15.4], [69.4, 10.6], [21.4, 20.2], [59.8, 20.2]]) { v.box(GRATE, X, 0.069, Z, 0.5, 0.012, 0.5, 'D'); for (let i = 0; i < 5; i++) v.box(C(0x16181a), X - 0.18 + i * 0.09, 0.076, Z, 0.035, 0.002, 0.4, 'D'); }   // gratings (frame 30)
+    along(v, PF0, PF1); v.slab(GRATE, xf(XG1), 0.06, 2.3, xf(LD[0] + 0.6) - xf(XG1), 0.012, 0.16, 'D'); home(v); }                 // slot drain at the foot of the porch steps
+  along(v, LC, LB); v.slab(PZ, -2, 0, 0, LNE + 6, 0.04, 5, 'D'); v.slab(KERB, -2, 0, 5, LNE + 6, 0.1, 0.12);                        // pale walkway along the north-east face (satellite image)
+  along(v, LB, LA); v.slab(PZ, -4, 0, 0, PORTAL[0] + 4, 0.04, 4.5, 'D'); v.slab(KERB, -4, 0, 4.5, PORTAL[0] + 4, 0.1, 0.12);        // paved strip along the north-west face (frame 55)
+  for (let s = 3; s < PORTAL[0]; s += 9) v.box(GRATE, s, 0.046, 4.3, 0.6, 0.012, 0.25, 'D');
+  home(v);
+  // ---- sculpture (frames 29-30): black polished plinth, two red slabs, six curved red blades
   { const X = 20, Z = zf(20) + 4.2, RED = lm('sculpt'); at(v, X, Z, 0.25, 0.06);
-    v.box(lm('frame'), 0, 0.42, 0, 1.6, 0.84, 1.05); v.box(RED, 0, 0.96, 0, 1.3, 0.24, 0.9); v.box(RED, 0.04, 1.2, 0.02, 1.12, 0.24, 0.8);
+    v.box(lm('granite'), 0, 0.42, 0, 1.6, 0.84, 1.05); v.box(RED, 0, 0.96, 0, 1.3, 0.24, 0.9); v.box(RED, 0.04, 1.2, 0.02, 1.12, 0.24, 0.8);
     for (const [ang, lean, hgt, wid] of [[0.45, 0.22, 2.4, 0.95], [2.7, 0.55, 1.5, 0.85], [-0.7, 0.7, 1.25, 0.8], [1.6, 0.85, 1.0, 0.75], [3.7, 0.95, 0.85, 0.75], [-2.0, 0.5, 1.7, 0.8]]) {
-      const co = Math.cos(ang), si = Math.sin(ang), n = 6; let prev = null;
+      const co = Math.cos(ang), si = Math.sin(ang), n = 10; let prev = null;
       for (let i = 0; i <= n; i++) { const t = i / n, out = 0.15 + lean * hgt * t * t, y = 1.32 + hgt * (t - 0.22 * t * t), w = wid * (1 - 0.8 * t * t) / 2, tw = 0.9 * t;      // each blade leans out, tapers and twists a little
         const sx = Math.cos(ang + tw), sz = Math.sin(ang + tw), p = [[co * out - sz * w, y, si * out + sx * w], [co * out + sz * w, y, si * out - sx * w]];
         if (prev) v.quad(RED, prev[0], prev[1], p[1], p[0]); prev = p; }
@@ -795,34 +811,71 @@ export function build(item, ctx) {
     home(v); at(c, X, Z, 0.25, 0.05); c.box(G, 0, 1.2, 0, 1.6, 2.4, 1.05); home(c); }
   // plants in white pots at the porch columns (frames 31-33)
   for (const [X, Z] of [[42.2, zf(42) - 0.3], [52.2, zf(52) - 0.3], [58.6, 4.3], [62.5, 4.5]]) { plant(gx, X, Z, F0, 1.5); plant(gx, X + 0.45, Z + 0.25, F0, 1.0); }
-  // garden north-west of the building (frames 21, 55): everything here is placed by eye
-  { const nwOut = unit(sub(toL([A[0] - 0.5433, A[1] - 0.8395]), LA)), nwAlong = unit(sub(LB, LA)), P = (s, d) => add(add(LA, mul(nwAlong, s)), mul(nwOut, d));
-    home(v); cap(v, 'lawn', [P(12, 4.5), P(LNW + 2, 4.5), P(LNW + 2, 17), P(12, 19)], 0.045, true);
+  // plaza furniture (imagined): lamps, benches, bins, a notice board; the axis of the doors stays clear
+  for (const [X, Z] of [[6, 21.5], [25, 21.5], [38, 21.5], [55, 21.5], [70, 21.5], [9, 9.5], [68, 6]]) lampAt(X, Z);
+  for (const [X, Z, yaw] of [[12, 20.6, Math.PI], [29, 20.6, Math.PI], [34, 20.6, Math.PI], [59, 20.6, Math.PI], [64, 20.6, Math.PI], [3.2, 9, Math.PI / 2]]) benchAt(X, Z, yaw);
+  binsAt(31.5, 21.2, Math.PI); binsAt(61.5, 21.2, Math.PI); binsAt(65.6, 3.2, -Math.PI / 2, true);
+  { const w = toW([70.5, 13]); noticeBoard(gx, c, w[0], w[1], aS - Math.PI / 2, 3, 2); home(gx); home(c); }
+  { at(gx, 17.2, zf(17.2) + 0.02, 0, 3.3); gx.box(MW, 0, 0, 0.09, 0.1, 0.12, 0.18); gx.box(MW, 0, -0.1, 0.24, 0.09, 0.09, 0.2); gx.cyl(C(0x16181a), 0, -0.2, 0.3, 0.05, 0.06, 8); home(gx); }      // camera on the tile wall (frame 30)
+  // ---- garden north-west of the building (frames 21, 55): everything here is placed by eye
+  { const nwOut = unit(sub(toL([A[0] - 0.5433, A[1] - 0.8395]), LA)), nwAlong = unit(sub(LB, LA)), P = (s, d) => add(add(LA, mul(nwAlong, s)), mul(nwOut, d)), yawG = Math.atan2(-nwAlong[1], nwAlong[0]);
+    home(v); cap(v, 'lawn', [P(12, 4.6), P(LNW + 2, 4.6), P(LNW + 2, 17), P(12, 19)], 0.045, true);
     const circ = (r, n, a0 = 0, a1 = 2 * Math.PI) => Array.from({ length: a1 - a0 > 6.28 ? n : n + 1 }, (_, i) => [r * Math.cos(a0 + (a1 - a0) * i / n), r * Math.sin(a0 + (a1 - a0) * i / n)]);
     const sector = (r0, r1, a0, a1, n) => [...circ(r1, n, a0, a1), ...circ(r0, n, a0, a1).reverse()];
-    const bed = P(-6, 15), SG = lm('stone'), PZ = lm('plaza'), FLO = lm('flower');                               // round bed with a stone disc, a ring of red planting and a ring path (frame 21)
-    at(v, bed[0], bed[1]); cap(v, PZ, circ(6.2, 28), 0.065, true, [circ(3.8, 24)]); ringTop(v, FLO, 0, 0, 2.7, 3.8, 0, 2 * Math.PI, 0.3, 24); ringWall(v, FLO, 0, 0, 3.8, 0, 2 * Math.PI, 0, 0.3, 24, true);
-    v.cyl(SG, 0, 0, 0, 2.7, 0.45, 28); cap(v, PZ, sector(12.5, 14.6, -0.4, 1.5, 20), 0.065, true);                      // an arc of path that leads round the west corner
+    const bed = P(-6, 15), FLO = pbr('hedge', [0x8f2030]);                                                        // round bed with a stone disc, a ring of red-leaved planting and a ring path (frame 21)
+    at(v, bed[0], bed[1]); cap(v, PZ, circ(6.2, 28), 0.065, true, [circ(3.8, 24)]); ringTop(v, FLO, 0, 0, 2.7, 3.8, 0, 2 * Math.PI, 0.34, 24); ringWall(v, FLO, 0, 0, 3.8, 0, 2 * Math.PI, 0, 0.34, 24, true);
+    ringWall(v, KERB, 0, 0, 3.86, 0, 2 * Math.PI, 0, 0.12, 24, true); ringTop(v, KERB, 0, 0, 3.8, 3.86, 0, 2 * Math.PI, 0.12, 24);
+    v.cyl(SG, 0, 0, 0, 2.7, 0.45, 28); v.cyl(lm('granite'), 0, 0.45, 0, 1.1, 0.03, 24); cap(v, PZ, sector(12.5, 14.6, -0.4, 1.5, 20), 0.065, true);   // an arc of path that leads round the west corner
     cap(v, FLO, sector(8.6, 11, -1.5, -0.45, 10), 0.2, true); ringWall(v, FLO, 0, 0, 11, -1.5, -0.45, 0, 0.2, 10, true); ringWall(v, FLO, 0, 0, 8.6, -1.5, -0.45, 0, 0.2, 10, false); home(v);   // crescent of red flowers (frames 21, 22, 55)
+    { const r = rng(77); for (let i = 0; i < (low ? 60 : 150); i++) { const a = -1.5 + 1.05 * r(), q = 8.8 + 2.0 * r(); blooms.push(toW([bed[0] + q * Math.cos(a), bed[1] + q * Math.sin(a)])); }
+      for (let i = 0; i < (low ? 30 : 70); i++) { const a = r() * TAU, q = 2.85 + 0.85 * r(); blooms.push(toW([bed[0] + q * Math.cos(a), bed[1] + q * Math.sin(a)])); } }
     at(c, bed[0], bed[1]); c.box(G, 0, 0.25, 0, 4.6, 0.5, 4.6); home(c);
-    for (const [s, d] of [[2, 12], [-13, 11]]) { const p = P(s, d); at(gx, p[0], p[1], 0.6); gx.box(SG, 0, 0.25, 0, 2.2, 0.5, 0.7); home(gx); }      // stone benches
+    for (const [s, d] of [[2, 12], [-13, 11]]) { const p = P(s, d); at(gx, p[0], p[1], 0.6); gx.box(SG, 0, 0.25, 0, 2.2, 0.5, 0.7); home(gx); at(c, p[0], p[1], 0.6); c.box(G, 0, 0.25, 0, 2.2, 0.5, 0.7); home(c); }      // stone benches
     const round = P(13, 14); at(v, round[0], round[1]); cap(v, PZ, circ(4.2, 24), 0.065, true); v.box(SG, 0.5, 0.3, 0.3, 1.8, 0.5, 1.0); home(v);        // small round paved place with a stone block (frame 55)
-    const pad = P(47, 12); at(v, pad[0], pad[1], Math.atan2(-nwAlong[1], nwAlong[0])); v.box(PZ, 0, 0.035, 0, 7, 0.07, 3.2, 'D'); home(v);              // pale paved pad (frame 55, left)
-    along(v, P(32, 4.5), P(32, 12)); v.slab(PZ, 0, 0, -1.5, 7.5, 0.07, 3, 'D'); home(v);                                                               // path from the middle door
-    // young trees held by tripods of orange poles
-    const tb = new Batch();
-    for (const [s, d, hgt] of [[28.2, 11, 9], [18, 9, 6], [38, 9.5, 6], [46, 8, 5.5], [-4, 6, 8], [-10, 19.5, 6.5], [6, 22, 6]]) {
-      const w = toW(P(s, d)); tree(tb, w[0], w[1], hgt);
-      for (let i = 0; i < 3; i++) { const a = i * 2.094 + s; gx.strut(lm('pole'), [w[0] + 1.3 * Math.cos(a), 0, w[1] + 1.3 * Math.sin(a)], [w[0], 2.3, w[1]], 0.06); }
-    }
-    home(gx); ctx.add(tb.build({ name: item.id + '-trees' })); }
-
+    at(c, round[0], round[1]); c.box(G, 0.5, 0.3, 0.3, 1.8, 0.6, 1.0); home(c);
+    const pad = P(47, 12); at(v, pad[0], pad[1], yawG); v.box(PZ, 0, 0.035, 0, 7, 0.07, 3.2, 'D'); for (const x of [-2, 0.4, 2.6]) v.box(SG, x, 0.29, 0.3, 1.5, 0.44, 0.55, 'D'); home(v);   // pale paved pad with stone seats (frame 55, left)
+    at(c, pad[0], pad[1], yawG); c.box(G, 0.3, 0.26, 0.3, 6.1, 0.52, 0.55); home(c);
+    along(v, P(32, 4.6), P(32, 12)); v.slab(PZ, 0, 0, -1.5, 7.4, 0.07, 3, 'D'); home(v);                                                               // path from the middle door
+    along(v, P(22, 4.6), P(22, 8.6)); v.slab(PZ, 0, 0, -1.4, 4, 0.07, 2.8, 'D'); home(v);                                                              // path from the door of the stair hall (imagined)
+    along(v, P(14.3, 9.6), P(30.5, 9.6)); v.slab(PZ, 0, 0, -1, 16.2, 0.07, 2, 'D'); home(v);                                                           // cross path (imagined)
+    // young trees held by tripods of orange poles: a row along the paved strip (frame 55) and a few larger ones
+    const young = [[15, 6.6, 4.2], [18.4, 6.6, 4.6], [26, 6.6, 4.4], [28.6, 6.6, 4], [36, 6.6, 4.5], [39.6, 6.6, 4.2], [43.2, 6.6, 4.6], [46.8, 6.6, 4.1], [50.4, 6.6, 4.4], [54, 6.6, 4.3],
+      [28.2, 12.6, 9], [17.5, 13.4, 6], [38, 12.5, 6.5], [-4, 6, 8], [-10, 19.5, 6.5], [6, 22, 6], [24, 18, 7], [44, 18.5, 6.5], [57, 13, 6]];
+    for (const [s, d, hgt] of young) { const w = toW(P(s, d)); trees.push([w[0], w[1], hgt]); tripod(w, hgt, s); }
+    // imagined: lamps along the strip (the footage shows black posts there), benches, bins, shrubs
+    for (const [s, d] of [[12.5, 5], [24.6, 5], [34.6, 5], [45, 5], [55, 5], [-1.5, 9.5], [8, 17.5], [22, 11.4]]) { const p = P(s, d); lampAt(p[0], p[1]); }
+    for (const [s, d, turn] of [[19, 11.2, Math.PI], [26, 11.2, Math.PI], [9.6, 16.6, Math.PI * 0.7]]) { const p = P(s, d); benchAt(p[0], p[1], yawG + turn); }
+    { const p = P(24, 11); binsAt(p[0], p[1], yawG + Math.PI); }
+    { const r = rng(55); for (const [s, d, n, rad] of [[43, 13.4, 5, 0.55], [51.5, 13.4, 5, 0.55], [16.5, 9, 3, 0.5], [30.2, 12.6, 4, 0.45], [33.8, 12.6, 4, 0.45], [9, 12, 4, 0.6], [35, 16, 5, 0.7], [52, 9, 4, 0.5], [20, 15.5, 4, 0.65]])
+      for (let i = 0; i < n; i++) greens.push([...toW(P(s + (r() - 0.5) * n * 0.6, d + (r() - 0.5) * 1.2)), rad * (0.8 + 0.5 * r())]); }
+  }
+  // ---- driveway into the portal (frame 55 shows the driveway and its arrows; kerbs, lines, height bar and barrier are imagined)
+  { const zc = -(PW + PE) / 2, RW = C(0xd8362c), YL = C(0xf2c230), DK = C(0x1c1d1f), xo = nwX(zc) - 9;
+    along(v, LA, LE); along(gx, LA, LE); along(c, LA, LE);
+    for (const z of [-PW - 0.06, -PE - 0.06]) v.slab(KERB, nwX(z) - 9, 0, z, 9, 0.14, 0.12);
+    for (let x = xo + 0.6; x < PBACK - 2.6; x += 3) v.box(LINE, x + 0.75, 0.083, zc, 1.5, 0.004, 0.12, 'D');                     // centre line
+    for (const z of [-PW - 0.4, -PE + 0.4]) v.box(LINE, (xo + PBACK) / 2, 0.083, z, PBACK - xo, 0.004, 0.1, 'D');                 // edge lines
+    v.box(LINE, PBACK - 1.3, 0.083, zc, 0.3, 0.004, PE - PW - 1, 'D');                                                           // stop line before the shutter
+    // height bar hanging from a gantry just inside the mouth
+    for (const z of [-PW - 0.22, -PE + 0.22]) { for (let i = 0; i < 6; i++) gx.box(i % 2 ? DK : YL, 0.6, 0.225 + i * 0.45, z, 0.12, 0.45, 0.12, 'UD'); c.box(G, 0.6, 1.35, z, 0.18, 2.7, 0.18); }
+    gx.box(DK, 0.6, 2.76, zc, 0.12, 0.12, PE - PW - 0.3); for (const z of [-PW - 1.2, zc, -PE + 1.2]) gx.box(STL, 0.6, 2.52, z, 0.015, 0.36, 0.015, 'UD');
+    for (let i = 0; i < 10; i++) gx.box(i % 2 ? MW : RW, 0.6, 2.3, -PW - 0.6 - (i + 0.5) * (PE - PW - 1.2) / 10, 0.08, 0.14, (PE - PW - 1.2) / 10, i === 0 || i === 9 ? '' : 'NS');
+    // barrier on a small island between the lanes: the arm of the entry lane is up, that of the exit lane down
+    v.slab(KERB, -6.8, 0.07, zc - 0.3, 2.6, 0.1, 0.6); gx.box(YL, -5.5, 0.67, zc, 0.36, 1.0, 0.36, 'D'); gx.box(DK, -5.5, 1.19, zc, 0.4, 0.04, 0.4); c.box(G, -5.5, 0.7, zc, 0.42, 1.3, 0.42);
+    for (let i = 0; i < 5; i++) gx.box(i % 2 ? MW : RW, -5.5, 1.02, zc - 0.25 - (i + 0.5) * 0.66, 0.06, 0.1, 0.66, 'NS');
+    bar(gx, RW, [-5.5, 1.02, zc + 0.2], [-5.5, 3.9, zc + 1.25], 0.07, 0.1); bar(gx, MW, [-5.5, 1.9, zc + 0.52], [-5.5, 2.5, zc + 0.74], 0.075, 0.105);
+    // wall lights along both flanks, a convex mirror outside
+    for (const x of [2, 6, 10]) { gx.box(lm('lamp'), x, 3.3, -PW - 0.05, 0.5, 0.1, 0.07, 'S'); gx.box(lm('lamp'), x, 3.3, -PE + 0.05, 0.5, 0.1, 0.07, 'N'); }
+    gx.cyl(STL, xo + 0.6, 0, -PE - 0.7, 0.04, 2.3, 8); gx.box(C(0xe2701c), xo + 0.6, 2.45, -PE - 0.7, 0.06, 0.6, 0.6); gx.box(STL, xo + 0.635, 2.45, -PE - 0.7, 0.01, 0.52, 0.52, 'W');
+    home(v); home(gx); home(c); }
   // ================================================================= ASSEMBLY
-  // flat panes, ground surfaces, indoor finishes, fins and railings are not drawn into the shadow map
-  const NO_SHADOW = new Set([STL, 'lib-fin', 'lib-railDark', 'glassDark', 'lawn', 'asphalt', 'lib-plaster', 'lib-ceil', 'lib-cove', 'lib-plaza', 'lib-flower', 'lib-ribbon', 'lib-frame']);
+  // tree trunks collide (thin posts)
+  c.frame(); for (const [x, z] of trees) c.slab(G, x - 0.1, 0, z - 0.1, 0.2, 2.2, 0.2); home(c);
+  // flat panes, ground surfaces, indoor finishes and stains are not drawn into the shadow map
+  const NO_SHADOW = new Set([lm('plaza'), lm('band'), lm('plaster'), lm('ceil'), lm('wallUp'), lm('ceilUp'), lm('cove'), lm('ribbon'), lm('stain'), lm('tile'), lm('lamp')]), NO_SHADOW_NAMES = new Set(['glassDark', 'lawn', 'asphalt', 'floorGrey']);
   const finish = (b, name, shadow) => {
-    const g = b.build({ name: item.id + '-' + name, castShadow: shadow });
-    g.traverse(o => { if (!o.isMesh) return; if (o.material.transparent) o.renderOrder = 1; if (NO_SHADOW.has(o.material.name)) o.castShadow = false; });
+    const g = mergeFlat(b.build({ name: item.id + '-' + name, castShadow: shadow }), shadow);
+    g.traverse(o => { if (!o.isMesh) return; if (o.material.transparent) o.renderOrder = 1; if (NO_SHADOW.has(o.material) || NO_SHADOW_NAMES.has(o.material.name)) o.castShadow = false; });
     return ctx.add(g);
   };
   finish(v, 'shell', true);
@@ -830,9 +883,18 @@ export function build(item, ctx) {
   ctx.detail(finish(iv, 'interior', false), mid[0], mid[1], 140);
   ctx.detail(finish(fu, 'furniture', false), mid[0], mid[1], 70);
   ctx.detail(finish(fx, 'fine', false), mid[0], mid[1], 45);
-  ctx.detail(finish(gx, 'outdoor-detail', false), mid[0], mid[1], 150);
+  const gxG = finish(gx, 'outdoor-detail', false);
+  if (greens.length) gxG.add(shrubs(greens, { seed: 5 }));
+  if (blooms.length) gxG.add(flowers(blooms, [0xd22a36, 0xe2485c, 0xc21f4a], { seed: 3, size: 0.42, y: 0.18 }));
+  ctx.detail(gxG, mid[0], mid[1], 170);
+  if (trees.length) ctx.add(broadleafTrees(trees, { seed: 9, low }).group);
   const cg = ctx.add(c.build({ name: item.id + '-colliders' })); cg.visible = false;
   cg.traverse(o => { if (o.isMesh) ctx.collide(o); });
+  // after dusk the lights are on: the indoor finishes glow a little more (the lighting module lights the glass and the lamps)
+  if (ctx.animate) {
+    const glowing = [[lm('plaster'), 0.22, 0.2], [lm('ceil'), 0.3, 0.25], [lm('wallUp'), 0.16, 0.22], [lm('ceilUp'), 0.26, 0.3]]; let last = -1;
+    ctx.animate((dt, t, env) => { const n = env && env.lighting && env.lighting.night ? env.lighting.night() : 0; if (Math.abs(n - last) < 0.01) return; last = n; for (const [m, base, more] of glowing) m.emissiveIntensity = base + more * n; });
+  }
 
   function aTan(f) { return Math.atan2(-(f(40) - f(30)), 10); }       // heading of the podium front in the L frame
 }

@@ -119,7 +119,7 @@ export function build(item, ctx) {
   for (let k = 0; k < floors; k++) { const top = k === floors - 1; E.win(zw - 0.4, zw + (top ? 1.2 : 0.4), k * FH + 1.4, k * FH + 2.4, { n: top ? 1 : 0, glass: lm('glassWin') }); }
   E.door(zdE, { w: 1.4, h: 2.2, glazed: true, swing: 'in', fan: 0.4, canopy: 1.2, plate: false, bars: lm('frameDark') });
   PE(S.v, lm('concrete'), zdE - 1.2, zdE + 1.2, 0, 0.03, 0, 1.3, 'FLRU'); LIT.push([x1 + 1.3, zdE, 3.5]); apron(ctx, 'E', x1, zdE, 3, 2.4);
-  if (ctx.occupy) ctx.occupy([[x0, z0], [x1, z0], [x1, z1 + 2.7], [x0, z1 + 2.7]]);                              // the body west of the measured outline, the balconies and the back door
+  if (ctx.occupy) ctx.occupy([[x0, z0], [x1, z0], [x1, z1 + 3.6], [x0, z1 + 3.6]]);                              // the body west of the measured outline, the balconies and the back door
   // south face: a window per storey, the back door on the ground floor, the balcony door on the storeys above
   const xdS = ix0 + 0.75;
   for (let k = 0; k < floors; k++) {
@@ -171,7 +171,8 @@ export function build(item, ctx) {
 
   // ---- balconies on the storeys above the ground: from the tower's south door along the slab's end wall to a (closed) door in it
   if (slab) for (let k = 1; k < floors; k++) {
-    const y = k * FH, bx0 = x0 + 0.02, bx1 = x0 + 1.85, bz1 = z1 + 2.55, zc = z1 + 1.35;
+    // the door stands on the centre line of the slab's corridor (teaching-slab.js: 2.6 m wide inside its south face), so that an opening cut there later meets it
+    const y = k * FH, bx0 = x0 + 0.02, bx1 = x0 + 1.85, zc = Math.max(z1 + 0.75, slab.mainBar.s - 1.6), bz1 = zc + 0.85;
     F(S.v, lm('tread'), bx0, y - 0.02, z1, bx1 - bx0, 0.02, bz1 - z1, 'U'); F(S.v, W, bx0, y - 0.45, z1, bx1 - bx0, 0.43, bz1 - z1, 'ESD'); hit(S, bx0, y - 0.2, z1 + 0.01, bx1 - bx0, 0.2, bz1 - z1);
     for (const [x, z, a, c, fc] of [[bx1 - 0.12, z1, 0.12, bz1 - z1, 'EW'], [bx0, bz1 - 0.12, bx1 - bx0 - 0.12, 0.12, 'NS']]) {
       F(S.v, W, x, y, z, a, 0.95, c, fc); F(S.v, CP, x - 0.02, y + 0.95, z - 0.02, a + 0.04, 0.05, c + 0.04, 'NSEWUD'); hit(S, x, y + 0.01, z, a, 1.75, c);
