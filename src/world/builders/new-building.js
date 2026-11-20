@@ -32,15 +32,18 @@
 //   and fourth storeys; a strip of grey vertical fins from terrace to roof at the east end.
 // - Terrace (frames 20, 25-28): the roof of the two-storey podium, deep at the west and narrow at the east (about
 //   7.5 m to 2.5 m, worked out from frame 20), dark railing, terracotta-tile edge band, three pale rectangles on its floor.
-// - Podium front (frames 28-33): from the west a terracotta-tile wall (with a louvre and a window), a glass curtain wall
+// - Podium front (frames 28-33): from the west a terracotta-tile wall (with a louvre, a window and a camera), a glass curtain wall
 //   in two tiers with a tile band between them, then the glass folds back to form a porch under the terrace: white
 //   soffit, white round columns, a second-floor walkway with a tile band and dark railing on columns with flared heads,
 //   glass entrance doors, a tile wall with a door, and at the east end a dog-leg external stair with red-brown solid
 //   balustrades and dark railings beside two tall white columns. The porch floor is grey tile, two steps above the plaza.
-// - In front (frames 28-33): pale granite paving with brown bands; a red sculpture (curving blades rising from stacked
-//   red slabs) on a black plinth. The gold characters on the plinth are not legible, so the plinth is left blank.
+// - In front (frames 28-33): pale granite paving with a grid of brown bands and square drain gratings; a white notice
+//   stand at the doors; a red sculpture (curving blades rising from stacked red slabs) on a black polished plinth. The gold
+//   characters on the plinth are not legible, so the plinth is left blank.
 // - Garden on the north-west side (frames 21, 55): lawn, curved pale paths, a round bed with a grey stone disc ringed by
-//   red planting, a crescent of red flowers, grey stone benches, young trees held by tripods of orange poles.
+//   red planting, a crescent of red flowers, grey stone benches, a pale paved pad, young trees held by tripods of orange
+//   poles (a row of small ones along the paved strip at the foot of the face, one larger tree in front), slim dark lamp
+//   posts at the edge of that strip; cream double doors in the grey base.
 // - Library (frames 34-53): frameless glass doors with long steel pulls; a low grey ceiling with downlights inside the
 //   doors, then a white curved edge with a light cove where the hall opens up; a wide straight stair on the right with
 //   dark treads, seating tiers on part of its width, a glass balustrade on a white flank, a sloping light line on the
@@ -59,8 +62,7 @@
 //   north; shelf wall with alcoves along the north-west wall on both levels; rows of tall shelves on the west side;
 //   long lamp tables at the south windows on both levels; reading tables and low shelves round the opening.
 //   The skylight is placed under the light well seen on the satellite image, which is the one fixed point.
-// - Everything outside the hall on the two lower storeys (rooms behind the grey north-west wall and behind the east
-//   and north-east walls) is closed and empty. Storeys three to six are closed: no interior.
+// - Outside the hall the two lower storeys are closed and empty, except the stair lobby west of it (see IMAGINED).
 // - Storey heights: ground floor 0.3 m above the plaza, gallery floor at 4.2 m, terrace and third floor at 7.8 m.
 // - North-east and east faces: never seen in the video. They are drawn with the same vertical fins as the strip at the
 //   south-east corner (on the satellite image the north-east face is a uniform grey-blue band) over a plain stone base.
@@ -75,8 +77,72 @@
 //   The plaza is paved for 23 m south of the building, which is where the data puts the arc building's wall.
 // - The sculpture's exact form (six curved blades) and size. Curtain patterns, book colours, chair colours per seat.
 // - The lettering font: whatever brush or Kai typeface the device has (the real characters are in a brush hand).
-// NOT MODELLED: the basement and its ramp; the stair, lifts and rooms of the upper storeys; the white notice stand at
-// the doors; people, bicycles; the neighbouring buildings seen in the footage.
+// - That the two roof pavilions hold the heads of stairs. The footage shows them standing over the two stacks of balconies
+//   of the north-west face; nothing shows what is inside. The western one is used as the head of the stair.
+//
+// IMAGINED (the owner asked for a complete, believable building, "a work of art", and said that it need not be factual:
+// where nothing is known, imagination fills in). None of the following comes from a reference:
+// - STAIR AND LOBBY. A stair behind the western stack of balconies: seven levels (0.3, 4.2, 7.8, 11.7, 15.6, 19.5 m and the
+//   roof), two flights between each pair; on storeys 3 to 6 each landing opens through a glazed screen onto the balcony of
+//   that stack; the stair ends in the western roof pavilion, whose steel door leads out under the pergola. A lobby with two
+//   lift doors (always shut; there is no lift car) on every level. On the ground the lobby has a door from the garden (one
+//   of the doors of the stone base, here with steps, a canopy and a plate); on both library storeys a glass door in the
+//   hall's west wall leads into it.
+// - STOREYS 3 TO 6. A hall beside the lobby and a corridor round the light well, glazed toward the well (from the
+//   corridors one looks down through the library's skylight, which is now real glass, and from the hall up the well);
+//   rooms between the corridor and the faces, of which two per storey are furnished and open:
+//     storey 3: computer room (south), maker space (north-west);   storey 4: art studio, music room;
+//     storey 5: lecture room with stepped rows, staff room;        storey 6: reading and seminar room, television studio
+//     with a control room.
+//   Every other room is a shut door with a plate. A foyer behind the two-storey void of the south face, with a glass door
+//   onto the terrace on storey 3; a lounge behind the recessed terraces of storeys 5 and 6 with a glass door onto them;
+//   toilets in the plain north wing (the face there has only thin high slots); a second stair behind the eastern stack of
+//   balconies exists only as a shut double door. Lockers, benches, boards with posters, a show case, plants, a directory
+//   beside the lifts, exit signs, lights. From inside, the ribbon windows are see-through (a faint pane, sashes, a sill
+//   board, curtains); from outside they stay the painted bands with curtains that the footage shows.
+// - LIBRARY, added to what the footage shows: instanced tub chairs, books as runs of spines of different height and depth,
+//   rings of light hung over the island and the gaps between its four rings closed, pots and piles of books on it, table
+//   and floor lamps, timber pads, cushions and lines of light on the stair's seating tiers, two self-service lending
+//   machines, a box for returned books, two catalogue terminals, the text on the notice stand, a rack of newspapers, a wall
+//   of magazines, book trolleys, shelf marks on the ends of the tall cases, signs hung over the service points, a quiet
+//   study room behind glass with carrels in the north-east corner of the ground floor, the sign over the doors.
+// - ROOF: the barrier behind the railings and round the well (the railings themselves are seen), lightning tape and rods,
+//   the deck, benches and planters under the pergola, the door and plate of the eastern pavilion, plinths, pipes and the
+//   grilles of the units, a water tank, vents.
+// - OUTSIDE: window surrounds, door leaves and louvres of the stone base (their kind is seen), rainwater pipes on the two
+//   faces the footage never shows, streaks of dirt under coping and ledges; on the plaza lamps, benches, bins, a notice
+//   board; in the garden the cross path and the path to the stair hall, lamps (their kind is seen), benches, bins,
+//   shrubs, more young trees; at the driveway kerbs, lane lines, a height bar on a gantry, a barrier on an island, wall
+//   lights, a mirror; the roller shutter that closes the back of the portal.
+// - EVERY WORD except the six characters on the roof (and the school's name in the corner of two projected slides):
+//   all room names and numbers on the door plates and directories (301-311 ... 601-611: 创客空间, 通用技术教室, 机器人实验室,
+//   物理探究实验室, 数字化实验室, 教具室, 网络管理室, 计算机教室, 信息技术教研组, 储藏室; 音乐教室, 琴房, 舞蹈排练厅, 合唱排练室, 器乐排练室,
+//   乐器室, 书法教室, 美术教室, 陶艺工作室, 画具室; 教师办公室, 备课室, 心理辅导室, 团委 学生会, 会议室, 文印室, 录播教室, 多媒体教室, 阶梯教室,
+//   档案室; 校园电视台, 广播站, 天文社, 模拟联合国, 校史陈列室, 器材室, 社团活动室, 录音室, 研讨阅览室), 楼梯间, 卫生间 with 男 and 女, 机房 电梯 · 水箱,
+//   the storey numbers 1F to 6F and RF, 楼层索引, 安全出口 EXIT, 消火栓, 节约用水; 综合楼 · 北门 at the garden door; in and at the
+//   library 图书馆 LIBRARY, 楼梯 · 电梯, 自助借还 Self Service and the words on the machines' screens, 还书箱, 馆藏检索, 总服务台,
+//   报刊阅览, 期刊 · 报纸, 静音自习室, 保持安静, the opening hours on the notice stand, the shelf marks (I 文学, K 历史 地理, H 语言 文字,
+//   O 数理科学, TP 计算机技术: the letters follow the Chinese Library Classification, their use here is invented), the
+//   magazine titles (阅读, 科学, 少年, 自然, 作文, 英语); in the rooms the slides (信息技术 · Python 入门; 光合作用), the boards
+//   (桥梁承重挑战; 本周工作安排; a song 《榕树下的歌》 that does not exist), the posters (上机守则, 网络安全, 安全操作规程, 创客马拉松,
+//   学术讲座预告, 教师发展中心通知, 党建园地, 校园公告, 社团招新, 科技节, 光荣榜, 读书月, 安全教育, 心理健康, 值周安排, 艺术节, 校运会, 志愿服务),
+//   工具用后归位, 激光 · 当心, 校园电视台 CAMPUS TV 校园新闻 每周五播出, 直播中 ON AIR, 世界地图（示意）(the map is a set of blobs), 饮料, 零食.
+//   The notice board on the plaza and its posters come from street.js. The building has no known name; 综合楼 is made up.
+//
+// HOW IT IS BUILT. Surfaces come from hifi.js (terracotta and stone cladding, tiles, granite pavers, boards, concrete,
+// glazing with a tilt per pane). Every plain colour is merged into one vertex-coloured mesh per finish and group. All
+// lettering is cut from ONE sheet drawn in code (2048 x 2560 px, half on phones). Chairs, stools, easels and stands are instanced.
+// Tiers: shell (always drawn: faces, roof, the public floors, walls and well glazing of storeys 3 to 6), then behind
+// ctx.detail the library interior (140 m), fittings of halls, corridors and stair (105 m), furniture (70 m), fine things
+// (45 m), outdoor things (170 m); the rooms of one upper storey are drawn only while the viewer is on or near that storey.
+// Colliders: walls (shut doors are solid), floors, stair ramps, balustrades and railings with a barrier to 1.7 m, blocks
+// for large furniture; chairs, stools, easels and stands have none. The roof is solid, the light well is covered by an
+// unseen lid at roof level and its glass floor is solid too. After dusk the indoor finishes glow more (ctx.animate), the
+// lighting module lights the glass and the lamps.
+// NOT MODELLED: the basement and its ramp (the driveway is level and ends at a shut roller door); lift cars; the rooms
+// behind shut doors (most rooms of storeys 3 to 6, everything on the two lower storeys outside the library hall and the
+// stair lobby); the second stair (its balconies cannot be reached); people, bicycles; the neighbouring buildings seen in
+// the footage. The gold characters on the sculpture's plinth are left out because they cannot be read.
 import { THREE } from '../../kit.js';
 import { Batch } from '../../batch.js';
 import { pbr, SURFACES } from '../../hifi.js';
@@ -225,7 +291,7 @@ function lm(name) {
     louvre: () => S(0xffffff, 0.5, 0.5, { map: louvreTexture() }),
     arrows: () => S(0xffffff, 0.9, 0, { map: arrowTexture(), transparent: true, depthWrite: false, polygonOffset: true, polygonOffsetFactor: -2, polygonOffsetUnits: -2 }),
     stain: () => S(0xffffff, 1, 0, { map: stainTexture(), transparent: true, depthWrite: false, polygonOffset: true, polygonOffsetFactor: -1, polygonOffsetUnits: -2 }),
-    sign: () => S(0xffffff, 0.5, 0, { map: signTexture(), transparent: true, alphaTest: 0.35, side: THREE.DoubleSide }),
+    sign: () => { const tx = signTexture(); return S(0xffffff, 0.5, 0, { map: tx, transparent: true, alphaTest: 0.35, side: THREE.DoubleSide, emissive: 0xffffff, emissiveMap: tx, emissiveIntensity: 0 }); },      // lit after dusk (see the end of build)
     // glass. The names decide what lights up after dusk: "glass" does, "rail", "inner" and "rooflight" do not.
     glassLib: () => pane(0xcfe2e0, 0.36, 0.35),                                         // curtain wall of the podium
     glassWell: () => pane(0xd4e6e2, 0.3, 0.3),                                          // corridor glazing round the light well
@@ -252,14 +318,15 @@ function lm(name) {
 // Everything printed, written or shown on a screen in this building is a card cut from ONE texture sheet drawn in code.
 // Every word on it is invented (see IMAGINED in the header).
 class Atlas {
-  constructor(low) { this.k = low ? 0.5 : 1; this.S = 2048 * this.k; this.c = document.createElement('canvas'); this.c.width = this.c.height = this.S; this.g = this.c.getContext('2d'); this.g.fillStyle = '#8a8a84'; this.g.fillRect(0, 0, this.S, this.S); this.x = 0; this.y = 0; this.row = 0; this.uv = {}; this.full = []; }
-  put(key, w, h, draw) {
-    const P = Math.max(2, Math.round(4 * this.k)), pw = Math.round(w * this.k), ph = Math.round(h * this.k), g = this.g, S = this.S;
-    if (this.x + pw > S) { this.x = 0; this.y += this.row + P; this.row = 0; }
-    if (this.y + ph > S) { this.full.push(key); return (this.uv[key] = [0.001, 0.001, 0.003, 0.003]); }
-    g.save(); g.translate(this.x, this.y); g.beginPath(); g.rect(0, 0, pw, ph); g.clip(); g.scale(pw / w, ph / h); draw(g, w, h); g.restore();
-    this.uv[key] = [(this.x + 0.6) / S, 1 - (this.y + ph - 0.6) / S, (this.x + pw - 0.6) / S, 1 - (this.y + 0.6) / S];
-    this.x += pw + P; this.row = Math.max(this.row, ph); return this.uv[key];
+  constructor(low) { this.k = low ? 0.5 : 1; this.S = 2048 * this.k; this.T = 2560 * this.k; this.c = document.createElement('canvas'); this.c.width = this.S; this.c.height = this.T; this.g = this.c.getContext('2d'); this.g.fillStyle = '#8a8a84'; this.g.fillRect(0, 0, this.S, this.T); this.y = 0; this.shelves = []; this.uv = {}; this.full = []; }
+  /** Draws a card of w by h units (scaled by s on the sheet) on a shelf of cards of about its height; returns its texture rectangle. */
+  put(key, w, h, draw, s = 1) {
+    const P = Math.max(2, Math.round(4 * this.k)), pw = Math.round(w * this.k * s), ph = Math.round(h * this.k * s), g = this.g, S = this.S, T = this.T;
+    let sh = this.shelves.filter(q => q.h >= ph && q.x + pw <= S).sort((a, e) => a.h - e.h)[0];                      // the lowest shelf it fits on
+    if (!sh || (sh.h > ph * 1.3 && this.y + ph <= T)) { if (this.y + ph > T) { this.full.push(key); return (this.uv[key] = [0.001, 0.001, 0.003, 0.003]); } sh = { y: this.y, h: ph, x: 0 }; this.shelves.push(sh); this.y += ph + P; }
+    g.save(); g.translate(sh.x, sh.y); g.beginPath(); g.rect(0, 0, pw, ph); g.clip(); g.scale(pw / w, ph / h); draw(g, w, h); g.restore();
+    this.uv[key] = [(sh.x + 0.6) / S, 1 - (sh.y + ph - 0.6) / T, (sh.x + pw - 0.6) / S, 1 - (sh.y + 0.6) / T];
+    sh.x += pw + P; return this.uv[key];
   }
 }
 const TX = (g, s, x, y, px, col, font = CJK, align = 'left', weight = '') => { g.font = `${weight} ${px}px ${font}`; g.textAlign = align; g.textBaseline = 'middle'; g.fillStyle = col; g.fillText(s, x, y); };
@@ -446,7 +513,7 @@ export function build(item, ctx) {
   const SH = new Atlas(low), sheetTex = new THREE.CanvasTexture(SH.c); sheetTex.colorSpace = THREE.SRGBColorSpace; sheetTex.anisotropy = 8;
   const PR = new THREE.MeshStandardMaterial({ map: sheetTex, roughness: 0.55 }); PR.name = 'lib-prints';
   const PRL = new THREE.MeshStandardMaterial({ map: sheetTex, roughness: 0.6, emissive: 0xffffff, emissiveMap: sheetTex, emissiveIntensity: 0.85 }); PRL.name = 'lib-screens';
-  const U = (key, w, h, draw) => SH.uv[key] || SH.put(key, w, h, draw);
+  const U = (key, w, h, draw, s = 1) => SH.uv[key] || SH.put(key, w, h, draw, s);
   /** Upright card in the current frame of b, facing +z (sg 1) or -z (sg -1); (x, y) is its lower corner with the smaller x. */
   const cardZ = (b, uv, x, y, z, w, h, sg = 1, lit = false) => (sg > 0 ? texQuad(b, lit ? PRL : PR, [x, y, z], [x + w, y, z], [x + w, y + h, z], [x, y + h, z], uv[0], uv[1], uv[2], uv[3])
     : texQuad(b, lit ? PRL : PR, [x + w, y, z], [x, y, z], [x, y + h, z], [x + w, y + h, z], uv[0], uv[1], uv[2], uv[3]));
@@ -456,13 +523,13 @@ export function build(item, ctx) {
   /** Card lying flat, face up, read by someone standing on its +z side. */
   const cardY = (b, uv, x, y, z, w, d, lit = false) => texQuad(b, lit ? PRL : PR, [x, y, z + d], [x + w, y, z + d], [x + w, y, z], [x, y, z], uv[0], uv[1], uv[2], uv[3]);
   const plateCard = (num, name) => U('pl' + num + name, 216, 74, (g, W, Hh) => { BX(g, 0, 0, W, Hh, '#1d4f9c'); BX(g, 3, 3, W - 6, Hh - 6, null, '#ffffff', 2); BX(g, 7, 7, 60, Hh - 14, '#ffffff');
-    TX(g, num, 37, Hh / 2 + 1, num.length > 3 ? 20 : 25, '#1d4f9c', CJK, 'center', 'bold'); TX(g, name, 72 + (W - 80) / 2, Hh / 2 + 1, name.length > 5 ? 19 : 24, '#ffffff', CJK, 'center', 'bold'); });
+    TX(g, num, 37, Hh / 2 + 1, num.length > 3 ? 20 : 25, '#1d4f9c', CJK, 'center', 'bold'); TX(g, name, 72 + (W - 80) / 2, Hh / 2 + 1, name.length > 5 ? 19 : 24, '#ffffff', CJK, 'center', 'bold'); }, 0.85);
   const signCard = (text, bg = '#f7f9fb', fg = '#1d4f9c', w = 240, h = 80) => U('sg' + text + bg, w, h, (g, W, Hh) => { BX(g, 0, 0, W, Hh, bg, fg, 3); TX(g, text, W / 2, Hh / 2 + 1, Math.min(Hh * 0.52, (W - 16) / Math.max(1, text.length) * 1.05), fg, CJK, 'center', 'bold'); });
   const exitCard = () => U('exit', 200, 70, (g, W, Hh) => { BX(g, 0, 0, W, Hh, '#0d8a4a'); g.fillStyle = '#fff'; g.beginPath(); g.arc(38, 18, 7, 0, TAU); g.fill();
     g.strokeStyle = '#fff'; g.lineWidth = 6; g.lineCap = 'round'; g.beginPath(); g.moveTo(40, 28); g.lineTo(32, 44); g.lineTo(22, 58); g.moveTo(32, 44); g.lineTo(44, 54); g.lineTo(48, 62); g.moveTo(38, 32); g.lineTo(52, 36); g.moveTo(36, 32); g.lineTo(24, 38); g.stroke();
     TX(g, '安全出口', 128, 24, 24, '#fff', CJK, 'center', 'bold'); TX(g, 'EXIT', 128, 51, 20, '#fff', CJK, 'center', 'bold'); });
-  const floorCard = n => U('fl' + n, 160, 160, (g, Sz) => { BX(g, 0, 0, Sz, Sz, '#f7f7f3'); g.beginPath(); g.arc(Sz / 2, Sz / 2, 68, 0, TAU); g.fillStyle = '#1d4f9c'; g.fill(); TX(g, n + 'F', Sz / 2, Sz / 2 + 4, 66, '#fff', CJK, 'center', 'bold'); });
-  const mag = i => U('mag' + i, 90, 120, (g, W2, Hh) => { const hue = (i * 67) % 360; BX(g, 0, 0, W2, Hh, `hsl(${hue},45%,${i % 2 ? 34 : 86}%)`); TX(g, ['读者', '科学', '少年', '博物', '作文', '英语'][i], W2 / 2, 22, 26, i % 2 ? '#fff' : '#b3261e', KAI, 'center', 'bold'); const gr = g.createLinearGradient(0, 40, W2, Hh); gr.addColorStop(0, `hsl(${(hue + 40) % 360},50%,60%)`); gr.addColorStop(1, `hsl(${(hue + 150) % 360},40%,40%)`); g.fillStyle = gr; g.fillRect(8, 40, W2 - 16, 62); ROWS(g, 10, 106, W2 - 20, 2, 5, i % 2 ? '#eee' : '#555', 2); });
+  const floorCard = n => U('fl' + n, 160, 160, (g, Sz) => { BX(g, 0, 0, Sz, Sz, '#f7f7f3'); g.beginPath(); g.arc(Sz / 2, Sz / 2, 68, 0, TAU); g.fillStyle = '#1d4f9c'; g.fill(); TX(g, n + 'F', Sz / 2, Sz / 2 + 4, 66, '#fff', CJK, 'center', 'bold'); }, 0.75);
+  const mag = i => U('mag' + i, 90, 120, (g, W2, Hh) => { const hue = (i * 67) % 360; BX(g, 0, 0, W2, Hh, `hsl(${hue},45%,${i % 2 ? 34 : 86}%)`); TX(g, ['阅读', '科学', '少年', '自然', '作文', '英语'][i], W2 / 2, 22, 26, i % 2 ? '#fff' : '#b3261e', KAI, 'center', 'bold'); const gr = g.createLinearGradient(0, 40, W2, Hh); gr.addColorStop(0, `hsl(${(hue + 40) % 360},50%,60%)`); gr.addColorStop(1, `hsl(${(hue + 150) % 360},40%,40%)`); g.fillStyle = gr; g.fillRect(8, 40, W2 - 16, 62); ROWS(g, 10, 106, W2 - 20, 2, 5, i % 2 ? '#eee' : '#555', 2); });
   /** A pile of books or exercise books. */
   const pile = (b, x, y, z, n, seed, w = 0.2, d = 0.28) => { const r = rng(seed * 31 + 7), cols = [0x2f5fa8, 0xb8322a, 0x2f8a55, 0xe0b020, 0xf2efe6, 0x7a4fa0, 0xd9772b, 0x3a3d42]; let yy = y;
     for (let i = 0; i < n; i++) { const t = 0.012 + r() * 0.02; b.box(C(cols[Math.floor(r() * cols.length)]), x + (r() - 0.5) * 0.03, yy + t / 2, z + (r() - 0.5) * 0.03, w * (0.85 + 0.15 * r()), t, d * (0.85 + 0.15 * r()), 'D'); yy += t; } };
@@ -885,7 +952,7 @@ export function build(item, ctx) {
     const cat = U('cat', 128, 96, (g, W, Hh) => { BX(g, 0, 0, W, Hh, '#f7f9fb'); BX(g, 0, 0, W, 18, '#0f7a6a'); TX(g, '馆藏检索', 8, 10, 12, '#fff', CJK, 'left', 'bold'); BX(g, 10, 28, 84, 14, '#fff', '#888', 1); BX(g, 98, 28, 20, 14, '#0f7a6a'); ROWS(g, 10, 52, 108, 5, 8, '#9aa0a6', 3); });
     for (const X of [41.0, 42.1]) { at(fx, X, -7.3, 0, F0); fx.box(WHG, 0, 0.5, 0, 0.36, 1.0, 0.28, 'D'); fx.box(DK, 0, 1.2, 0.02, 0.44, 0.34, 0.04); cardZ(fx, cat, -0.2, 1.05, 0.045, 0.4, 0.3, 1, true); fx.box(DK, 0, 1.01, 0.2, 0.36, 0.02, 0.14); home(fx); } blockBox(40.75, -7.5, 42.35, -7.1, F0, F0 + 1.3);
     at(gx, 48.4, 0.9, 0.25, F0); for (const s of [-1, 1]) bar(gx, MW, [s * 0.3, 0, 0.12], [s * 0.3, 1.5, 0], 0.035); gx.box(MW, 0, 1.0, 0.035, 0.66, 0.9, 0.03);
-    cardZ(gx, U('hours', 200, 280, (g, W, Hh) => { BX(g, 0, 0, W, Hh, '#ffffff'); BX(g, 0, 0, W, 50, '#1d4f9c'); TX(g, '图书馆开放时间', W / 2, 26, 22, '#fff', CJK, 'center', 'bold'); [['周一至周五', '7:30 — 21:30'], ['周六', '9:00 — 17:00'], ['周日', '14:00 — 21:30']].forEach(([a, e], i) => { TX(g, a, 20, 86 + i * 44, 19, '#222', CJK, 'left', 'bold'); TX(g, e, 20, 106 + i * 44, 16, '#555', CJK); }); TX(g, '请刷卡入馆  保持安静', W / 2, 236, 16, '#b3261e', CJK, 'center', 'bold'); TX(g, '饮料食品请勿带入', W / 2, 260, 14, '#555', CJK, 'center'); }), -0.3, 0.58, 0.052, 0.6, 0.84, 1); home(gx);
+    cardZ(gx, U('hours', 200, 280, (g, W, Hh) => { BX(g, 0, 0, W, Hh, '#ffffff'); BX(g, 0, 0, W, 50, '#1d4f9c'); TX(g, '图书馆开放时间', W / 2, 26, 22, '#fff', CJK, 'center', 'bold'); [['周一至周五', '7:30 — 21:30'], ['周六', '9:00 — 17:00'], ['周日', '14:00 — 21:30']].forEach(([a, e], i) => { TX(g, a, 20, 86 + i * 44, 19, '#222', CJK, 'left', 'bold'); TX(g, e, 20, 106 + i * 44, 16, '#555', CJK); }); TX(g, '请刷卡入馆  保持安静', W / 2, 236, 16, '#b3261e', CJK, 'center', 'bold'); TX(g, '饮料食品请勿带入', W / 2, 260, 14, '#555', CJK, 'center'); }, 0.8), -0.3, 0.58, 0.052, 0.6, 0.84, 1); home(gx);
     home(v); cardZ(v, signCard('图 书 馆   LIBRARY', '#6f2a20', '#f1dfb0', 480, 80), 44.6, 3.71, ZG + 0.125, 3.6, 0.6, 1);
     // newspapers on a rack, a wall of magazines, book trolleys, shelf marks on the ends of the tall cases, signs hanging over the service points
     at(fu, 29.2, -5.0, 0.4, F0); for (const s of [-0.45, 0.45]) { bar(fu, C(0x8a6a48), [s, 0, -0.3], [s, 1.45, 0], 0.04); bar(fu, C(0x8a6a48), [s, 0, 0.3], [s, 1.45, 0], 0.04); }
@@ -1193,7 +1260,7 @@ export function build(item, ctx) {
     cardX(b, scr(kind), x + dir * 0.017, y + 0.2, z - 0.24, 0.48, 0.28, dir, true); if (kb) { b.box(C(0x3a3d42), x + dir * 0.3, y + 0.012, z, 0.14, 0.02, 0.42); b.box(C(0x3a3d42), x + dir * 0.3, y + 0.012, z + 0.32, 0.1, 0.03, 0.06); } };
   const poster = (title, col, i = 0) => U('po' + title, 200, 280, (g, W, Hh) => { const r = rng(911 + i * 37 + title.length); BX(g, 0, 0, W, Hh, '#f6f3ea', 'rgba(0,0,0,0.3)', 2); BX(g, 0, 0, W, 46, col); TX(g, title, W / 2, 24, title.length > 6 ? 20 : 26, '#fff', CJK, 'center', 'bold');
     let y = 58; while (y < Hh - 30) { if (r() < 0.35 && y < Hh * 0.6) { const ph = 44 + r() * 20; for (let q = 0; q < 2; q++) { const hue = Math.floor(r() * 360), gr = g.createLinearGradient(0, y, 0, y + ph); gr.addColorStop(0, `hsl(${hue},40%,72%)`); gr.addColorStop(1, `hsl(${(hue + 40) % 360},35%,42%)`); g.fillStyle = gr; g.fillRect(14 + q * 90, y, 82, ph); } y += ph + 10; }
-      else { BX(g, 14, y, 60 + r() * 60, 6, col); y += 12; const n = 3 + Math.floor(r() * 4); ROWS(g, 14, y, W - 28, n, 9, '#8b8880', 3.5, r); y += n * 9 + 8; } } });
+      else { BX(g, 14, y, 60 + r() * 60, 6, col); y += 12; const n = 3 + Math.floor(r() * 4); ROWS(g, 14, y, W - 28, n, 9, '#8b8880', 3.5, r); y += n * 9 + 8; } } }, 0.7);
 
   // ---- toilets in the plain north wing of every upper storey (the face there has only thin high slots, frames 55-57)
   const TILEW = pbr('tiles', [0xeef0ec, 4, 1.2, 0.3]), TILEF = pbr('tiles', [0x9aa3a6, 4, 1.2, 0.5]), PART = C(0xcfd8dc, 'gloss'), CER = C(0xfafaf7, 'gloss');
@@ -1322,7 +1389,7 @@ export function build(item, ctx) {
     b.slab(RIS, 2.1, 0, 4.4, 0.9, 0.15, 0.9); R.col(2.1, 4.4, 3.0, 5.3, 0.15); R.put('mstand', 3.15, 4.85, Math.PI);
     for (let i = 0; i < 6; i++) { const z = 2.0 + i * 1.15; R.put('chair', 4.35, z, Math.PI, 0x2f4f7f); R.put('mstand', 3.8, z, 0); R.sub(3.8, z, 0); cardX(b, U('score'), 0.024, 1.07, -0.2, 0.4, 0.27, 1); R.fr(); }
     cardX(b, U('staff', 440, 156, (g, W2, Hh) => { BX(g, 0, 0, W2, Hh, '#fbfbf8', '#9aa0a6', 4); for (let s = 0; s < 3; s++) for (let l = 0; l < 5; l++) { g.fillStyle = '#b9bcc0'; g.fillRect(16, 24 + s * 46 + l * 7, W2 - 32, 1.5); }
-      g.fillStyle = '#1d1d1f'; for (let n = 0; n < 14; n++) { const x = 60 + n * 24, y = 24 + ((n * 3) % 6) * 3.5; g.beginPath(); g.ellipse(x, y + 14, 5, 3.6, -0.35, 0, TAU); g.fill(); g.fillRect(x + 4, y - 8, 1.6, 22); } TX(g, '《送别》  李叔同', 150, 84, 15, '#1f4fa0', KAI, 'left', 'bold'); TX(g, '4/4   ♩ = 72', 18, 84, 14, '#b3261e', KAI); TX(g, '长亭外，古道边，芳草碧连天', 18, 130, 16, '#222', KAI); }), 0.02, 0.95, 2.4, 3.6, 1.276, 1);
+      g.fillStyle = '#1d1d1f'; for (let n = 0; n < 14; n++) { const x = 60 + n * 24, y = 24 + ((n * 3) % 6) * 3.5; g.beginPath(); g.ellipse(x, y + 14, 5, 3.6, -0.35, 0, TAU); g.fill(); g.fillRect(x + 4, y - 8, 1.6, 22); } TX(g, '《榕树下的歌》', 150, 84, 15, '#1f4fa0', KAI, 'left', 'bold'); TX(g, '4/4   ♩ = 72', 18, 84, 14, '#b3261e', KAI); TX(g, '榕树下，读书声，伴着晨风起', 18, 130, 16, '#222', KAI); }), 0.02, 0.95, 2.4, 3.6, 1.276, 1);
     for (const z of [1.5, 6.9]) { b.box(DKM, 0.16, 2.7, z, 0.26, 0.42, 0.3); b.box(C(0x55595e), 0.295, 2.7, z, 0.01, 0.3, 0.2); }
     b.slab(C(0x9a7b55), 2.2, 0, 0.05, 2.8, 2.0, 0.5); b.quad(GRL, [2.25, 0.5, 0.56], [4.95, 0.5, 0.56], [4.95, 1.95, 0.56], [2.25, 1.95, 0.56]); for (let i = 0; i < 5; i++) lathe(b, C([0xb5653a, 0x8a2f2b, 0xd9a22b][i % 3]), 2.5 + i * 0.55, 0.3, [[0.1, 1.0], [0.13, 1.25], [0.15, 1.38], [0.14, 1.4]], 10); R.col(2.2, 0, 5.0, 0.6, 2);
     for (const x of [1.3, 2.9]) { b.box(DKM, x + 0.65, 0.76, D - 0.5, 1.3, 0.1, 0.32); const u = U('keys'); texQuad(b, PR, [x + 1.28, 0.812, D - 0.62], [x + 0.02, 0.812, D - 0.62], [x + 0.02, 0.812, D - 0.5], [x + 1.28, 0.812, D - 0.5], u[0], u[1], u[2], u[3]); for (const s of [0.2, 1.1]) { bar(b, DKM, [x + s, 0.72, D - 0.62], [x + s, 0, D - 0.3], 0.03); bar(b, DKM, [x + s, 0.72, D - 0.38], [x + s, 0, D - 0.7], 0.03); } R.put('stool', x + 0.65, D - 1.0, 0, 0x2a2c2f); }
@@ -1394,11 +1461,10 @@ export function build(item, ctx) {
       if (t === 2) { b.box(C(0x8f959b), x - 0.15, 0.748, z + 0.15, 0.32, 0.016, 0.22); cardZ(b, scr(1), x - 0.31, 0.76, z + 0.04, 0.32, 0.2, 1, true); b.box(C(0x8f959b), x - 0.15, 0.86, z + 0.03, 0.33, 0.21, 0.01); } });
     b.slab(SOFA, 0.25, 0.12, 7.5, 0.9, 0.3, 2.2); b.slab(SOFA, 0.05, 0.12, 7.5, 0.2, 0.75, 2.2); b.slab(SOFA, 1.6, 0.12, D - 1.05, 2.2, 0.3, 0.9); b.slab(SOFA, 1.6, 0.12, D - 0.3, 2.2, 0.75, 0.2); for (let i = 0; i < 3; i++) { b.slab(C(0xa06a48), 0.3, 0.42, 7.53 + i * 0.725, 0.62, 0.1, 0.7); b.slab(C(0xa06a48), 1.63 + i * 0.725, 0.42, D - 1.0, 0.7, 0.1, 0.62); }
     R.col(0.05, 7.5, 1.15, 9.7, 0.8); R.col(1.6, D - 1.05, 3.8, D, 0.8); tbl(b, 1.7, 8.3, 1.1, 0.6, 0.42, C(0x8a6a48, 'gloss'), DKM); b.box(C(0x9a6f5a), 2.2, 0.006, 8.7, 3.2, 0.004, 2.6, 'D');
-    const mag = i => U('mag' + i, 90, 120, (g, W2, Hh) => { const hue = (i * 67) % 360; BX(g, 0, 0, W2, Hh, `hsl(${hue},45%,${i % 2 ? 34 : 86}%)`); TX(g, ['读者', '科学', '少年', '博物', '作文', '英语'][i], W2 / 2, 22, 26, i % 2 ? '#fff' : '#b3261e', KAI, 'center', 'bold'); const gr = g.createLinearGradient(0, 40, W2, Hh); gr.addColorStop(0, `hsl(${(hue + 40) % 360},50%,60%)`); gr.addColorStop(1, `hsl(${(hue + 150) % 360},40%,40%)`); g.fillStyle = gr; g.fillRect(8, 40, W2 - 16, 62); ROWS(g, 10, 106, W2 - 20, 2, 5, i % 2 ? '#eee' : '#555', 2); });
     cardY(b, mag(0), 1.8, 0.425, 8.4, 0.21, 0.28); cardY(b, mag(3), 2.3, 0.425, 8.5, 0.21, 0.28);
     bar(b, C(0xc9a45c), [0.5, 0, 10.3], [0.5, 1.5, 10.3], 0.03); b.cyl(C(0xc9a45c), 0.5, 0, 10.3, 0.16, 0.03, 12); lathe(b, lm('shadeWarm'), 0.5, 10.3, [[0.22, 1.42], [0.13, 1.72]], 14);
     cardX(b, U('map', 480, 250, (g, W2, Hh) => { const r = rng(7); BX(g, 0, 0, W2, Hh, '#9cc7e0', '#6a5a3c', 6); g.fillStyle = '#b9d49a'; for (const [x, y, rx, ry] of [[110, 90, 62, 46], [150, 170, 30, 44], [250, 80, 46, 30], [262, 150, 34, 50], [352, 96, 76, 52], [400, 196, 30, 20]]) { g.beginPath(); for (let a = 0; a <= 24; a++) { const k = 0.75 + 0.5 * r(), t = a / 24 * TAU; g.lineTo(x + Math.cos(t) * rx * k, y + Math.sin(t) * ry * k); } g.fill(); }
-      g.strokeStyle = 'rgba(255,255,255,0.5)'; g.lineWidth = 1; for (let i = 1; i < 8; i++) { g.beginPath(); g.moveTo(i * 60, 6); g.lineTo(i * 60, Hh - 6); g.stroke(); } for (let j = 1; j < 5; j++) { g.beginPath(); g.moveTo(6, j * 50); g.lineTo(W2 - 6, j * 50); g.stroke(); } TX(g, '世界地图（示意）', 16, 20, 14, '#3a3a3a', KAI, 'left', 'bold'); }), 0.02, 1.0, 2.2, 3.65, 1.9, 1);
+      g.strokeStyle = 'rgba(255,255,255,0.5)'; g.lineWidth = 1; for (let i = 1; i < 8; i++) { g.beginPath(); g.moveTo(i * 60, 6); g.lineTo(i * 60, Hh - 6); g.stroke(); } for (let j = 1; j < 5; j++) { g.beginPath(); g.moveTo(6, j * 50); g.lineTo(W2 - 6, j * 50); g.stroke(); } TX(g, '世界地图（示意）', 16, 20, 14, '#3a3a3a', KAI, 'left', 'bold'); }, 0.75), 0.02, 1.0, 2.2, 3.65, 1.9, 1);
     b.slab(C(0x8a6a48, 'gloss'), 0.05, 0, 2.4, 0.42, 0.8, 3.2); for (let i = 0; i < 3; i++) lathe(b, C(0xd9a520, 'metal'), 0.26, 2.9 + i * 1.1, [[0.07, 0.8], [0.02, 0.86], [0.02, 0.95], [0.09, 1.02], [0.1, 1.12]], 8); R.col(0.05, 2.4, 0.5, 5.6, 0.85);
     b.slab(WOOD, 2.4, 0, 0.02, 4.0, 2.0, 0.08); for (let t = 0; t < 3; t++) { b.slab(WOOD, 2.4, 0.42 + t * 0.52, 0.1, 4.0, 0.03, 0.14); for (let i = 0; i < 10; i++) cardZ(b, mag((i + t * 2) % 6), 2.5 + i * 0.39, 0.46 + t * 0.52, 0.2 - 0.004 * i % 0.02, 0.3, 0.4, 1); } R.col(2.4, 0, 6.4, 0.3, 2);
     tbl(b, 6.0, 9.2, 0.8, 0.8, 0.5, WOOD, DKM); cardY(b, U('go', 160, 160, (g, S2) => { const r = rng(19); BX(g, 0, 0, S2, S2, '#dcb46a'); g.strokeStyle = '#3a2a14'; g.lineWidth = 1; for (let i = 0; i < 19; i++) { const q = 8 + i * 8; g.beginPath(); g.moveTo(q, 8); g.lineTo(q, 152); g.moveTo(8, q); g.lineTo(152, q); g.stroke(); } for (let i = 0; i < 46; i++) { g.fillStyle = i % 2 ? '#111' : '#f7f7f3'; g.beginPath(); g.arc(8 + Math.floor(r() * 19) * 8, 8 + Math.floor(r() * 19) * 8, 3.4, 0, TAU); g.fill(); } }), 6.1, 0.506, 9.3, 0.6, 0.6);
@@ -1417,7 +1483,7 @@ export function build(item, ctx) {
     UPF.forEach((y, k) => { const lo = k < 2, nm = NAMES[k], n = k + 3, S0 = lo ? [47, ZS] : A5, dW = dWat(ZS);
       onWall(AW, A1, Nf(38, 9), y, (sg, hit) => {                    // beside the lifts: the directory of the storey, a litter bin
         cardZ(uf, U('dir' + k, 300, 380, (g, W, Hh) => { BX(g, 0, 0, W, Hh, '#f7f9fb', '#1d4f9c', 4); BX(g, 0, 0, W, 56, '#1d4f9c'); TX(g, n + 'F  楼层索引', W / 2, 30, 26, '#fff', CJK, 'center', 'bold');
-          [['01', 'B2'], ['02', 'B1'], ['03', 'E3'], ['04', 'E2'], ['05', 'E1'], ['06', 'SE'], ['07', 'S5'], ['08', 'S4'], ['09', 'A'], ['10', 'S2'], ['11', 'S1']].filter(q => nm[q[1]]).forEach(([no, key], i) => { TX(g, n + no, 24, 86 + i * 26, 18, '#1d4f9c', CJK, 'left', 'bold'); TX(g, nm[key], 86, 86 + i * 26, 18, '#222', CJK); }); TX(g, '卫生间 · 楼梯 · 电梯  →', W / 2, Hh - 22, 15, '#555', CJK, 'center'); }), 1.3, 0.95, sg * 0.014, 1.1, 1.39, sg);
+          [['01', 'B2'], ['02', 'B1'], ['03', 'E3'], ['04', 'E2'], ['05', 'E1'], ['06', 'SE'], ['07', 'S5'], ['08', 'S4'], ['09', 'A'], ['10', 'S2'], ['11', 'S1']].filter(q => nm[q[1]]).forEach(([no, key], i) => { TX(g, n + no, 24, 86 + i * 26, 18, '#1d4f9c', CJK, 'left', 'bold'); TX(g, nm[key], 86, 86 + i * 26, 18, '#222', CJK); }); TX(g, '卫生间 · 楼梯 · 电梯  →', W / 2, Hh - 22, 15, '#555', CJK, 'center'); }, 0.8), 1.3, 0.95, sg * 0.014, 1.1, 1.39, sg);
         uf.cyl(GREYM, 3.3, 0, sg * 0.3, 0.17, 0.62, 10); uf.cyl(DKM, 3.3, 0.62, sg * 0.3, 0.18, 0.03, 10); hit(3.1, 0.4, 0.65); });
       onWall(A2, A3, Nf(36, 9), y, (sg, hit) => bench(sg, hit, 1.0, 2.2));
       onWall(S0, lo ? AW : [28.9, ZS], [30, ZS - 1], y, (sg, hit) => { const a = X => S0[0] - X;           // the long south wall: lockers between the doors of room A, a bench, boards
@@ -1552,7 +1618,7 @@ export function build(item, ctx) {
     along(v, LB, LA, H); along(c, LB, LA, H);
     v.box(DECK, 25.5, 0.03, -5.25, 17.6, 0.06, 6.1, 'D');
     for (const s of [20, 25.5, 31]) { for (const d of [0.2, 0.36, 0.52]) v.box(TW, s, 0.45, -3.2 - d, 1.8, 0.035, 0.13); for (const e of [-0.75, 0.75]) v.box(DKS, s + e, 0.22, -3.56, 0.05, 0.44, 0.44, 'D'); c.slab(G, s - 0.9, 0, -3.8, 1.8, 0.5, 0.5); }
-    for (const s of [17.6, 22.8, 28.2, 33.4]) { v.box(CONC, s, 0.3, -7.6, 1.5, 0.6, 0.7, 'D'); v.box(C(0x4b3d2f), s, 0.605, -7.6, 1.3, 0.01, 0.5, 'D'); c.slab(G, s - 0.75, 0, -7.95, 1.5, 0.75, 0.7); for (const e of [-0.4, 0, 0.4]) { const w = toW(Nf(s + e, 7.6)); highGreens.push([w[0], H + 0.6, w[1], 0.3]); } }
+    for (const s of [17.6, 22.2, 26.8, 31.4]) { v.box(CONC, s, 0.3, -7.6, 1.5, 0.6, 0.7, 'D'); v.box(C(0x4b3d2f), s, 0.605, -7.6, 1.3, 0.01, 0.5, 'D'); c.slab(G, s - 0.75, 0, -7.95, 1.5, 0.75, 0.7); for (const e of [-0.4, 0, 0.4]) { const w = toW(Nf(s + e, 7.6)); highGreens.push([w[0], H + 0.6, w[1], 0.3]); } }
     for (const [s, d] of [[34.42, 4.0], [16.58, 4.0]]) v.box(lm('lamp'), s, 2.5, -d, 0.06, 0.12, 0.3);
     // the eastern pavilion is closed: a steel door with a plate
     v.box(C(0x8e9a94, 'metal'), 16.52, 1.05, -5.6, 0.04, 2.1, 0.95, 'D'); v.box(DKS, 16.53, 1.05, -5.6, 0.03, 2.2, 1.06, 'DW'); v.box(STL, 16.56, 1.05, -5.25, 0.04, 0.12, 0.03); cardX(v, plateCard('机房', '电梯 · 水箱'), 16.515, 1.5, -6.6, 0.34, 0.116, 1);
@@ -1600,10 +1666,11 @@ export function build(item, ctx) {
   if (ctx.animate) ctx.animate((dt, t, env) => { const p = env && env.camera ? env.camera.position : null; if (!p) return; const near = Math.hypot(p.x - ctrW[0], p.z - ctrW[1]) < 62;
     roomGroups.forEach((g, k) => { g.visible = near && p.y > UPF[k] - 4.2 && p.y < UPF[k] + 4.4; }); });
   const cg = ctx.add(c.build({ name: item.id + '-colliders' })); cg.visible = false;
+  if (typeof globalThis !== 'undefined') globalThis.__newbSheet = { full: SH.full, usedRows: SH.y, size: [SH.S, SH.T], cards: Object.keys(SH.uv).length };      // for checks: cards that did not fit on the lettering sheet
   cg.traverse(o => { if (o.isMesh) ctx.collide(o); });
   // after dusk the lights are on: the indoor finishes glow a little more (the lighting module lights the glass and the lamps)
   if (ctx.animate) {
-    const glowing = [[lm('plaster'), 0.22, 0.2], [lm('ceil'), 0.3, 0.25], [lm('wallUp'), 0.16, 0.22], [lm('ceilUp'), 0.26, 0.3]]; let last = -1;
+    const glowing = [[lm('plaster'), 0.22, 0.2], [lm('ceil'), 0.3, 0.25], [lm('wallUp'), 0.16, 0.22], [lm('ceilUp'), 0.26, 0.3], [lm('sign'), 0, 0.85]]; let last = -1;      // the roof characters are lit at night (imagined)
     ctx.animate((dt, t, env) => { const n = env && env.lighting && env.lighting.night ? env.lighting.night() : 0; if (Math.abs(n - last) < 0.01) return; last = n; for (const [m, base, more] of glowing) m.emissiveIntensity = base + more * n; });
   }
 
