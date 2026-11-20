@@ -36,6 +36,8 @@
 //     units, pipes, doors, number plates, lamps, the porch steps, canopies and signs, roof parapet and lightning rods,
 //     the soft dirt on the walls, and everything inside (lobby, stairs, wash rooms, common rooms, furnished rooms);
 //   - the names on the entrance signs (学生公寓 一栋 to 四栋) and every word on the signs, notices and posters;
+//   - what the large glazed walls show after dusk (lit rooms with blinds, drapes and people: a drawn picture used as
+//     their emissive map), the bedding, bed curtains and mosquito nets, the potted plants (flora.js foliage);
 //   - which rooms stand open and furnished: two in each row of rooms on every storey of block A north, one in the
 //     other blocks (isOpen() in plan()). All other room doors are closed and nothing is built behind them.
 //
@@ -351,7 +353,8 @@ function litRooms() {
     if (!dark) { g.fillStyle = 'rgba(255,250,236,0.95)'; for (const t of [0.28, 0.72]) g.fillRect(x + cw * t - 7, top + 5, 14, 3); }                    // ceiling lights
     g.fillStyle = `rgba(28,22,16,${dark ? 0.5 : 0.62})`;                                                                                          // a cupboard, heads at the tables
     if (r() < 0.5) g.fillRect(x + cw * (0.08 + 0.5 * r()), bot - ch * (0.42 + 0.14 * r()), cw * 0.24, ch * 0.6);
-    for (let q = 0, n = Math.floor(r() * 3); q < n; q++) { const px = x + cw * (0.2 + 0.6 * r()), py = bot - ch * (0.2 + 0.06 * r()); g.beginPath(); g.arc(px, py, 4.5, 0, 6.283); g.fill(); g.fillRect(px - 6.5, py + 4, 13, bot - py - 4); }
+    g.fillStyle = `rgba(28,22,16,${dark ? 0.4 : 0.5})`;
+    for (let q = 0, n = Math.floor(r() * 2.4); q < n; q++) { const px = x + cw * (0.2 + 0.6 * r()), py = bot - ch * (0.1 + 0.05 * r()); g.beginPath(); g.arc(px, py - 5, 3.4, 0, 6.283); g.fill(); g.beginPath(); g.ellipse(px, bot, 8, bot - py + 1, 0, Math.PI, 6.283); g.fill(); }   // someone sitting: head and shoulders
     const kind = r();
     if (kind < 0.45) { const len = (bot - top) * (0.15 + 0.6 * r()); g.fillStyle = `rgba(${dark ? '40,36,32' : '170,150,116'},0.84)`; g.fillRect(x + 2, top, cw - 4, len); g.fillStyle = 'rgba(0,0,0,0.22)'; for (let yy = top + 3; yy < top + len; yy += 5) g.fillRect(x + 2, yy, cw - 4, 1); }   // a blind
     else if (kind < 0.78) { g.fillStyle = `rgba(${dark ? '34,30,30' : '150,108,90'},0.86)`; g.fillRect(x + 2, top, cw * (0.1 + 0.16 * r()), bot - top); if (r() < 0.7) { const w2 = cw * (0.1 + 0.16 * r()); g.fillRect(x + cw - 2 - w2, top, w2, bot - top); } }   // drapes
@@ -380,11 +383,11 @@ function softShapes() {
     const g = new THREE.BufferGeometry(); g.setAttribute('position', new THREE.Float32BufferAttribute(pos, 3)); g.setIndex(idx); g.computeVertexNormals(); return g;
   };
   const clothM = new THREE.MeshStandardMaterial({ color: 0xffffff, roughness: 0.95, side: THREE.DoubleSide }); clothM.name = 'hifi-dormbedding';
-  const netM = new THREE.MeshStandardMaterial({ color: 0xffffff, roughness: 0.9, transparent: true, opacity: 0.3, depthWrite: false, side: THREE.DoubleSide }); netM.name = 'hifi-dormbednet';
+  const netM = new THREE.MeshStandardMaterial({ color: 0xffffff, roughness: 0.9, transparent: true, opacity: 0.2, depthWrite: false, side: THREE.DoubleSide }); netM.name = 'hifi-dormbednet';
   return (SOFT = { clothM, netM,
     mattress: soft(0.87, 0.105, 1.9, 0.28, 8, 4), pillow: soft(0.5, 0.14, 0.3, 0.62, 8, 5), fold: soft(0.56, 0.1, 0.46, 0.36, 8, 4), net: soft(0.9, 0.92, 1.94, 0.3, 8, 4),
     // thrown back: lies in soft waves on the mattress and hangs over its aisle edge
-    spread: sheetOf(8, 8, (u, w) => { const x = -0.44 + u * 1.0, over = Math.max(0, x - 0.4); return [x - over * 0.45, 0.035 + 0.03 * Math.sin(u * 7 + w * 9) * Math.cos(w * 5.3 + 1) + 0.018 * Math.sin(w * 13 + u * 3) - over * 1.25 - (w < 0.06 || w > 0.94 ? 0.02 : 0), -0.68 + w * 1.36]; }),
+    spread: sheetOf(8, 8, (u, w) => { const x = -0.44 + u * 1.0, over = Math.max(0, x - 0.4); return [x - over * 0.45, 0.07 + 0.028 * Math.sin(u * 7 + w * 9) * Math.cos(w * 5.3 + 1) + 0.016 * Math.sin(w * 13 + u * 3) - over * 1.3 - (w < 0.06 || w > 0.94 ? 0.03 : 0), -0.68 + w * 1.36]; }),
     // hanging edge of a sheet: a wavy strip below the top of the mattress
     sheet: sheetOf(1, 12, (u, w) => [u * (0.014 + 0.008 * Math.sin(w * 31)), -u * (0.12 + 0.035 * Math.sin(w * 17 + 1)), 0.95 - w * 1.9]),
     // bed curtain: pleats, one unit long and one unit high
@@ -778,13 +781,13 @@ export function build(item, ctx) {
     let xg = x0 + 0.1;
     for (const [a, b] of doors) { pane(ex, 'x', xg, a, y + 0.02, y + CEIL, gd, m.clear); pane(ex, 'x', a, b, y + 2.4, y + CEIL, gd, m.clear); xg = b; }
     pane(ex, 'x', xg, xb, y + 0.02, y + CEIL, gd, m.clear);
-    box(v, litGlass(m.teal, (xb - x0) / Math.round((xb - x0) / 1.95), x0), x0 + 0.1, xb, gd, gd + 0.02, level(1), yCol, 'F');
+    box(v, litGlass(m.teal, (xb - x0) / Math.round((xb - x0) / 1.95), x0), x0 + 0.1, xb, gd, gd + 0.02, level(1), yF, 'F');
     for (let k = 1; k <= FLOORS; k++) box(v, m.tile, x0, xb, gd - 0.1, gd, level(k) - 0.38, level(k), 'FUD');
     const nm = Math.round((xb - x0) / 1.95);
-    for (let i = 1; i < nm; i++) { const xq = x0 + i * (xb - x0) / nm, atDoor = doors.some(([a, b]) => xq > a + 0.05 && xq < b - 0.05); box(v, m.frame, xq - 0.035, xq + 0.035, gd - 0.07, gd + 0.03, atDoor ? y + 2.4 : y, yCol, 'FWEK'); }
+    for (let i = 1; i < nm; i++) { const xq = x0 + i * (xb - x0) / nm, atDoor = doors.some(([a, b]) => xq > a + 0.05 && xq < b - 0.05); box(v, m.frame, xq - 0.035, xq + 0.035, gd - 0.07, gd + 0.03, atDoor ? y + 2.4 : y, yF - 0.02, 'FWEK'); }
     box(v, m.frame, x0, xb, gd - 0.05, gd + 0.03, y + 2.36, y + 2.44, 'FUDK');
     for (const [a, b] of doors) for (const xl of [a + 0.02, b - 0.02]) { frame(v, 'd', gd + 0.03, gd + 0.97, y + 0.02, y + 2.36, xl - 0.02, xl + 0.02, m.frame, 0, y + 1.05, 0.07); pane(ex, 'd', gd + 0.1, gd + 0.9, y + 0.09, y + 2.29, xl, m.clear); }   // glazed leaves swung in
-    box(v, m.tile, x0, xb, gd + 0.06, gd + 0.4, yF, yCol, 'F');                                                 // upstand behind the top of the glass
+    box(v, m.tile, x0, xb, gd - 0.1, gd + 0.4, yF - 0.02, yCol, 'FD');                                          // white band over the glass, under the roof slab
     box(v, m.tile, xb, L - FACE, FACE, 6.0, yF, yCol, 'EW'); box(v, m.tile, xb, xb + 0.02, FACE, gd, BASE, yCol, 'W'); box(v, m.tile, x0 - 0.02, x0, FACE, gd, BASE, yCol, 'E');
     box(v, m.white, x0, L, 0, 6.0, yCol, yCol + 0.6);              // thin roof slab over the columns
     for (let xr = x0 + 0.5; xr < L - 0.8; xr += 1.2) box(v, m.frame, xr, xr + 0.5, 0.3, 5.7, yCol + 0.6, H, 'WEFKU');   // ribbed strip seen from above
@@ -855,7 +858,7 @@ export function build(item, ctx) {
   const plant = (b, x, d, y, s = 1, tall = false) => {
     const G = greens.get(b) || greens.set(b, { balls: [], trees: [] }).get(b), r = (tall ? 0.25 : 0.17) * s, h = (tall ? 0.46 : 0.24) * s, pot = tint(tall ? 0x77726c : 0xa9583c, 0.75);
     cyl(b, pot, x, d, y, r * 0.84, h - 0.035 * s, 12, false); cyl(b, pot, x, d, y + h - 0.035 * s, r, 0.035 * s, 12); cyl(b, tint(0x3f3327, 0.95), x, d, y + h - 0.004, r * 0.84, 0.006, 10);
-    if (tall) G.trees.push([x, d, y + h - 0.03, (1.55 + 0.5 * rnd()) * s]); else G.balls.push([x, d, y + h - 0.02, 0.27 * s]);
+    if (tall) G.trees.push([x, d, y + h - 0.03, (1.15 + 0.25 * rnd()) * s]); else G.balls.push([x, d, y + h - 0.02, 0.27 * s]);
   };
   /** Chair seen from all sides: seat, back, four legs. dir: [dx, dd] the way it faces. */
   const chair = (F, X, material, x, d, y, dir) => {
@@ -881,7 +884,7 @@ export function build(item, ctx) {
       B.mattress.push([instM(mx, md, yb + 0.052), pick(SHEET)]);
       B.pillow.push([instM(mx + (R() - 0.5) * 0.14, pd + (R() - 0.5) * 0.06, top + 0.05, (R() - 0.5) * 0.5, 0.9 + 0.2 * R(), 0.8 + 0.4 * R(), 1), pick(PILLOW)]);
       if (made) { const yq = (R() - 0.5) * 0.16; B.fold.push([instM(mx, qd, top + 0.045, yq), quilt], [instM(mx + (R() - 0.5) * 0.03, qd, top + 0.135, yq + (R() - 0.5) * 0.08, 0.95, 1, 0.93), quilt]); }
-      else B.spread.push([instM(mx, atD0 ? md + 0.24 : md - 0.24, top - 0.01, turn, 1, 0.8 + 0.5 * R(), 1), quilt]);
+      else B.spread.push([instM(mx, atD0 ? md + 0.24 : md - 0.24, top, turn, 1, 0.85 + 0.4 * R(), 1), quilt]);
       if (R() < 0.55) { const len = 0.45 + 0.5 * R(); B.sheet.push([instM(xa0, md + (R() - 0.5) * 1.8 * (1 - len), top - 0.015, turn, 1, 0.7 + 0.6 * R(), len), pick(SHEET)]); }   // a sheet edge hanging over the frame
       if (R() < 0.6) box(X, tint(pick(TOWEL), 0.95), ...XR(0.2, 0.52), d1 - 0.004, d1 + 0.016, yb + 0.02, yb + 0.4, 'KWEUD');   // towel over the end rail
     }
@@ -1007,7 +1010,9 @@ export function build(item, ctx) {
     box(F, wood, sX + 0.4, sX + 1.5, sD + 1.25, sD + 1.8, y + 0.36, y + 0.4); for (const [a, c] of [[0.42, 1.27], [1.44, 1.27], [0.42, 1.74], [1.44, 1.74]]) box(X, m.dark, sX + a, sX + a + 0.04, sD + c, sD + c + 0.04, y, y + 0.36, 'WEFK');
     box(X, tint(0xf4f1e6, 0.9), sX + 0.6, sX + 0.9, sD + 1.35, sD + 1.56, y + 0.4, y + 0.41, 'U'); cyl(X, tint(0x2a8a96, 0.4), sX + 1.2, sD + 1.5, y + 0.4, 0.04, 0.09, 8);
     cPost(sX, sX + 1.9, sD, sD + 0.8, y, y + 0.9); cPost(sX + 0.4, sX + 1.5, sD + 1.25, sD + 1.8, y, y + 0.5);
-    plant(F, x0 + 0.5, dF + 0.5, y, 1, true); plant(F, x1 - 0.5, dF + 0.5, y, 1, true); if (x1 - x0 > 14) { plant(F, (x0 + x1) / 2, dF + 0.45, y, 0.9, true); plant(F, x1 - 0.5, dB - 0.5, y, 1, true); }
+    plant(F, x0 + 0.45, dF + 0.45, y, 1.6); plant(F, x1 - 0.45, dF + 0.45, y, 1.6);                                     // leafy pots in the corners, small trees in tubs beside the doors
+    for (const xd of doorsFront) for (const o of doorsFront.length > 1 ? [-2.3] : [-2.2, 2.2]) plant(F, xd + o, dF + 1.25, y, 1, true);
+    if (x1 - x0 > 14) plant(F, doorsFront[1] + 2.3, dF + 1.25, y, 1, true);
     plant(X, cxn + cw - 0.55, cF + 0.14, y + 1.12, 0.55);                                                                 // a small pot on the counter
     // on the back wall: lockers for parcels at the west end, a drinks machine and a water dispenser at the east end
     const pw = Math.min(2.6, doorsBack[0][0] - x0 - 0.3), pX = x0 + 0.1;
@@ -1068,7 +1073,7 @@ export function build(item, ctx) {
     }
     // water dispenser by a door, plants by the glass, lights and fans
     box(F, m.white, x1 - 0.42, x1 - 0.08, dB - 0.4, dB - 0.06, y, y + 0.98, 'WFU'); cyl(F, tint(0x9fc8e6, 0.2), x1 - 0.25, dB - 0.23, y + 0.98, 0.13, 0.34, 10);
-    plant(F, x0 + 0.5, dF + 0.45, y, 1, true); plant(F, x1 - 0.5, dF + 0.45, y, 0.9, true);
+    plant(F, x0 + 0.45, dF + 0.42, y, 1.5); plant(F, x1 - 0.45, dF + 0.42, y, 1.5); plant(F, x0 + 4.05, dF + 1.15, y, 0.95, true);
     for (const tx of [0.2, 0.5, 0.8]) for (const td of [0.3, 0.72]) tube(F, x0 + (x1 - x0) * tx, dF + (dB - dF) * td, yc); fan(F, x0 + (x1 - x0) * 0.35, (dF + dB) / 2, yc); fan(F, x0 + (x1 - x0) * 0.65, (dF + dB) / 2, yc);
     card(C, uvOf('notice'), x1 - 1.6, dB - 0.008, y + 1.7, 0, -1, 0.8, 0.32); card(C, uvOf('rules'), x1 - 1.6, dB - 0.008, y + 1.2, 0, -1, 0.4, 0.55);
   }
