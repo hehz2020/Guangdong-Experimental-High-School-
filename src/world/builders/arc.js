@@ -1,5 +1,9 @@
 // Long curved building north of the teaching core (item "arc-building"), inside and out.
-// (Showpiece pass in progress: this stage has the exterior, the roof garden and solid colliders; the interior follows.)
+// What it is used for is not known. Here it is treated as the school's administration and specialist-teaching building
+// (INVENTED, as is its name 求实楼): see IMAGINED below. Its three middle fields (cross-sections 11 to 44 of 60, about 98 m)
+// can be entered on all four floors and the roof garden can be reached by the stairs; the rest of the building is solid,
+// with dark rooms drawn behind its windows. A walker who leaves drone mode above it lands on the roof canopy (the collider
+// plate at canopy level also closes the roof openings).
 //
 // DEPTH (the one thing here that does not come straight from the data item)
 // The item is a band 13.7 m deep. Its convex (north) edge is the outer roof edge; its concave edge lies at the inner
@@ -72,9 +76,27 @@
 // - Everything at close range: window frames, drapes and blinds, the dark rooms behind the windows of the parts that
 //   cannot be entered, pipes, stains, the paved apron at the foot of the concave face.
 // - The roof garden's layout (planting is seen, its layout is not): hedged beds along both parapets, a timber walk,
-//   lawn with trees under the openings, a paved promenade with benches, low lights.
+//   lawn with trees under the openings, a paved promenade with benches, low lights; the stair-head pavilion and the lift
+//   overrun on it.
+// - THE WHOLE INTERIOR. Plan: a corridor 2.6 m wide along the concave face, rooms 13.6 m deep behind it with their
+//   windows in the convex face, an entrance hall five bays wide in the middle that is open to the corridor. Hall:
+//   sliding main doors, columns, reception desk before a stone wall with the emblem (the approximation of signs.js),
+//   the school's name and its published motto, a school-history wall with invented captions, show cases, a welcome
+//   screen, a lounge, two lifts (they do not run) and behind them a stair of two flights per storey with windows at
+//   its half landings (hence the stair bay in the convex face). Lobbies above with display boards. Rooms, per floor
+//   from west to east: ground floor meeting room, two offices, toilets | hall | office, raked lecture hall, office;
+//   first floor office, two computer rooms, toilets | lobby | computer room, two art studios (easels round a still
+//   life with plaster casts); second floor office, two music rooms (choir risers, grand piano), toilets | lobby |
+//   drawing studio, two dance studios (mirror wall, barres, piano); third floor meeting room, two offices, toilets |
+//   lobby | office, second raked hall, choir room. Every room name, every piece of furniture, every finish.
+//   Furniture is drawn only from near; desks, chairs, seats and easels are instanced.
 // NOT MODELLED: the green bicycle shelter at the foot of the west end (2018 frames 55-56); the dark green glazed
-// section beside the east end (2018 frame 2); stretches of the roof where the mosaic shows no dark openings.
+// section beside the east end (2018 frame 2); stretches of the roof where the mosaic shows no dark openings; the inside
+// of the two outer fields at either end and of the room behind the toilets; doors and lifts do not move.
+// COLLISION: floors are quads (top and underside), walls and partitions one box for all floors with the doorways left
+// out, flights are inclined boxes, entrance steps are ramps; furniture stops the walker as simple blocks (chairs and
+// small things do not). Stacked collider boxes with coincident faces are avoided (the collision octree degenerates on
+// them): furniture stands 2 cm above the floor quads, parapets start inside the solid below them.
 // Where the round dome building stands in the convex face the wall is left plain (dome.js builds that junction).
 import { THREE } from '../../kit.js';
 import { Batch } from '../../batch.js';
@@ -204,18 +226,17 @@ function materials() {
   const cw = SURFACES.glazing(0x54b8b2, 2, 2, [2.4, 2.4], 13), name = textTexture('求实楼', { color: '#a8231c', spacing: 0.34 });
   const fold = pleats();
   M = {
-    red: pbr('brick', [0xb4513a]),                                                    // the speckled orange-red facing of the frame
+    red: pbr('brick', [0xa85038]),                                                    // the speckled orange-red facing of the frame
     cream: pbr('concrete', [0xe8dcba]),                                               // cream render of the fields
     ctop: pbr('concrete', [0x8f918f]),                                                // canopy top
-    gran: pbr('granitePolished', [0x5c5856, 9]), stone: pbr('paving', [0xa8a39a, 0x9a958c, 2, 2, [1.6, 1.6], 17, false]),
+    gran: pbr('granitePolished', [0x5c5856, 9]),
     pave: pbr('paving', [0xc6bfae, 0xb2aa99, 3, 3, [1.8, 1.8], 23, false]), lawn: pbr('lawn'), hedge: pbr('hedge'),
-    boards: pbr('boards', [0xa98458, 1.2]), timber: pbr('timber'), steel: pbr('steel'),
+    boards: pbr('boards', [0xa98458, 1.2]), steel: pbr('steel'),
     white: P('whitepaint', 0xf1f0ea, 0.7), frame: P('frame', 0xe6e8e4, 0.45, 0.2), ac: P('acunit', 0xe2e2dc, 0.6), grille: P('grille', 0x4b5154, 0.7), pvc: P('pvc', 0xd9d7cf, 0.6),
     dark: P('darkroom', 0x1d2325, 0.95), bronze: P('bronze', 0x3a3632, 0.45, 0.6), soil: P('soil', 0x4b3d2f, 1), doorSteel: P('servicedoor', 0x8b9499, 0.5, 0.4),
     // the same glass seen from outside (it mirrors the sky and glows after dusk: the lighting module goes by the name) and from inside (clear)
     glass: std('glass-ribbon', { map: gz.map, normalMap: gz.normalMap, roughness: 0.05, metalness: 0.55, envMapIntensity: 1.5, transparent: true, opacity: 0.8, depthWrite: false }),
     lite: std('lite-inner', { color: 0xd6e6ea, roughness: 0.08, metalness: 0, transparent: true, opacity: 0.1, depthWrite: false }),
-    gsolid: std('glass-small', { map: gz.map, normalMap: gz.normalMap, roughness: 0.05, metalness: 0.6, envMapIntensity: 1.5 }),
     gdoor: std('glass-door', { color: 0xa9cdd4, roughness: 0.05, metalness: 0.3, transparent: true, opacity: 0.34, depthWrite: false, envMapIntensity: 1.4 }),
     cw: std('curtainwall', { map: cw.map, normalMap: cw.normalMap, roughness: 0.05, metalness: 0.6, envMapIntensity: 1.5 }),
     drape: [std('drape-lilac', { map: fold, color: 0xcfc4da, roughness: 0.95, side: THREE.DoubleSide }), std('drape-pale', { map: fold, color: 0xe9efe3, roughness: 0.95, side: THREE.DoubleSide })],
@@ -225,14 +246,17 @@ function materials() {
     signs: signAtlas('signs', [['广东实验中学 · 求实楼', '#b08d57', '#2a1f14'], ['行政办公 · 艺术 · 信息技术', '#b08d57', '#2a1f14'], ['西门厅'], ['东门厅'], ['西区入口'], ['东区入口'], ['设备用房 · 闲人免进', '#8a2f2b']]),
   };
   Object.assign(M, {                                                                  // interior (IMAGINED)
-    pl: P('plaster', 0xf0ede3, 0.92, 0, { emissive: 0xf0ede3, emissiveIntensity: 0.05 }), ce: P('ceiling', 0xe9e6dc, 0.95, 0, { emissive: 0xe9e6dc, emissiveIntensity: 0.16 }),
+    pl: P('plaster', 0xf0ede3, 0.78, 0, { emissive: 0xf0ede3, emissiveIntensity: 0.05 }), ce: P('ceiling', 0xe9e6dc, 0.95, 0, { emissive: 0xe9e6dc, emissiveIntensity: 0.16 }),
     ftile: pbr('tiles', [0xd9cdb4, 2, 1.2, 0.32], { envMapIntensity: 0.45 }), vinyl: pbr('tiles', [0x9ba7a6, 2, 1.2, 0.5], { envMapIntensity: 0.3 }),
     clad: pbr('cladding', [0xe6e0d2, 1.2, 0.6, 0.45]), liftDoor: P('liftdoor', 0xaeb4b8, 0.3, 0.9),
     tread: P('tread', 0xb7b1a4, 0.7), nosing: P('nosing', 0x3b3b3b, 0.8), dado: P('dado', 0xc3d2c4, 0.5), door: P('doorleaf', 0xb98452, 0.6), dframe: P('doorframe', 0x6f4b31, 0.6),
     sofa: P('sofa', 0x51606b, 0.8), cush: P('cushion', 0x7c8b94, 0.85), rug: P('rug', 0x7a4a3c, 0.95), pot: P('pot', 0xb5653f, 0.85), exit: P('exitsign', 0x1c8a4a, 0.5, 0, { emissive: 0x18c060, emissiveIntensity: 0.9 }),
+    walnut: P('walnut', 0x8a5a34, 0.55), walnutDark: P('walnutdark', 0x5d3c24, 0.55), carpet: P('carpet', 0x56667a, 0.98), cork: P('cork', 0xb08d57, 0.95), cast: P('plastercast', 0xe9e6de, 0.85),
+    flagRed: P('flagred', 0xc8201c, 0.7), board: P('greenboard', 0x24463a, 0.85), cloth: P('cloth', 0xcfd6d2, 0.9), piano: P('pianoblack', 0x0e0e10, 0.14, 0.3), mirror: P('mirror', 0xe6ecee, 0.04, 1),
+    wtile: pbr('tiles', [0xf3f4f0, 3, 0.6, 0.18], { envMapIntensity: 0.5 }), wfloor: pbr('tiles', [0xa9aba6, 4, 0.6, 0.45], { envMapIntensity: 0.4 }),
     gold: P('goldtrim', 0xd8a93a, 0.35, 0.9), deskTop: P('desktop', 0xdcc091, 0.65), cabinet: P('cabinet', 0x8ea2b2, 0.6), black: P('black', 0x1b1d20, 0.5), chairBlue: P('chairblue', 0x2f5f9e, 0.7),
   });
-  for (const k of ['dark', 'white', 'frame', 'ac', 'grille', 'pvc', 'soil', 'bronze', 'doorSteel', 'tread', 'nosing', 'dado', 'door', 'dframe', 'sofa', 'cush', 'rug', 'pot', 'deskTop', 'cabinet', 'black', 'chairBlue']) M[k].userData.flat = true;   // plain paints: merged into one vertex-coloured mesh
+  for (const k of ['dark', 'white', 'frame', 'ac', 'grille', 'pvc', 'soil', 'bronze', 'doorSteel', 'tread', 'nosing', 'dado', 'door', 'dframe', 'sofa', 'cush', 'rug', 'pot', 'deskTop', 'cabinet', 'black', 'chairBlue', 'walnut', 'walnutDark', 'carpet', 'cork', 'cast', 'flagRed', 'board', 'cloth']) M[k].userData.flat = true;   // plain paints: merged into one vertex-coloured mesh
   return M;
 }
 // After dusk the room lights are on: ceilings and walls glow a little (seen through the windows from outside). The page's hemisphere light
@@ -245,27 +269,64 @@ function followDaylight(renderer, scene) {
 }
 // Draw-call saver: the plain-coloured parts marked userData.flat become ONE mesh with vertex colours.
 let flatMat = null;
-function mergeFlat(group, castShadow) {
-  const take = group.children.filter(o => o.isMesh && !o.isInstancedMesh && o.material.userData.flat);
-  if (take.length < 2) return group;
-  let nv = 0, ni = 0; for (const o of take) { nv += o.geometry.attributes.position.count; ni += o.geometry.index.count; }
+const flatMaterial = () => { if (!flatMat) { flatMat = new THREE.MeshStandardMaterial({ vertexColors: true, roughness: 0.48, metalness: 0.02, envMapIntensity: 0.5 }); flatMat.name = 'arc-flat'; } return flatMat; };
+/** One geometry with vertex colours from meshes whose materials are plain colours. */
+function flatGeometry(meshes) {
+  let nv = 0, ni = 0; for (const o of meshes) { nv += o.geometry.attributes.position.count; ni += o.geometry.index.count; }
   const pos = new Float32Array(nv * 3), nor = new Float32Array(nv * 3), col = new Float32Array(nv * 3), idx = new Uint32Array(ni);
   let v0 = 0, i0 = 0;
-  for (const o of take) {
+  for (const o of meshes) {
     const g = o.geometry, n = g.attributes.position.count, c = o.material.color, ix = g.index.array;
     pos.set(g.attributes.position.array, v0 * 3); nor.set(g.attributes.normal.array, v0 * 3);
     for (let i = 0; i < n; i++) { col[(v0 + i) * 3] = c.r; col[(v0 + i) * 3 + 1] = c.g; col[(v0 + i) * 3 + 2] = c.b; }
     for (let i = 0; i < ix.length; i++) idx[i0 + i] = ix[i] + v0;
-    v0 += n; i0 += ix.length; group.remove(o); g.dispose();
+    v0 += n; i0 += ix.length;
   }
   const g = new THREE.BufferGeometry();
   g.setAttribute('position', new THREE.BufferAttribute(pos, 3)); g.setAttribute('normal', new THREE.BufferAttribute(nor, 3)); g.setAttribute('color', new THREE.BufferAttribute(col, 3));
-  g.setIndex(new THREE.BufferAttribute(idx, 1));
-  if (!flatMat) { flatMat = new THREE.MeshStandardMaterial({ vertexColors: true, roughness: 0.72, metalness: 0.03 }); flatMat.name = 'arc-flat'; }
-  const mesh = new THREE.Mesh(g, flatMat); mesh.castShadow = castShadow; mesh.receiveShadow = true; group.add(mesh);
-  return group;
+  g.setIndex(new THREE.BufferAttribute(idx, 1)); return g;
 }
-
+function mergeFlat(group, castShadow) {
+  const take = group.children.filter(o => o.isMesh && !o.isInstancedMesh && o.material.userData.flat);
+  if (take.length < 2) return group;
+  const mesh = new THREE.Mesh(flatGeometry(take), flatMaterial()); mesh.castShadow = castShadow; mesh.receiveShadow = true;
+  for (const o of take) { group.remove(o); o.geometry.dispose(); }
+  group.add(mesh); return group;
+}
+// Furniture that repeats (one instanced mesh per kind and wing). Each piece is modelled facing +x: whoever uses it looks toward +x.
+let PROTO = null;
+function prototypes(m) {
+  if (PROTO) return PROTO;
+  const geo = fn => { const b = new Batch(); fn(b); b.frame(); return flatGeometry(b.build({ castShadow: false }).children); };
+  const chair = (b, x, mm) => {
+    b.box(mm, x, 0.45, 0, 0.42, 0.04, 0.42).box(mm, x - 0.2, 0.72, 0, 0.03, 0.36, 0.4);
+    for (const [dx, dz] of [[-0.18, -0.18], [-0.18, 0.18], [0.18, -0.18], [0.18, 0.18]]) b.box(m.black, x + dx, 0.215, dz, 0.03, 0.43, 0.03, 'UD');
+    b.box(m.black, x - 0.2, 0.5, -0.18, 0.03, 0.14, 0.03, 'UD').box(m.black, x - 0.2, 0.5, 0.18, 0.03, 0.14, 0.03, 'UD');
+  };
+  const stool = (b, x) => { b.cyl(m.walnut, x, 0.45, 0, 0.16, 0.04, 10); for (const a of [0.5, 2.6, 4.7]) b.box(m.black, x + Math.cos(a) * 0.11, 0.225, Math.sin(a) * 0.11, 0.03, 0.45, 0.03, 'UD'); };
+  PROTO = {
+    chair: geo(b => chair(b, 0, m.chairBlue)), stool: geo(b => stool(b, 0)),
+    desk: geo(b => {                                                                    // office desk with a monitor, papers and a swivel chair
+      b.box(m.deskTop, 0, 0.74, 0, 0.7, 0.03, 1.4).box(m.cabinet, 0.33, 0.37, 0, 0.03, 0.72, 1.36, 'UD').box(m.cabinet, 0, 0.37, -0.68, 0.66, 0.72, 0.03, 'UD').box(m.cabinet, 0, 0.37, 0.68, 0.66, 0.72, 0.03, 'UD').box(m.cabinet, 0.05, 0.3, 0.45, 0.5, 0.58, 0.4, 'D');
+      b.box(m.black, 0.2, 0.98, -0.1, 0.03, 0.3, 0.5).box(m.black, 0.22, 0.8, -0.1, 0.06, 0.1, 0.12).box(m.black, -0.05, 0.765, -0.1, 0.14, 0.015, 0.42).box(m.white, 0.05, 0.762, 0.42, 0.21, 0.012, 0.3);
+      b.box(m.black, -0.62, 0.46, -0.1, 0.46, 0.06, 0.46).box(m.black, -0.84, 0.78, -0.1, 0.05, 0.5, 0.42).box(m.black, -0.62, 0.23, -0.1, 0.05, 0.4, 0.05, 'UD').box(m.black, -0.62, 0.04, -0.1, 0.5, 0.04, 0.06).box(m.black, -0.62, 0.04, -0.1, 0.06, 0.04, 0.5);
+    }),
+    pc: geo(b => {                                                                      // computer desk: screen, keyboard, tower, chair
+      b.box(m.deskTop, 0, 0.73, 0, 0.6, 0.03, 1.05).box(m.cabinet, 0, 0.36, -0.51, 0.56, 0.72, 0.025, 'UD').box(m.cabinet, 0, 0.36, 0.51, 0.56, 0.72, 0.025, 'UD').box(m.cabinet, 0.28, 0.45, 0, 0.02, 0.5, 1.0, 'UD');
+      b.box(m.black, 0.15, 0.97, 0, 0.03, 0.3, 0.48).box(m.black, 0.17, 0.79, 0, 0.06, 0.1, 0.12).box(m.black, -0.08, 0.752, 0, 0.14, 0.014, 0.4).box(m.black, 0.05, 0.2, 0.36, 0.4, 0.38, 0.17);
+      chair(b, -0.52, m.chairBlue);
+    }),
+    seat: geo(b => {                                                                    // tip-up seat with a writing tablet
+      b.box(m.chairBlue, 0, 0.43, 0, 0.44, 0.07, 0.48).box(m.chairBlue, -0.24, 0.72, 0, 0.07, 0.52, 0.48).box(m.black, -0.02, 0.33, -0.26, 0.5, 0.62, 0.04).box(m.black, -0.02, 0.33, 0.26, 0.5, 0.62, 0.04).box(m.deskTop, 0.22, 0.68, 0.17, 0.26, 0.02, 0.3);
+    }),
+    easel: geo(b => {                                                                   // easel with a sheet on a board, and the pupil's stool
+      for (const [a, c2] of [[[0.15, 0, -0.3], [-0.02, 1.75, -0.06]], [[0.15, 0, 0.3], [-0.02, 1.75, 0.06]], [[0.62, 0, 0], [-0.02, 1.7, 0]]]) b.strut(m.walnut, a, c2, 0.035);
+      b.frame(); b.box(m.walnut, 0.08, 0.72, 0, 0.06, 0.03, 0.66).box(m.cloth, 0.05, 1.14, 0, 0.02, 0.8, 0.6).box(m.white, 0.036, 1.14, 0, 0.006, 0.7, 0.5).box(m.cabinet, 0.031, 1.12, 0.02, 0.004, 0.36, 0.26);
+      stool(b, -0.6);
+    }),
+  };
+  return PROTO;
+}
 export function build(item, ctx) {
   const H = item.height, m = materials(), rnd = rng(20221), low = !!ctx.lowPower;
   const { NB, bay, I, O, W, X } = layout(item), PW = bay / PANES;
@@ -308,6 +369,7 @@ export function build(item, ctx) {
 
   const v = new Batch(), ex = new Batch(), c = new Batch();                          // always drawn; fine exterior fittings (near only); colliders
   const world = (A, B, x, z) => { const t = unit(sub(B, A)); return [A[0] + t[0] * x - t[1] * z, A[1] + t[1] * x + t[0] * z]; };   // local (x, z) of along(A, B) in world coordinates
+  const yards = [];                                                                  // outlines of what is built outside the item's band (handed to ctx.occupy: the grounds keep trees and lamps off them)
 
   // ---------- parts shared by the faces (all in the current frame of v: x along the face, +z outward) ----------
   // Ribbon window on storey k between x0 and x1; zf: the outer face of the wall. Glass set back in an aluminium frame; behind it
@@ -373,9 +435,9 @@ export function build(item, ctx) {
       .quad('generic', [x1, GF, zb], [x1 + s, 0, zb + s], [x1 + s, 0, z0], [x1, GF, z0]);
     const cy = head[0] + (main ? 0.42 : 0.24), ct = main ? 0.42 : 0.2, cz = main ? 4.6 : 2.1, xa = x0 - 0.25, xb = x1 + 0.25;
     v.slab(m.white, xa, cy, 0, xb - xa, ct, cz, 'N');                                                                                     // canopy slab with a steel edge
-    v.slab(m.steel, xa - 0.02, cy + ct - 0.06, -0.0, xb - xa + 0.04, 0.08, cz + 0.02, 'ND');
+    v.slab(m.steel, xa - 0.02, cy + ct - 0.07, cz, xb - xa + 0.04, 0.09, 0.025, 'N').slab(m.steel, xa - 0.025, cy + ct - 0.07, 0, 0.025, 0.09, cz, 'E').slab(m.steel, xb, cy + ct - 0.07, 0, 0.025, 0.09, cz, 'W');
     if (main) {
-      v.slab(m.timber, xa + 0.3, cy - 0.03, 0.3, xb - xa - 0.6, 0.03, cz - 0.6, 'U');                                                     // timber soffit
+      v.slab(m.boards, xa + 0.3, cy - 0.03, 0.3, xb - xa - 0.6, 0.03, cz - 0.6, 'U');                                                     // timber soffit
       for (const x of [x0 + 0.45, Lc / 3, 2 * Lc / 3, x1 - 0.45]) {                                                                       // steel columns on granite bases
         v.cyl(m.gran, x, GF, zb - 0.6, 0.3, 0.5, 20).cyl(m.steel, x, GF + 0.5, zb - 0.6, 0.2, cy - GF - 0.5, 20, false); c.slab('generic', x - 0.25, GF, zb - 0.85, 0.5, 3, 0.5);
       }
@@ -391,11 +453,12 @@ export function build(item, ctx) {
       for (const x of [xa + 0.12, xb - 0.12]) { v.cyl(m.steel, x, GF, cz - 0.14, 0.05, cy - GF, 10, false); c.slab('generic', x - 0.1, GF, cz - 0.24, 0.2, 3, 0.2); }   // slim posts
       const [r0, r1] = m.signs.row(row); uvq(v, m.signs.material, [Lc / 2 - 0.8, cy + 0.0, cz + 0.012], [Lc / 2 + 0.8, cy, cz + 0.012], [Lc / 2 + 0.8, cy + 0.2, cz + 0.012], [Lc / 2 - 0.8, cy + 0.2, cz + 0.012], 0, r0, 1, r1);
     }
-    for (const f of main ? [0.2, 0.5, 0.8] : [0.5]) { v.slab(m.lamp, Lc * f - 0.25, cy - 0.035, cz * 0.45, 0.5, 0.03, 0.18, 'U'); LIT.push([...world(A, B, Lc * f, cz * 0.6), main ? 5 : 3.5]); }
+    along(ex, A, B); for (const f of main ? [0.2, 0.5, 0.8] : [0.5]) { ex.slab(m.lamp, Lc * f - 0.25, cy - 0.035, cz * 0.45, 0.5, 0.03, 0.18, 'U'); LIT.push([...world(A, B, Lc * f, cz * 0.6), main ? 5 : 3.5]); }
     for (const sx of main ? [-1, 1] : []) {                                                                                               // planters with clipped shrubs beside the steps
-      const px = sx < 0 ? x0 - 2.6 : x1 + 1.4; v.slab(m.stone, px, 0, z0 + 0.3, 1.2, 0.6, 1.2, 'D').slab(m.hedge, px + 0.1, 0.6, z0 + 0.4, 1.0, 0.55, 1.0, 'D'); c.slab('generic', px, 0, z0 + 0.3, 1.2, 1.2, 1.2);
+      const px = sx < 0 ? x0 - 2.6 : x1 + 1.4; v.slab(m.pave, px, 0, z0 + 0.3, 1.2, 0.6, 1.2, 'D').slab(m.hedge, px + 0.1, 0.6, z0 + 0.4, 1.0, 0.55, 1.0, 'D'); c.slab('generic', px, 0, z0 + 0.3, 1.2, 1.2, 1.2);
     }
     v.slab(m.pave, x0 - 2.2, 0, z0 + 1.67, x1 - x0 + 4.4, 0.07, main ? 10 : 4.2, 'D');                                                     // paved forecourt
+    { const e2 = main ? 3.4 : 2.4, ze = z0 + 1.67 + (main ? 10 : 4.2) + 0.3; yards.push([world(A, B, x0 - e2, 0), world(A, B, x1 + e2, 0), world(A, B, x1 + e2, ze), world(A, B, x0 - e2, ze)]); }
   };
 
   // ---------- concave (south) face ----------
@@ -467,6 +530,7 @@ export function build(item, ctx) {
         y = yb;
       }
       piece(o, y, L, head[3] - y); v.slab(m.red, o, head[3], -T, L, parapet - head[3], T, 'EW').slab(m.pl, o, head[3], -T - 0.012, L, deck + PH - head[3], 0.012, 'EWSUD');
+      v.slab(m.cream, o - 0.25, GF, -T, 0.5, head[3] - GF, T + 0.06, 'N');                       // pier on the joint with the next bay
       continue;
     }
     const wall = j < jfo ? m.red : m.cream, svc = service.includes(j);                         // red behind the glass box, under the tilted roof (2018 frames 43, 53, 67)
@@ -489,7 +553,8 @@ export function build(item, ctx) {
         v.slab(wall, o, GF, -T, xd - o, hh, T, 'N').slab(wall, xd + 1.7, GF, -T, x1 - xd - 1.7, hh, T, 'N').slab(wall, xd, GF + 2.2, -T, 1.7, hh - 2.2, T, 'N');
         v.slab(m.doorSteel, xd, GF, -0.2, 1.7, 2.2, 0.05, 'N').slab(m.grille, xd + 0.84, GF, -0.15, 0.02, 2.2, 0.01, 'N').slab(m.steel, xd + 0.7, GF + 0.95, -0.15, 0.04, 0.22, 0.05).slab(m.steel, xd + 0.96, GF + 0.95, -0.15, 0.04, 0.22, 0.05);
         for (let i = 0; i < 3; i++) v.slab(m.gran, xd - 0.3 - (2 - i) * 0.3, i * 0.15, 0.05, 2.3 + (2 - i) * 0.6, 0.15, 1.0 + (2 - i) * 0.3, 'DN');
-        v.slab(m.white, xd - 0.4, GF + 2.45, 0, 2.5, 0.14, 1.3, 'N').slab(m.lamp, xd + 0.6, GF + 2.42, 0.5, 0.5, 0.03, 0.16, 'U'); LIT.push([...world(O[j + 1], O[j], xd - o + 0.85, 0.9), 3.5]);
+        v.slab(m.white, xd - 0.4, GF + 2.45, 0, 2.5, 0.14, 1.3, 'N'); ex.slab(m.lamp, xd + 0.6, GF + 2.42, 0.5, 0.5, 0.03, 0.16, 'U'); LIT.push([...world(O[j + 1], O[j], xd - o + 0.85, 0.9), 3.5]);
+        yards.push([world(O[j + 1], O[j], xd - o - 1.2, 0), world(O[j + 1], O[j], xd - o + 2.9, 0), world(O[j + 1], O[j], xd - o + 2.9, 2.4), world(O[j + 1], O[j], xd - o - 1.2, 2.4)]);
         const [r0, r1] = m.signs.row(6); uvq(v, m.signs.material, [xd + 0.25, GF + 2.27, 0.012], [xd + 1.45, GF + 2.27, 0.012], [xd + 1.45, GF + 2.42, 0.012], [xd + 0.25, GF + 2.42, 0.012], 0, r0, 1, r1);
         along(c, O[j + 1], O[j]); c.quad('generic', [xd - o - 0.3, GF, 0.05], [xd - o - 0.3, GF, 1.05], [xd - o + 2.0, GF, 1.05], [xd - o + 2.0, GF, 0.05]).quad('generic', [xd - o - 0.3, GF, 1.05], [xd - o - 0.9, 0, 1.95], [xd - o + 2.6, 0, 1.95], [xd - o + 2.0, GF, 1.05]);
         continue;
@@ -512,7 +577,7 @@ export function build(item, ctx) {
     v.slab(m.cream, px, 1.0, PROUD, pw, deck - 2.4, 0.05, 'N');
     for (const k of [1, 2]) for (const f of [0.14, 0.44, 0.74]) {
       const x = px + f * pw;
-      uvq(v, m.gsolid, [x, sill[k], PROUD + 0.07], [x + 1.0, sill[k], PROUD + 0.07], [x + 1.0, sill[k] + 1.0, PROUD + 0.07], [x, sill[k] + 1.0, PROUD + 0.07], 0, 0, 1, 1);
+      uvq(v, m.glass, [x, sill[k], PROUD + 0.07], [x + 1.0, sill[k], PROUD + 0.07], [x + 1.0, sill[k] + 1.0, PROUD + 0.07], [x, sill[k] + 1.0, PROUD + 0.07], 0, 0, 2, 1); v.slab(m.dark, x, sill[k], PROUD + 0.05, 1.0, 1.0, 0.01, 'N');
       v.slab(m.white, x - 0.06, sill[k] - 0.07, PROUD + 0.05, 1.12, 0.07, 0.14, 'N').slab(m.frame, x - 0.04, sill[k], PROUD + 0.05, 0.04, 1.04, 0.06, 'N').slab(m.frame, x + 1.0, sill[k], PROUD + 0.05, 0.04, 1.04, 0.06, 'N')
         .slab(m.frame, x, sill[k] + 1.0, PROUD + 0.05, 1.0, 0.04, 0.06, 'N').slab(m.frame, x + 0.48, sill[k], PROUD + 0.06, 0.04, 1.0, 0.03, 'N');
       stain(x + 0.1, sill[k] - 0.07, PROUD + 0.062, 0.8, 0.6 + rnd() * 0.5);
@@ -582,7 +647,7 @@ export function build(item, ctx) {
     // very tall slender columns from the ground to the tilted roof (collide), and shorter posts on the convex parapet
     const cols = [add(I[0], mul(q, 0.55), mul(e, -0.55)), add(O[0], mul(e, -(GX + 0.45)), mul(q, 0.6)), add(O[0], mul(e, 0.65), mul(q, 0.6)), add(O[0], mul(e, 5.4), mul(q, 1.2))];
     for (const j of [2, 4, 6]) if (j < jfo) cols.push(pt(j, W[j] + ovOut(j) - 0.7));
-    for (const p of cols) { v.cyl(m.white, p[0], 0, p[1], 0.3, top(p) - WTH, 14, false).cyl(m.gran, p[0], 0, p[1], 0.38, 0.35, 14); c.box('generic', p[0], 3, p[1], 0.6, 6, 0.6); }
+    for (const p of cols) { v.cyl(m.white, p[0], 0, p[1], 0.3, top(p) - WTH, 14, false).cyl(m.gran, p[0], 0, p[1], 0.38, 0.35, 14); c.box('generic', p[0], 3, p[1], 0.6, 6, 0.6); yards.push([[p[0] - 0.8, p[1] - 0.8], [p[0] + 0.8, p[1] - 0.8], [p[0] + 0.8, p[1] + 0.8], [p[0] - 0.8, p[1] + 0.8]]); }
     for (let j = jfi + 3; j < jfo; j += 3) { const p = pt(j, W[j] - 0.1); v.box(m.white, p[0], (parapet + top(p) - WTH) / 2, p[1], 0.45, top(p) - WTH - parapet, 0.45); }
   }
 
@@ -623,7 +688,7 @@ export function build(item, ctx) {
   }
 
   // ================= INTERIOR (IMAGINED). The shell is always drawn; fittings and furniture only from near =================
-  const hb = new Batch(), wings = [new Batch(), new Batch()], wingOf = j => wings[j < jMain ? 0 : 1];
+  const hb = new Batch(), wings = [new Batch(), new Batch()], wingOf = j => wings[j < jMain ? 0 : 1], lists = [{}, {}];   // lists: instanced furniture of each wing, by kind
   // frame at station s: +x east along the building, +z toward the concave side, so a point d metres in from the concave face is (u, y, -d)
   const sec = (b, s, d, y) => { const p = at(s, d), j = Math.max(0, Math.min(NB - 1, Math.floor(s))), xs = unit(mix(X[j], X[j + 1], s - j)); b.frame(p[0], p[1], Math.atan2(-xs[0], -xs[1]), y); };
   let HM = null;                                                                     // the hall's frame (on its axis, at the concave face, y = 0)
@@ -684,7 +749,7 @@ export function build(item, ctx) {
       .slab(m.white, -SW - 0.8, deck + PH, -WB - T - 0.35, 10.2, 0.18, WB + T + 0.35 - DL + 0.9).slab(m.doorSteel, 4.4, deck, -LIFT + 0.0, 1.0, 2.0, 0.03, 'N').slab(m.grille, 4.5, deck + 1.2, -LIFT + 0.03, 0.8, 0.6, 0.01, 'N');
     { const zz = -(WB + 0.2), ya = parapet + 0.09, yb = deck + PH;                     // glass over the parapet at the back of the pavilion
       uvq(v, m.glass, [SW + 0.1, ya, zz], [-SW - 0.1, ya, zz], [-SW - 0.1, yb, zz], [SW + 0.1, yb, zz], 0, 0, 3, 1); uvq(v, m.lite, [-SW - 0.1, ya, zz + 0.012], [SW + 0.1, ya, zz + 0.012], [SW + 0.1, yb, zz + 0.012], [-SW - 0.1, yb, zz + 0.012]); }
-    for (const u of [-4.55, -1.53, 1.53, 4.55]) { v.cyl(m.clad, u, GF, -4.9, 0.3, deck - 0.15 - GF, 18, false); c.slab('generic', u - 0.3, GF + 0.02, -5.2, 0.6, deck - 0.3 - GF, 0.6); }   // columns of the hall
+    for (const u of [-4.55, -1.53, 1.53, 4.55]) { v.cyl(m.pl, u, GF, -4.9, 0.25, deck - 0.15 - GF, 18, false); c.slab('generic', u - 0.25, GF + 0.02, -5.15, 0.5, deck - 0.3 - GF, 0.5); }   // columns of the hall
     c.slab('generic', SW + 0.1, GF, -WB, 0.2, deck + PH - GF, WB - DL).slab('generic', -SW - 0.3, GF, -WB, 0.2, deck + PH - GF, WB - DL)                   // stair walls
       .slab('generic', SW + 0.32, GF, -WB - T, 6.4, deck + PH - GF, WB + T - LIFT)                                                                         // lift shafts and overrun
       .slab('generic', -0.1, GF, -(DL + RUN), 0.2, deck + 1.2 - GF, RUN - 0.02)                                                                            // the well between the flights
@@ -784,7 +849,7 @@ export function build(item, ctx) {
         if (back === 'N') R(m.sofa, u, 0.42, d + sd - 0.22, su, 0.44, 0.22, 'D'); else if (back === 'S') R(m.sofa, u, 0.42, d, su, 0.44, 0.22, 'D'); else if (back === 'W') R(m.sofa, u, 0.42, d, 0.22, 0.44, sd, 'D'); else R(m.sofa, u + su - 0.22, 0.42, d, 0.22, 0.44, sd, 'D');
       };
       const plant = (u, d, h = 1.5) => hb.cyl(m.pot, u, 0, -d, 0.24, 0.42, 12).cyl(m.hedge, u, 0.42, -d, 0.36, h * 0.45, 10).cyl(m.hedge, u, 0.42 + h * 0.45, -d, 0.24, h * 0.3, 10);
-      for (const u of [-4.55, -1.53, 1.53, 4.55]) hb.cyl(m.gran, u, 0, -4.9, 0.34, 0.14, 18);                   // column bases
+      for (const u of [-4.55, -1.53, 1.53, 4.55]) hb.cyl(m.gran, u, 0, -4.9, 0.29, 0.14, 18);                   // column bases
       for (const u of [-6, -3, 0, 3, 6]) for (const d of [1.6, 6.6, 10.4]) R(m.lamp, u - 0.3, hgt - 0.03, d - 0.3, 0.6, 0.03, 0.6, 'U');   // ceiling lights
       // lifts: stone-clad wall, two doors with indicators, call buttons, a riser door
       R(m.clad, SW + 0.32, 0, LIFT - 0.03, 6.3, hgt, 0.03, 'N');
@@ -795,11 +860,11 @@ export function build(item, ctx) {
       R(m.steel, 4.12, 0.95, LIFT - 0.045, 0.16, 0.32, 0.015, 'N'); R(m.lamp, 4.175, 1.14, LIFT - 0.05, 0.05, 0.05, 0.005, 'N'); R(m.lamp, 4.175, 1.03, LIFT - 0.05, 0.05, 0.05, 0.005, 'N');
       R(m.doorSteel, 6.75, 0, LIFT - 0.05, 0.8, 2.05, 0.02, 'N'); plate(hb, '管道井', 6.9, 1.6, -(LIFT - 0.052), 0.5, 0.125);
       // lounge beside the stair, under the north windows
-      R(m.rug, -6.7, 0.004, 12.9, 4.4, 0.012, 3.2, 'D'); sofa(-6.4, 15.5, 3.4, 0.9, 'N'); sofa(-6.9, 13.2, 0.9, 2.0, 'W'); R(m.timber, -5.4, 0, 13.6, 1.5, 0.4, 0.8, 'D'); plant(-2.4, 16.1, 1.7); plant(-7.0, 16.0, 1.3);
+      R(m.rug, -6.7, 0.004, 12.9, 4.4, 0.012, 3.2, 'D'); sofa(-6.4, 15.5, 3.4, 0.9, 'N'); sofa(-6.9, 13.2, 0.9, 2.0, 'W'); R(m.walnut, -5.4, 0, 13.6, 1.5, 0.4, 0.8, 'D'); plant(-2.4, 16.1, 1.7); plant(-7.0, 16.0, 1.3);
       if (k === 0) {
         R(m.black, -1.2, 0.003, 0.6, 2.4, 0.012, 1.3, 'D');                           // door mat
         // reception desk and the wall behind it
-        R(m.timber, -2.4, 0, 6.2, 4.8, 1.08, 0.12, 'D'); R(m.gran, -2.46, 1.08, 6.14, 4.92, 0.04, 0.44, ''); R(m.white, -2.3, 0.72, 6.5, 4.6, 0.04, 0.6, 'D'); R(m.timber, -2.4, 0, 6.32, 0.1, 1.08, 0.78, 'D'); R(m.timber, 2.3, 0, 6.32, 0.1, 1.08, 0.78, 'D');
+        R(m.walnut, -2.4, 0, 6.2, 4.8, 1.08, 0.12, 'D'); for (let i = 1; i < 8; i++) R(m.walnutDark, -2.4 + i * 0.6, 0.04, 6.194, 0.02, 1.0, 0.008, 'N'); R(m.gran, -2.46, 1.08, 6.14, 4.92, 0.04, 0.44, ''); R(m.white, -2.3, 0.72, 6.5, 4.6, 0.04, 0.6, 'D'); R(m.walnut, -2.4, 0, 6.32, 0.1, 1.08, 0.78, 'D'); R(m.walnut, 2.3, 0, 6.32, 0.1, 1.08, 0.78, 'D');
         R(m.black, 0.5, 0.78, 6.75, 0.5, 0.32, 0.03); R(m.black, 0.7, 0.76, 6.72, 0.1, 0.04, 0.1); R(m.black, -1.3, 0.76, 6.6, 0.22, 0.07, 0.2); R(m.chairBlue, -0.25, 0.42, 7.35, 0.5, 0.06, 0.5); R(m.chairBlue, -0.25, 0.48, 7.8, 0.5, 0.5, 0.06); R(m.black, -0.03, 0, 7.57, 0.06, 0.42, 0.06);
         plate(hb, '接待 · 问询', -0.6, 0.45, -6.195, 1.2, 0.15);
         R(m.clad, -3.5, 0, 8.4, 7.0, 3.0, 0.3, 'D');
@@ -811,8 +876,8 @@ export function build(item, ctx) {
         R(m.door, -SW + 0.1, 0, DL - 0.02, 0.85, 2.0, 0.03, 'N'); plate(hb, '储藏室', -SW + 0.3, 1.55, -(DL - 0.025), 0.45, 0.11);                         // the closed door under the stair
         // west wall: the school-history wall over a low cabinet with three show cases
         along(hb, pt(HA, 3.7), pt(HA, 12.1), F[0]);
-        uvq(hb, hist, [0.2, 0.95, 0.125], [8.2, 0.95, 0.125], [8.2, 2.95, 0.125], [0.2, 2.95, 0.125]); hb.slab(m.timber, 0.1, 0.87, 0.1, 8.2, 0.08, 0.05, 'N').slab(m.timber, 0.1, 2.95, 0.1, 8.2, 0.08, 0.05, 'N');
-        hb.slab(m.timber, 1.0, 0, 0.1, 6.4, 0.8, 0.5, 'DN'); for (let i = 0; i < 3; i++) { hb.slab(m.gdoor, 1.3 + i * 2.1, 0.8, 0.14, 1.6, 0.45, 0.42, 'D'); hb.cyl(m.gold, 1.7 + i * 2.1, 0.8, 0.35, 0.07, 0.26, 10).cyl(m.gold, 2.2 + i * 2.1, 0.8, 0.35, 0.1, 0.16, 10).box(m.gold, 2.6 + i * 2.1, 0.88, 0.35, 0.16, 0.16, 0.1); }
+        uvq(hb, hist, [0.2, 0.95, 0.125], [8.2, 0.95, 0.125], [8.2, 2.95, 0.125], [0.2, 2.95, 0.125]); hb.slab(m.walnut, 0.1, 0.87, 0.1, 8.2, 0.08, 0.05, 'N').slab(m.walnut, 0.1, 2.95, 0.1, 8.2, 0.08, 0.05, 'N');
+        hb.slab(m.walnut, 1.0, 0, 0.1, 6.4, 0.8, 0.5, 'DN'); for (let i = 0; i < 3; i++) { hb.slab(m.gdoor, 1.3 + i * 2.1, 0.8, 0.14, 1.6, 0.45, 0.42, 'D'); hb.cyl(m.gold, 1.7 + i * 2.1, 0.8, 0.35, 0.07, 0.26, 10).cyl(m.gold, 2.2 + i * 2.1, 0.8, 0.35, 0.1, 0.16, 10).box(m.gold, 2.6 + i * 2.1, 0.88, 0.35, 0.16, 0.16, 0.1); }
         for (let i = 0; i < 5; i++) hb.slab(m.lamp, 0.9 + i * 1.7, hgt - 0.05, 0.5, 0.12, 0.05, 0.12, 'U');
         // east wall: a welcome screen over a long bench
         along(hb, pt(HB, 11.6), pt(HB, 4.2), F[0]);
@@ -825,9 +890,173 @@ export function build(item, ctx) {
           const u = -5.6 + i * 2.9; R(m.steel, u, 0, 7.4, 0.06, 2.0, 0.06); R(m.steel, u + 2.34, 0, 7.4, 0.06, 2.0, 0.06); R(m.white, u + 0.06, 0.5, 7.41, 2.28, 1.5, 0.04, 'D');
           for (let q = 0; q < 2; q++) { poster(hb, (k * 3 + i * 2 + q) % 8, u + 0.16 + q * 1.1, 0.72, -7.409, 0.96, 1.2); poster(hb, (k * 5 + i + q + 3) % 8, u + 0.16 + q * 1.1, 0.72, -7.451, 0.96, 1.2, true); }
         }
-        for (const u of [-6.4, 4.2]) { R(m.timber, u, 0.4, 0.75, 2.2, 0.06, 0.5); R(m.steel, u + 0.1, 0, 0.8, 0.06, 0.4, 0.4); R(m.steel, u + 2.04, 0, 0.8, 0.06, 0.4, 0.4); }
+        for (const u of [-6.4, 4.2]) { R(m.walnut, u, 0.4, 0.75, 2.2, 0.06, 0.5); R(m.steel, u + 0.1, 0, 0.8, 0.06, 0.4, 0.4); R(m.steel, u + 2.04, 0, 0.8, 0.06, 0.4, 0.4); }
         plant(-3.2, 5.2, 1.6); plant(3.2, 5.2, 1.6); plant(7.0, 11.6, 1.4);
       }
+    }
+    // ---- rooms: furniture (near only; repeated pieces are instanced). Each room is built in its own frame on its centre line: ----
+    // u metres east of that line, r metres into the room from the corridor wall, heights from its floor.
+    const cardX = (b, mm, west, u, y, r0, r1, h, u0 = 0, v0 = 0, u1 = 1, v1 = 1) => {     // upright card on a wall that runs along the depth, facing west (on an east wall) or east
+      const zN = -(RD + r1), zS = -(RD + r0);
+      if (west) uvq(b, mm, [u, y, zN], [u, y, zS], [u, y + h, zS], [u, y + h, zN], u0, v0, u1, v1); else uvq(b, mm, [u, y, zS], [u, y, zN], [u, y + h, zN], [u, y + h, zS], u0, v0, u1, v1);
+    };
+    const posterX = (b, i, west, u, y, r0, w, h) => cardX(b, posters, west, u, y, r0, r0 + w, h, (i % 4) / 4, i % 8 < 4 ? 0.5 : 0, (i % 4) / 4 + 0.25, (i % 8 < 4 ? 0.5 : 0) + 0.5);
+    const spines = cardMat('spines', 256, 32, (g, Wc, Hc) => { const r = rng(606); let x = 0; while (x < Wc) { const w = 4 + r() * 7; g.fillStyle = ['#2f5f9e', '#b8322a', '#3d8a55', '#d9a520', '#e9e2cf', '#6b4e8a', '#2a8a96', '#30343a'][Math.floor(r() * 8)]; g.fillRect(x, 0, w - 1, Hc); g.fillStyle = 'rgba(255,255,255,0.7)'; g.fillRect(x + 1, Hc * 0.2, w - 3, Hc * 0.22); x += w; } });
+    spines.map.wrapS = THREE.RepeatWrapping;
+    const staves = cardMat('staves', 512, 128, (g, Wc, Hc) => {                           // a ruled music board with a few notes
+      const r = rng(88); g.fillStyle = '#24463a'; g.fillRect(0, 0, Wc, Hc); g.strokeStyle = 'rgba(255,255,255,0.75)'; g.lineWidth = 1.2; g.fillStyle = 'rgba(255,255,255,0.85)';
+      for (let s2 = 0; s2 < 2; s2++) { const y0 = 22 + s2 * 58; for (let i = 0; i < 5; i++) { g.beginPath(); g.moveTo(14, y0 + i * 7); g.lineTo(Wc - 14, y0 + i * 7); g.stroke(); }
+        for (let i = 0; i < 16; i++) { const x = 40 + i * 28 + r() * 8, y = y0 + Math.floor(r() * 9) * 3.5; g.beginPath(); g.ellipse(x, y, 4.2, 3, -0.4, 0, 6.3); g.fill(); g.beginPath(); g.moveTo(x + 4, y); g.lineTo(x + 4, y - 20); g.stroke(); } }
+    });
+    const lightsOf = (R, hw, hgt, nu, nr, dep) => { for (let i = 0; i < nu; i++) for (let q = 0; q < nr; q++) R(m.lamp, -hw + (i + 0.5) * 2 * hw / nu - 0.6, hgt - 0.03, (q + 0.5) * dep / nr - 0.15, 1.2, 0.03, 0.3, 'U'); };
+    const acOf = (R, u, r, hgt) => { R(m.white, u - 0.42, hgt - 0.05, r - 0.42, 0.84, 0.05, 0.84, 'U'); R(m.grille, u - 0.3, hgt - 0.056, r - 0.3, 0.6, 0.006, 0.6, 'U'); };
+    const plantOf = (C, u, r, h = 1.4) => { C(m.pot, u, 0, r, 0.22, 0.4); C(m.hedge, u, 0.4, r, 0.34, h * 0.45, 10); C(m.hedge, u, 0.4 + h * 0.45, r, 0.22, h * 0.3, 10); };
+    const sofaOf = (R, u, r, su, sr, back) => {
+      R(m.sofa, u, 0.08, r, su, 0.34, sr, 'D'); R(m.cush, u + 0.05, 0.42, r + 0.05, su - 0.1, 0.07, sr - 0.1, 'D');
+      if (back === 'N') R(m.sofa, u, 0.42, r + sr - 0.22, su, 0.44, 0.22, 'D'); else if (back === 'S') R(m.sofa, u, 0.42, r, su, 0.44, 0.22, 'D'); else if (back === 'W') R(m.sofa, u, 0.42, r, 0.22, 0.44, sr, 'D'); else R(m.sofa, u + su - 0.22, 0.42, r, 0.22, 0.44, sr, 'D');
+    };
+    const boardOf = (R, mm, hw, r0, len, y = 0.95, h = 1.25) => {                         // a board on the east wall in an aluminium frame with a tray
+      R(mm, hw - 0.035, y, r0, 0.03, h, len, 'E'); R(m.frame, hw - 0.05, y - 0.04, r0 - 0.04, 0.045, 0.04, len + 0.08, 'E'); R(m.frame, hw - 0.05, y + h, r0 - 0.04, 0.045, 0.04, len + 0.08, 'E'); R(m.frame, hw - 0.12, y - 0.06, r0, 0.12, 0.02, len, 'E');
+    };
+    const ROOM = {
+      office({ R, C, put, hit, hw, dep, hgt, b, seed }) {                                  // open office: three groups of four desks, filing cabinets, a round table, a sofa, shelves
+        const uc = -hw * 0.36, ue = hw - 2.3;
+        lightsOf(R, hw, hgt, 3, 4, dep); acOf(R, -hw / 2, dep * 0.3, hgt); acOf(R, hw / 2, dep * 0.68, hgt);
+        for (const cr of [3.3, 7.1, 10.9]) {
+          for (const dr of [-0.71, 0.71]) { put('desk', uc - 0.36, cr + dr, 0); put('desk', uc + 0.36, cr + dr, Math.PI); }
+          R(m.cabinet, uc - 0.02, 0.74, cr - 1.42, 0.04, 0.42, 2.84, 'D'); hit(uc - 1.25, 0, cr - 1.45, 2.5, 1.15, 2.9);
+        }
+        const cl = Math.floor((dep - 4.6) / 0.9) * 0.9;
+        R(m.cabinet, -hw + 0.02, 0, 2.3, 0.45, 1.95, cl, 'DW'); for (let i = 1; i < cl / 0.9 - 0.01; i++) R(m.black, -hw + 0.47, 0.05, 2.3 + i * 0.9 - 0.004, 0.004, 1.85, 0.008, 'W'); hit(-hw + 0.02, 0, 2.3, 0.45, 1.95, cl);
+        C(m.deskTop, ue, 0.72, 3.6, 0.65, 0.04, 20); C(m.black, ue, 0, 3.6, 0.06, 0.72, 8); C(m.black, ue, 0, 3.6, 0.3, 0.03, 12); hit(ue - 0.7, 0, 2.9, 1.4, 0.8, 1.4);
+        for (let i = 0; i < 4; i++) { const a = i * Math.PI / 2 + 0.6; put('chair', ue - Math.cos(a) * 0.95, 3.6 - Math.sin(a) * 0.95, a); }
+        R(m.walnut, hw - 0.42, 0, 5.6, 0.4, 2.0, 2.7, 'DE'); hit(hw - 0.42, 0, 5.6, 0.4, 2.0, 2.7);
+        for (let i = 0; i < 5; i++) cardX(b, spines, true, hw - 0.425, 0.1 + i * 0.38, 5.68, 8.22, 0.3, (i + seed) * 0.37, 0, (i + seed) * 0.37 + 1.06, 1);
+        sofaOf(R, hw - 1.0, 9.3, 0.9, 2.3, 'E'); R(m.walnut, hw - 2.3, 0, 9.9, 0.7, 0.4, 1.1, 'D'); hit(hw - 2.3, 0, 9.3, 2.2, 0.8, 2.3);
+        R(m.cork, -1.4, 1.15, 0.0, 2.8, 1.0, 0.02, 'S'); for (let i = 0; i < 5; i++) R(i % 2 ? m.white : m.cloth, -1.2 + i * 0.52, 1.3 + (i % 3) * 0.12, 0.02, 0.3, 0.4, 0.004, 'S');   // pin board on the corridor wall
+        R(m.white, hw - 0.5, 0, 1.6, 0.36, 0.95, 0.36, 'D'); C(m.chairBlue, hw - 0.32, 0.95, 1.78, 0.13, 0.32, 10); plantOf(C, hw - 0.5, dep - 0.6); plantOf(C, -hw + 0.5, dep - 0.6, 1.2);
+      },
+      meeting({ R, C, put, hit, hw, dep, hgt }) {                                          // long table, chairs both sides, a screen and two flags at its head
+        const r0 = 3.2, len = dep - 6.2, n = Math.floor(len / 0.78);
+        lightsOf(R, hw, hgt, 3, 4, dep); acOf(R, -hw / 2, dep * 0.3, hgt); acOf(R, hw / 2, dep * 0.68, hgt);
+        R(m.carpet, -hw + 0.4, 0.003, 1.2, 2 * hw - 0.8, 0.012, dep - 2.2, 'D');
+        R(m.walnut, -1.05, 0.72, r0, 2.1, 0.05, len); R(m.walnutDark, -0.75, 0, r0 + 0.4, 1.5, 0.72, len - 0.8, 'UD'); hit(-1.05, 0, r0, 2.1, 0.8, len);
+        for (let i = 0; i < n; i++) { const r = r0 + (i + 0.5) * len / n; put('chair', -1.5, r, 0); put('chair', 1.5, r, Math.PI); if (i % 2) R(m.white, (i % 4 === 1 ? -0.7 : 0.4), 0.772, r - 0.1, 0.21, 0.006, 0.3); }
+        put('chair', -0.45, r0 + len + 0.45, -Math.PI / 2); put('chair', 0.45, r0 + len + 0.45, -Math.PI / 2);
+        R(m.black, -1.8, 0.95, 0.01, 3.6, 2.0, 0.05, 'S'); R(m.frame, -1.86, 0.89, 0.0, 3.72, 2.12, 0.03, 'S');
+        for (const [u, mm] of [[-2.5, m.flagRed], [2.5, m.chairBlue]]) { C(m.gold, u, 0, 0.4, 0.02, 2.3, 6); C(m.gold, u, 0, 0.4, 0.16, 0.04, 10); R(mm, u + 0.02, 1.62, 0.39, 0.55, 0.62, 0.015); }
+        R(m.walnut, hw - 0.5, 0, 3.0, 0.48, 0.82, 5.0, 'DE'); hit(hw - 0.5, 0, 3.0, 0.48, 0.82, 5.0); for (let i = 0; i < 4; i++) C(m.white, hw - 0.28, 0.82, 3.5 + i * 0.35, 0.04, 0.09, 8);
+        for (let i = 0; i < 8; i++) put('chair', -hw + 0.4, 3.2 + i * 0.85, 0); plantOf(C, hw - 0.5, dep - 0.6); plantOf(C, -hw + 0.5, dep - 0.6); plantOf(C, hw - 0.5, 1.2, 1.2);
+      },
+      lecture({ R, C, put, hit, hw, dep, hgt, quad2 }) {                                   // a small raked hall: stage, lectern, screen; seven rows of tip-up seats on six low tiers
+        const uT = hw - 5.4, TH = 0.12, NR = 6, uB = uT - NR * 0.95, top = NR * TH;
+        lightsOf(R, hw, hgt, 4, 4, dep);
+        R(m.walnut, hw - 3.0, 0, 1.6, 3.0, 0.3, dep - 3.2, 'DE'); hit(hw - 3.0, -0.03, 1.6, 3.0, 0.3, dep - 3.2);
+        R(m.walnutDark, hw - 2.5, 0.3, 2.6, 0.6, 1.1, 0.55, 'D'); R(m.white, hw - 0.04, 1.3, dep / 2 - 2.3, 0.03, 2.3, 4.6, 'E'); R(m.black, hw - 0.05, 1.24, dep / 2 - 2.36, 0.02, 2.42, 4.72, 'E');
+        for (const s2 of [-1, 1]) { R(m.board, hw - 0.04, 1.2, dep / 2 + s2 * 3.9 - 0.9, 0.03, 1.2, 1.8, 'E'); R(m.black, hw - 0.4, hgt - 0.9, dep / 2 + s2 * 5.2 - 0.15, 0.3, 0.5, 0.3); }
+        R(m.white, hw - 5.0, hgt - 0.36, dep / 2 - 0.2, 0.4, 0.14, 0.4); R(m.black, hw - 4.83, hgt - 0.22, dep / 2 - 0.03, 0.06, 0.22, 0.06);
+        for (let i = 1; i <= NR; i++) R(m.carpet, uT - i * 0.95, 0, 1.5, 0.95, i * TH, dep - 1.6, 'DW');
+        R(m.carpet, -hw + 0.1, 0, 1.5, uB + hw - 0.1, top, dep - 1.6, 'D'); R(m.walnut, -hw + 0.1, 0, 1.4, uB + hw - 0.1, top + 0.45, 0.08, 'D'); hit(-hw + 0.1, 0, 1.38, uB + hw - 0.1, top + 0.45, 0.1);
+        for (let i = 2; i <= NR; i++) { R(m.walnut, uT - i * 0.95, 0, 1.4, 0.95, i * TH + 0.45, 0.08, 'D'); hit(uT - i * 0.95, 0, 1.38, 0.95, i * TH + 0.45, 0.1); }
+        for (let i = 0; i <= NR; i++) { const u = uT + 0.475 - i * 0.95; for (let q = 0; q < 18; q++) put('seat', u, 2.2 + (q < 9 ? q * 0.56 : 1.3 + q * 0.56), 0, i * TH); for (const r0 of [1.95, 8.25]) hit(u - 0.3, i * TH + 0.06, r0, 0.55, 0.95, 5.05); }
+        quad2([uT, 0, 1.5], [uT, 0, dep - 0.1], [uB, top, dep - 0.1], [uB, top, 1.5]); quad2([uB, top, 1.5], [uB, top, dep - 0.1], [-hw + 0.1, top, dep - 0.1], [-hw + 0.1, top, 1.5]);   // the tiers as one ramp, and the level behind the last row
+        R(m.walnutDark, -hw + 0.5, top, 5.2, 0.8, 0.95, 2.4, 'D'); hit(-hw + 0.5, top, 5.2, 0.8, 0.95, 2.4); R(m.black, -hw + 0.6, top + 0.95, 5.5, 0.5, 0.06, 0.7);
+      },
+      computer({ R, C, put, hit, hw, dep, hgt, b, seed }) {                                // five rows of eight computers facing a whiteboard, a teacher's desk, a server rack
+        lightsOf(R, hw, hgt, 3, 4, dep); acOf(R, -hw / 2, dep * 0.3, hgt); acOf(R, hw / 2, dep * 0.68, hgt);
+        boardOf(R, m.white, hw, dep / 2 - 2.0, 4.0); put('desk', hw - 1.7, dep / 2 + 0.2, Math.PI); hit(hw - 2.1, 0, dep / 2 - 0.55, 1.1, 1.1, 1.5);
+        for (let i = 0; i < 5; i++) { const u = hw - 3.8 - i * 1.6; for (const r0 of [1.9, 7.5]) { for (let q = 0; q < 4; q++) put('pc', u, r0 + 0.52 + q * 1.05, 0); hit(u - 0.8, 0, r0, 1.15, 1.1, 4.2); } }
+        R(m.black, -hw + 0.08, 0, dep - 1.3, 0.65, 2.0, 0.8, 'D'); R(m.grille, -hw + 0.735, 0.1, dep - 1.25, 0.004, 1.8, 0.7, 'W'); hit(-hw + 0.08, 0, dep - 1.3, 0.65, 2.0, 0.8);
+        for (let i = 0; i < 3; i++) posterX(b, seed + i, false, -hw + 0.012, 1.25, 2.6 + i * 2.6, 0.9, 1.15);
+        R(m.cabinet, hw - 0.5, 0, 1.4, 0.45, 0.9, 1.6, 'DE'); R(m.white, hw - 0.48, 0.9, 1.6, 0.4, 0.3, 0.5); hit(hw - 0.5, 0, 1.4, 0.45, 1.2, 1.6);
+      },
+      art({ R, C, put, hit, hw, dep, hgt, b, seed }) {                                     // easels in a horseshoe round a still life with plaster casts; shelves of casts, a sink, pupils' work
+        const cr = 6.4;
+        lightsOf(R, hw, hgt, 3, 4, dep);
+        R(m.cloth, -0.8, 0, cr - 0.6, 1.6, 0.76, 1.2, 'D'); hit(-0.8, 0, cr - 0.6, 1.6, 0.9, 1.2);
+        C(m.cast, -0.35, 0.76, cr - 0.1, 0.16, 0.12, 12); C(m.cast, -0.35, 0.88, cr - 0.1, 0.22, 0.12, 14); C(m.cast, -0.35, 1.0, cr - 0.1, 0.07, 0.1, 10); C(m.cast, -0.35, 1.1, cr - 0.1, 0.115, 0.2, 14); C(m.cast, -0.35, 1.3, cr - 0.1, 0.08, 0.05, 12);   // a bust
+        R(m.cast, 0.1, 0.76, cr - 0.4, 0.26, 0.26, 0.26); C(m.cast, 0.45, 0.76, cr + 0.25, 0.1, 0.34, 14); C(m.pot, -0.05, 0.76, cr + 0.3, 0.09, 0.22, 12); C(m.pot, -0.05, 0.98, cr + 0.3, 0.05, 0.1, 10);
+        for (const u of [-0.5, 0, 0.5]) { R(m.black, u - 0.03, hgt - 0.3, cr - 0.03, 0.06, 0.3, 0.06); C(m.lamp, u, hgt - 0.34, cr, 0.07, 0.04, 10); }
+        for (let i = 0; i < 13; i++) { const a = (-150 + i * 25) * Math.PI / 180 + Math.PI / 2, u = Math.cos(a) * 3.3, r = cr + Math.sin(a) * 3.3; if (r > 1.8 && r < dep - 1) put('easel', u, r, a + Math.PI); }
+        R(m.walnut, -hw + 0.02, 0, 2.4, 0.04, 2.0, 7.2, 'DW'); hit(-hw + 0.02, 0, 2.4, 0.42, 2.0, 7.2); for (let q = 0; q <= 4; q++) R(m.walnut, -hw + 0.06, 0, 2.4 + q * 1.79, 0.38, 2.0, 0.04, 'DW');
+        for (let i = 0; i < 5; i++) { R(m.walnut, -hw + 0.06, 0.36 + i * 0.42 - (i === 4 ? 0.08 : 0), 2.44, 0.38, 0.03, 7.12, 'W'); if (i === 4) continue; for (let q = 0; q < 6; q++) { const r = 2.8 + q * 1.15 + (i % 2) * 0.4; if ((i + q) % 3) C(m.cast, -hw + 0.24, 0.41 + i * 0.42, r, 0.09 + 0.03 * ((i + q) % 2), 0.2 + 0.06 * (q % 3), 10); else R(m.cast, -hw + 0.12, 0.41 + i * 0.42, r - 0.1, 0.22, 0.24, 0.22); } }
+        R(m.white, hw - 0.62, 0, 1.8, 0.6, 0.86, 1.5, 'DE'); R(m.grille, hw - 0.54, 0.862, 2.0, 0.44, 0.004, 1.1, 'D'); R(m.wtile, hw - 0.03, 0.86, 1.7, 0.02, 0.7, 1.7, 'E'); R(m.steel, hw - 0.1, 0.86, 2.5, 0.03, 0.28, 0.03); hit(hw - 0.62, 0, 1.8, 0.6, 0.9, 1.5);
+        for (let i = 0; i < 6; i++) posterX(b, seed + i * 3, true, hw - 0.012, 1.15 + (i % 2) * 0.05, 4.2 + i * 1.3, 1.0, 1.2);
+        for (const u of [-2.6, 1.0]) { R(m.deskTop, u, 0.72, dep - 1.9, 1.7, 0.04, 0.9); for (const [x, z] of [[0.05, 0.05], [1.6, 0.05], [0.05, 0.8], [1.6, 0.8]]) R(m.black, u + x, 0, dep - 1.9 + z, 0.05, 0.72, 0.05, 'UD'); R(m.white, u + 0.3, 0.762, dep - 1.7, 0.6, 0.004, 0.42); hit(u, 0, dep - 1.9, 1.7, 0.8, 0.9); put('stool', u + 0.5, dep - 2.3, 0); put('stool', u + 1.2, dep - 2.3, 0); }
+      },
+      music({ R, C, put, hit, hw, dep, hgt, b, quad2, FM }) {                                  // choir risers, a grand piano, a ruled board, music stands, two zithers
+        lightsOf(R, hw, hgt, 3, 4, dep);
+        for (let j2 = 0; j2 < 3; j2++) R(m.walnut, -hw + 0.1, j2 * 0.2, 2.0, (3 - j2) * 1.1, 0.2, dep - 4.0, 'D');
+        for (let j2 = 0; j2 < 3; j2++) { const u = -hw + 0.65 + j2 * 1.1; for (let q = 0; q < 12; q++) put('chair', u, 2.5 + q * 0.8, 0, 0.6 - j2 * 0.2); hit(u - 0.3, 0.6 - j2 * 0.2 + 0.05, 2.2, 0.5, 0.9, dep - 4.4); }
+        quad2([-hw + 3.4, 0, 2.0], [-hw + 3.4, 0, dep - 2.0], [-hw + 0.1, 0.6, dep - 2.0], [-hw + 0.1, 0.6, 2.0]);
+        const pu = hw - 3.6, pr = 3.0;                                                    // grand piano: case, lid on its prop, keys, legs, a bench
+        R(m.piano, pu, 0.62, pr, 1.55, 0.3, 1.5); R(m.piano, pu + 0.25, 0.62, pr + 1.5, 1.05, 0.3, 0.95); R(m.white, pu - 0.14, 0.7, pr + 0.1, 0.15, 0.03, 1.3); R(m.piano, pu - 0.16, 0.6, pr, 0.2, 0.1, 1.5);
+        b.setMatrix(FM.clone().multiply(new THREE.Matrix4().makeRotationZ(-0.42).setPosition(pu + 1.53, 0.935, -(RD + pr + 1.2)))); b.box(m.piano, -0.75, 0, 0, 1.5, 0.03, 2.3); b.setMatrix(FM);
+        R(m.black, pu + 0.62, 0.92, pr + 0.5, 0.02, 0.4, 0.02, 'UD');
+        for (const [x, z] of [[0.15, 0.15], [0.15, 1.3], [1.0, 2.2]]) R(m.piano, pu + x, 0, pr + z, 0.09, 0.62, 0.09, 'UD'); R(m.black, pu - 0.75, 0.46, pr + 0.35, 0.36, 0.06, 0.8); R(m.black, pu - 0.7, 0, pr + 0.4, 0.26, 0.46, 0.7, 'UD'); hit(pu - 0.8, 0, pr, 2.4, 1.0, 2.5);
+        cardX(b, staves, true, hw - 0.04, 0.95, dep / 2 - 0.3, dep / 2 + 3.9, 1.2); R(m.frame, hw - 0.05, 0.9, dep / 2 - 0.35, 0.04, 1.3, 4.3, 'E');
+        for (let i = 0; i < 6; i++) { const u = -hw + 4.4 + (i % 2) * 0.5, r = 3.2 + i * 1.5; R(m.black, u, 0, r, 0.025, 1.1, 0.025, 'UD'); R(m.black, u - 0.02, 1.05, r - 0.2, 0.03, 0.3, 0.42); R(m.black, u - 0.15, 0, r - 0.15, 0.32, 0.02, 0.32); }
+        for (const r of [dep - 2.6, dep - 1.6]) { R(m.walnut, 0.4, 0.62, r, 1.65, 0.1, 0.36); R(m.walnutDark, 0.5, 0, r + 0.08, 0.06, 0.62, 0.2, 'UD'); R(m.walnutDark, 1.85, 0, r + 0.08, 0.06, 0.62, 0.2, 'UD'); for (let q = 0; q < 7; q++) R(m.white, 0.5 + q * 0.2, 0.722, r + 0.02, 0.012, 0.012, 0.32); }
+        hit(0.4, 0, dep - 2.6, 1.65, 0.8, 1.4);
+        R(m.walnut, -hw + 3.6, 0.9, 0.0, 2 * hw - 5.2, 1.7, 0.03, 'S'); for (let i = 0; i < 2 * (2 * hw - 5.2) / 0.3 - 1; i++) R(m.walnutDark, -hw + 3.7 + i * 0.15, 0.9, 0.03, 0.05, 1.7, 0.03, 'S');   // slatted acoustic lining on the corridor wall
+        for (const r of [0.6, dep - 0.9]) R(m.black, hw - 0.36, hgt - 0.75, r, 0.3, 0.5, 0.3);
+      },
+      dance({ R, C, put, hit, hw, dep, hgt }) {                                            // mirrors along one wall, barres, a piano, benches and pigeon-holes
+        lightsOf(R, hw, hgt, 4, 4, dep);
+        R(m.mirror, -hw + 0.02, 0.12, 0.6, 0.015, 2.2, dep - 1.2, 'W'); for (let r = 0.6; r < dep - 0.5; r += 1.25) R(m.frame, -hw + 0.03, 0.12, r - 0.01, 0.012, 2.2, 0.02, 'W'); R(m.frame, -hw + 0.03, 2.32, 0.6, 0.012, 0.03, dep - 1.2, 'W');
+        for (const y of [0.88, 1.12]) R(m.walnut, -hw + 0.3, y, 1.0, 0.045, 0.045, dep - 2.0); for (let r = 1.2; r < dep - 1; r += 1.6) { R(m.steel, -hw + 0.04, 0.86, r, 0.3, 0.03, 0.03); R(m.steel, -hw + 0.31, 0, r, 0.03, 1.14, 0.03, 'UD'); }
+        hit(-hw + 0.04, 0, 1.0, 0.34, 1.2, dep - 2.0);
+        for (const y of [0.88, 1.12]) R(m.walnut, -hw + 1.6, y, dep - 0.42, 2 * hw - 3.2, 0.045, 0.045); for (let u = -hw + 1.8; u < hw - 1.6; u += 1.7) R(m.steel, u, 0, dep - 0.415, 0.03, 1.14, 0.03, 'UD');
+        hit(-hw + 1.6, 0, dep - 0.45, 2 * hw - 3.2, 1.2, 0.12);
+        for (const [u, r] of [[-1.5, 5.2], [1.6, 8.4]]) { for (const y of [0.9, 1.1]) R(m.walnut, u, y, r, 2.2, 0.045, 0.045); for (const x of [0.05, 2.12]) { R(m.steel, u + x, 0, r + 0.008, 0.03, 1.12, 0.03, 'UD'); R(m.steel, u + x - 0.2, 0, r - 0.2, 0.43, 0.03, 0.45); } hit(u, 0, r - 0.1, 2.2, 1.15, 0.25); }
+        const pu = hw - 0.72, pr = 5.0;                                                   // upright piano on the east wall
+        R(m.piano, pu, 0, pr, 0.62, 1.22, 1.5, 'D'); R(m.piano, pu - 0.28, 0.6, pr, 0.3, 0.12, 1.5); R(m.white, pu - 0.26, 0.722, pr + 0.08, 0.14, 0.012, 1.34); R(m.black, pu - 0.75, 0.46, pr + 0.4, 0.34, 0.06, 0.7); R(m.black, pu - 0.7, 0, pr + 0.45, 0.24, 0.46, 0.6, 'UD'); hit(pu - 0.8, 0, pr, 1.4, 1.2, 1.5);
+        R(m.walnut, hw - 0.42, 0, 8.0, 0.4, 1.3, 3.6, 'DE'); for (let i = 1; i < 3; i++) R(m.walnutDark, hw - 0.43, i * 0.43, 8.0, 0.012, 0.02, 3.6, 'E'); for (let q = 1; q < 9; q++) R(m.walnutDark, hw - 0.43, 0, 8.0 + q * 0.4, 0.012, 1.3, 0.02, 'E'); hit(hw - 0.42, 0, 8.0, 0.4, 1.3, 3.6);
+        R(m.walnut, hw - 0.5, 0.4, 1.8, 0.45, 0.05, 2.6); R(m.steel, hw - 0.45, 0, 1.9, 0.35, 0.4, 0.05, 'UD'); R(m.steel, hw - 0.45, 0, 4.25, 0.35, 0.4, 0.05, 'UD'); hit(hw - 0.5, 0, 1.8, 0.45, 0.5, 2.6);
+        R(m.black, hw - 0.5, 0, 12.0, 0.45, 1.0, 0.6, 'D'); for (const r of [0.8, dep - 1.0]) R(m.black, hw - 0.36, hgt - 0.75, r, 0.3, 0.5, 0.3);
+        for (let i = 0; i < 5; i++) C([m.chairBlue, m.flagRed, m.cloth, m.sofa, m.dado][i], hw - 0.35 - (i % 2) * 0.22, 0, 12.8 + Math.floor(i / 2) * 0.22, 0.09, 0.65, 10);
+      },
+      wc({ R, C, hit, hw, dep, hgt, male }) {                                              // tiled toilet: screen wall, basins under a mirror, cubicles, urinals
+        R(m.wfloor, -hw, 0.002, 0, 2 * hw, 0.01, dep, 'D'); R(m.wtile, -hw, 0, 0, 0.012, 2.1, dep, 'W'); R(m.wtile, hw - 0.012, 0, 0, 0.012, 2.1, dep, 'E'); R(m.wtile, -hw, 0, dep - 0.012, 2 * hw, 2.1, 0.012, 'N');
+        R(m.lamp, -0.3, hgt - 0.03, 2.4, 0.6, 0.03, 0.6, 'U'); R(m.lamp, -0.3, hgt - 0.03, 6.0, 0.6, 0.03, 0.6, 'U');
+        R(m.wtile, -hw, 0, 1.3, hw + 0.45, 2.1, 0.09); hit(-hw, 0, 1.3, hw + 0.45, 2.1, 0.09);
+        R(m.gran, -hw + 0.012, 0.78, 2.0, 0.55, 0.06, 2.3); R(m.white, -hw + 0.03, 0.2, 2.05, 0.5, 0.58, 2.2, 'UD'); for (const r of [2.55, 3.65]) { C(m.white, -hw + 0.3, 0.8, r, 0.19, 0.045, 14); C(m.grille, -hw + 0.3, 0.846, r, 0.15, 0.002, 14); R(m.steel, -hw + 0.06, 0.84, r - 0.015, 0.03, 0.16, 0.03); R(m.steel, -hw + 0.06, 0.97, r - 0.015, 0.14, 0.03, 0.03); }
+        R(m.mirror, -hw + 0.014, 1.1, 2.1, 0.01, 0.9, 2.1, 'W'); hit(-hw + 0.012, 0, 2.0, 0.55, 0.9, 2.3);
+        for (let i = 0; i < 4; i++) { const r = 4.5 + i * 0.86; R(m.cabinet, hw - 1.42, 0.15, r, 1.4, 1.85, 0.03); R(m.cabinet, hw - 1.42, 0.15, r + 0.06, 0.03, 1.85, 0.62); R(m.white, hw - 0.75, 0, r + 0.2, 0.55, 0.38, 0.4, 'D'); R(m.white, hw - 0.28, 0.38, r + 0.2, 0.16, 0.4, 0.4); }
+        R(m.cabinet, hw - 1.42, 0.15, 4.5 + 4 * 0.86, 1.4, 1.85, 0.03); hit(hw - 1.42, 0, 4.5, 1.4, 2.0, 3.5);
+        if (male) for (let i = 0; i < 3; i++) { R(m.white, -hw + 0.014, 0.42, 4.8 + i * 0.9, 0.3, 0.7, 0.4); R(m.steel, -hw + 0.1, 1.12, 4.97 + i * 0.9, 0.05, 0.14, 0.05); R(m.cabinet, -hw + 0.014, 0.5, 5.4 + i * 0.9, 0.4, 0.9, 0.025); }
+        else { R(m.walnut, -hw + 0.014, 0.42, 5.0, 0.36, 0.05, 1.6); R(m.white, -hw + 0.02, 1.3, 7.0, 0.22, 0.28, 0.3); }
+      },
+    };
+    const M4 = (FM, u, y, r, rot) => FM.clone().multiply(new THREE.Matrix4().makeRotationY(rot).setPosition(u, y, -(RD + r)));
+    for (const s of SLOTS) for (let k = 0; k < 4; k++) {
+      const kind = PROGRAM[k][s.i][0], w = s.a < jMain ? 0 : 1, b = wings[w], hgt = ceilY(k) - F[k];
+      for (const [ja, jb] of kind === 'wc' ? [[s.a, s.a + 1], [s.a + 1, s.b]] : [[s.a, s.b]]) {
+        const sm = (ja + jb) / 2, hw = (dist(pt(ja, RD), pt(jb, RD)) - 0.24) / 2, dep = kind === 'wc' ? 8.0 : W[Math.floor(sm)] - T - RD - 0.05;
+        sec(b, sm, 0, F[k]); const FM = b.m.clone(); sec(c, sm, 0, F[k]);
+        ROOM[kind]({
+          hw, dep, hgt, b, FM, male: ja === s.a && kind === 'wc', seed: s.i * 7 + k * 3,
+          R: (mm, u, y, r, su, sy, sr, skip) => b.slab(mm, u, y, -(RD + r + sr), su, sy, sr, skip),
+          C: (mm, u, y, r, rad, h, seg = 12) => b.cyl(mm, u, y, -(RD + r), rad, h, seg),
+          put: (type, u, r, rot = 0, y = 0) => (lists[w][type] ||= []).push(M4(FM, u, y, r, rot)),
+          hit: (u, y, r, su, sy, sr) => c.slab('generic', u, y + 0.02, -(RD + r + sr), su, sy, sr),
+          quad2: (p0, p1, p2, p3) => c.quad('generic', ...[p0, p1, p2, p3].map(q => [q[0], q[1], -(RD + q[2])])),
+        });
+        b.setMatrix(FM);
+      }
+    }
+    // ---- corridor fittings: dado, posters, benches under the windows ----
+    for (let j = JA; j < JB; j++) {
+      if (inHall(j)) continue;
+      const b = wingOf(j), Lw = dist(pt(j, DCW), pt(j + 1, DCW)), op = doorAt(j, Lw), s = slotOf(j);
+      for (let k = 0; k < 4; k++) {
+        const kind = PROGRAM[k][s.i][0];
+        along(b, pt(j, DCW), pt(j + 1, DCW), F[k]);
+        if (op === null) b.slab(m.dado, 0, 0, 0.1, Lw, 1.1, 0.006, 'N'); else b.slab(m.dado, 0, 0, 0.1, op - 0.05, 1.1, 0.006, 'N').slab(m.dado, op + 1.05, 0, 0.1, Lw - op - 1.05, 1.1, 0.006, 'N');
+        if (op === null && !GLAZED.has(kind)) for (let q = 0; q < 2; q++) { poster(b, (j * 3 + k * 5 + q) % 8, Lw / 2 - 1.0 + q * 1.05, 1.3, 0.106, 0.95, 1.2); b.slab(m.frame, Lw / 2 - 1.03 + q * 1.05, 1.27, 0.1, 1.01, 1.26, 0.004, 'N'); }
+        if (j % 4 === 1) { along(b, I[j], I[j + 1], F[k]); b.slab(m.walnut, 0.5, 0.4, -T - 0.52, 1.9, 0.05, 0.42).slab(m.steel, 0.6, 0, -T - 0.48, 0.05, 0.4, 0.34, 'UD').slab(m.steel, 2.25, 0, -T - 0.48, 0.05, 0.4, 0.34, 'UD'); }
+      }
+      if (j % 4 === 1) { along(c, I[j], I[j + 1]); c.slab('generic', 0.5, GF + 0.02, -T - 0.54, 1.9, deck - 0.3 - GF, 0.44); }
     }
     // furniture of the hall that stops the walker (ground floor), and of every lobby
     c.setMatrix(HM);
@@ -848,12 +1077,13 @@ export function build(item, ctx) {
     v.frame(0, 0, 0); strip(m.boards, j, T, G2); strip(m.lawn, j, G2, G3);
     if (pav) strip(m.pave, j, G3, j === jMain ? DL : LIFT); else { strip(m.pave, j, G3, G4); strip(m.lawn, j, G4, wn + 1.0); }
     let L = along(v, I[j], I[j + 1], deck, j * bay);                                             // bed along the concave parapet: stone kerb, clipped hedge (the round columns rise out of it)
-    v.slab(m.stone, j * bay, 0, -G1, L, 0.4, 0.1, 'DEW').slab(m.hedge, j * bay, 0.3, -G1 + 0.12, L, 0.6, G1 - 0.12 - T - 0.08, 'DEW');
-    for (const d of pav ? [G2, G3] : [G2, G3, G4]) { L = along(v, pt(j, d), pt(j + 1, d), deck); v.slab(m.stone, 0, 0, -0.06, L, 0.1, 0.12, 'DEW'); }   // kerbs between the surfaces
+    v.slab(m.pave, j * bay, 0, -G1, L, 0.4, 0.1, 'DEW').slab(m.hedge, j * bay, 0.3, -G1 + 0.12, L, 0.6, G1 - 0.12 - T - 0.08, 'DEW');
+    for (const d of pav ? [G2, G3] : [G2, G3, G4]) { L = along(v, pt(j, d), pt(j + 1, d), deck); v.slab(m.pave, 0, 0, -0.06, L, 0.1, 0.12, 'DEW'); }   // kerbs between the surfaces
+    if (!low && j % 4 !== 2) for (const d of [G2 + 0.12, G3 - 0.12]) { L = along(ex, pt(j, d), pt(j + 1, d), deck); ex.slab(m.steel, 0, 0.44, -0.018, L, 0.036, 0.036, 'EW'); for (const x of [0.03, L / 2]) ex.slab(m.steel, x - 0.015, 0.08, -0.015, 0.03, 0.36, 0.03, 'UD'); }   // low rails round the lawn, open every fourth bay
     along(c, I[j], I[j + 1], deck); c.slab('generic', 0, 0.02, -G1, bay, 1.0, G1 - T - 0.02);    // the beds stop the walker
     if (pav) continue;
     L = along(v, O[j + 1], O[j], deck, offN[j + 1]);                                             // bed along the convex parapet
-    v.slab(m.stone, offN[j + 1], 0, -T - 1.0, L, 0.4, 0.1, 'DEW').slab(m.hedge, offN[j + 1], 0.3, -T - 0.9, L, 0.5, 0.82, 'DEW');
+    v.slab(m.pave, offN[j + 1], 0, -T - 1.0, L, 0.4, 0.1, 'DEW').slab(m.hedge, offN[j + 1], 0.3, -T - 0.9, L, 0.5, 0.82, 'DEW');
     along(c, O[j + 1], O[j], deck); c.slab('generic', 0, 0.02, -T - 1.0, L, 1.0, 0.98);
     // planting: a tree under each roof opening, small trees and shrubs on the lawns, flowers along the promenade
     const clear = p => !nearDrum(p, drum ? drum.radius * 0.66 + 1.6 : 0);
@@ -867,17 +1097,17 @@ export function build(item, ctx) {
   // benches on the promenade (timber slats on stone blocks), a planter box beside each, low lights along the lawn
   for (const j of seats) {
     sec(v, j + 0.5, G4 - 0.55, deck); sec(c, j + 0.5, G4 - 0.55, deck);
-    for (const sx of [-0.8, 0.8]) v.box(m.stone, sx, 0.22, 0, 0.16, 0.4, 0.44);
-    for (let i = 0; i < 4; i++) v.box(m.timber, 0, 0.445, -0.18 + i * 0.12, 2.0, 0.045, 0.1);
-    for (let i = 0; i < 2; i++) v.box(m.timber, 0, 0.62 + i * 0.14, -0.27 - i * 0.03, 2.0, 0.1, 0.035);
+    for (const sx of [-0.8, 0.8]) v.box(m.pave, sx, 0.22, 0, 0.16, 0.4, 0.44);
+    for (let i = 0; i < 4; i++) v.box(m.boards, 0, 0.445, -0.18 + i * 0.12, 2.0, 0.045, 0.1);
+    for (let i = 0; i < 2; i++) v.box(m.boards, 0, 0.62 + i * 0.14, -0.27 - i * 0.03, 2.0, 0.1, 0.035);
     v.box(m.steel, -0.8, 0.6, -0.26, 0.04, 0.42, 0.04).box(m.steel, 0.8, 0.6, -0.26, 0.04, 0.42, 0.04);
     c.box('generic', 0, 0.35, -0.05, 2.0, 0.66, 0.5);
-    v.box(m.stone, 1.75, 0.3, -0.05, 0.9, 0.56, 0.9).box(m.soil, 1.75, 0.57, -0.05, 0.7, 0.04, 0.7, 'D'); c.box('generic', 1.75, 0.5, -0.05, 0.9, 0.96, 0.9);
+    v.box(m.pave, 1.75, 0.3, -0.05, 0.9, 0.56, 0.9).box(m.soil, 1.75, 0.57, -0.05, 0.7, 0.04, 0.7, 'D'); c.box('generic', 1.75, 0.5, -0.05, 0.9, 0.96, 0.9);
     const pb = at(j + 0.5 + 1.75 / bay, G4 - 0.5); bushes.push([pb[0], pb[1], 0.5, 0.56]);
-    sec(v, j + 0.5, G3 + 0.3, deck); v.cyl(m.bronze, -1.2, 0, 0, 0.05, 0.62, 8).cyl(m.lamp, -1.2, 0.62, 0, 0.065, 0.14, 8).cyl(m.bronze, -1.2, 0.76, 0, 0.08, 0.03, 8);
+    sec(v, j + 0.5, G3 + 0.3, deck); sec(ex, j + 0.5, G3 + 0.3, deck); ex.cyl(m.lamp, -1.2, 0.62, 0, 0.065, 0.14, 8); v.cyl(m.bronze, -1.2, 0, 0, 0.05, 0.62, 8).cyl(m.bronze, -1.2, 0.76, 0, 0.08, 0.03, 8);
   }
   // a hedge across the garden where the recessed west end begins
-  { const L = along(v, O[0], I[0], deck); v.slab(m.stone, T, 0, -GD - 0.75, L - 2 * T, 0.4, 0.75, 'D').slab(m.hedge, T + 0.1, 0.4, -GD - 0.65, L - 2 * T - 0.2, 0.55, 0.55, 'D'); along(c, O[0], I[0], deck); c.slab('generic', T, 0.02, -GD - 0.75, L - 2 * T, 1.0, 0.7); }
+  { const L = along(v, O[0], I[0], deck); v.slab(m.pave, T, 0, -GD - 0.75, L - 2 * T, 0.4, 0.75, 'D').slab(m.hedge, T + 0.1, 0.4, -GD - 0.65, L - 2 * T - 0.2, 0.55, 0.55, 'D'); along(c, O[0], I[0], deck); c.slab('generic', T, 0.02, -GD - 0.75, L - 2 * T, 1.0, 0.7); }
 
   // ---------- colliders ----------
   c.frame(0, 0, 0);
@@ -907,19 +1137,36 @@ export function build(item, ctx) {
   along(c, O[0], I[0]);                                                                         // the west end follows its recess
   c.slab('generic', -0.1, 0, -GD, GX + 0.2, parapet, GD + 0.1).slab('generic', GX, 0, -GD, W0 - GX + PROUD, parapet, GD - RECESS).slab('generic', W0 - T, 0, -RECESS, T + PROUD, parapet, RECESS);
 
+  // ---------- what stands outside the item's band: the 3.3 m of building beyond its concave edge with the apron, porches and forecourts, service steps, the tall west columns ----------
+  if (ctx.occupy) {
+    const front = []; for (let j = 0; j <= NB; j++) front.push(pt(j, -2.0)); for (let j = NB; j >= 0; j--) front.push(pt(j, EXT + 0.5));
+    ctx.occupy(front); for (const o of yards) ctx.occupy(o);
+  }
+
   // ---------- assemble ----------
   const mid = at(NB / 2, 8.5);
   const vis = ctx.add(mergeFlat(v.build({ name: item.id + '-visual' }), true));
   if (INSIDE) {
     for (const o of vis.children) if (o.material === m.ce) { o.onBeforeRender = followDaylight; o.frustumCulled = false; }
-    const hc = at(sH, 8.5); ctx.detail(ctx.add(mergeFlat(hb.build({ name: item.id + '-hall', castShadow: false }), false)), hc[0], hc[1], 62);
-    wings.forEach((b, i) => { const p = at(i ? (HB + JB) / 2 : (JA + HA) / 2, 8.5); ctx.detail(ctx.add(mergeFlat(b.build({ name: item.id + (i ? '-east' : '-west'), castShadow: false }), false)), p[0], p[1], 68); });
+    const hc = at(sH, 8.5); ctx.detail(ctx.add(mergeFlat(hb.build({ name: item.id + '-hall', castShadow: false }), false)), hc[0], hc[1], 52);
+    const proto = prototypes(m);
+    wings.forEach((b, i) => {
+      const p = at(i ? (HB + JB) / 2 : (JA + HA) / 2, 8.5), g = mergeFlat(b.build({ name: item.id + (i ? '-east' : '-west'), castShadow: false }), false);
+      for (const [kind, list] of Object.entries(lists[i])) {                                  // the repeated furniture
+        const im = new THREE.InstancedMesh(proto[kind], flatMaterial(), list.length); list.forEach((mx, q) => im.setMatrixAt(q, mx));
+        im.name = item.id + '-' + kind; im.receiveShadow = true; im.computeBoundingSphere(); g.add(im);
+      }
+      ctx.detail(ctx.add(g), p[0], p[1], 50);
+    });
   }
   ctx.detail(ctx.add(mergeFlat(ex.build({ name: item.id + '-fittings', castShadow: false }), false)), mid[0], mid[1], 170);
   const trees = broadleafTrees(big, { seed: 23, low: true }); ctx.add(trees.group);
   c.frame(0, 0, 0); for (const [x, z] of big) c.box('generic', x, deck + 1.22, z, 0.44, 2.4, 0.44);
-  const ground = bushes.filter(b => !b[3]), raised = bushes.filter(b => b[3]);
-  for (const [list, y] of [[ground, deck], [raised, deck + 0.56]]) if (list.length) { const sh = shrubs(list.map(([x, z, r]) => [x, z, r]), { seed: 31 }); sh.position.y = y; ctx.add(sh); }
+  if (bushes.length) {                                                                          // one instanced mesh; the shrubs in the planter boxes are lifted onto them
+    const sh = shrubs(bushes.map(([x, z, r]) => [x, z, r]), { seed: 31 }), M4 = new THREE.Matrix4(); sh.position.y = deck;
+    bushes.forEach((q, i) => { if (q[3]) { sh.getMatrixAt(i, M4); M4.elements[13] += q[3]; sh.setMatrixAt(i, M4); } });
+    ctx.add(sh);
+  }
   if (blooms.length) ctx.detail(ctx.add(flowers(blooms, [0xe84a3a, 0xf2b61f, 0xffffff, 0xe0407a], { seed: 12, y: yg, size: 0.3 })), mid[0], mid[1], 150);
   const cg = ctx.add(c.build({ name: item.id + '-colliders' })); cg.visible = false;
   cg.traverse(o => { if (o.isMesh) ctx.collide(o); });
