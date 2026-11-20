@@ -29,8 +29,8 @@
 //     plate; on the ground floor of the north tower it is the DUTY ROOM, furnished: see dutyRoom below), an entrance on
 //     the east face, a back door to the south;
 //   - a balcony on storeys 2 to 4 along the slab's end wall, from a door in the tower's south wall to a door in that end
-//     wall at the end of the slab's corridor. That door is drawn closed: the wall belongs to teaching-slab.js and has no
-//     opening, so the storeys line up with the slab's but one cannot walk through;
+//     wall at the end of the slab's corridor (teaching-slab.js cuts that doorway and draws its frame and leaves): one
+//     walks from the stair through the lobby and along the balcony into the corridor;
 //   - the loggia as a terrace round the stair's head, with a rail on the parapet; on the south tower the taller box is
 //     drawn as a tank room with a closed door;
 //   - finishes: granite floors, a painted dado, ceiling lamps, storey numbers, hose cabinets, a store under the stair,
@@ -172,15 +172,14 @@ export function build(item, ctx) {
   // ---- balconies on the storeys above the ground: from the tower's south door along the slab's end wall to a (closed) door in it
   if (slab) for (let k = 1; k < floors; k++) {
     // the door stands on the centre line of the slab's corridor (teaching-slab.js: 2.6 m wide inside its south face), so that an opening cut there later meets it
-    const y = k * FH, bx0 = x0 + 0.02, bx1 = x0 + 1.85, zc = Math.max(z1 + 0.75, slab.mainBar.s - 1.6), bz1 = zc + 0.85;
+    const y = k * FH, bx0 = x0 - 0.02, bx1 = x0 + 1.85, zc = Math.max(z1 + 0.75, slab.mainBar.s - 1.6), bz1 = zc + 0.85;
     F(S.v, lm('tread'), bx0, y - 0.02, z1, bx1 - bx0, 0.02, bz1 - z1, 'U'); F(S.v, W, bx0, y - 0.45, z1, bx1 - bx0, 0.43, bz1 - z1, 'ESD'); hit(S, bx0, y - 0.2, z1 + 0.01, bx1 - bx0, 0.2, bz1 - z1);
     for (const [x, z, a, c, fc] of [[bx1 - 0.12, z1, 0.12, bz1 - z1, 'EW'], [bx0, bz1 - 0.12, bx1 - bx0 - 0.12, 0.12, 'NS']]) {
       F(S.v, W, x, y, z, a, 0.95, c, fc); F(S.v, CP, x - 0.02, y + 0.95, z - 0.02, a + 0.04, 0.05, c + 0.04, 'NSEWUD'); hit(S, x, y + 0.01, z, a, 1.75, c);
     }
     F(S.d, SS, bx1 - 0.08, y + 1.1, z1, 0.04, 0.04, bz1 - z1, 'EWUD'); F(S.d, SS, bx0, y + 1.1, bz1 - 0.08, bx1 - bx0, 0.04, 0.04, 'NSUD');
-    const pd = face('E', x0 - 0.02 + 0.09);
-    doorSet(S, pd, zc, { w: 0.9, h: 2.05, y0: y, rev: 0.05, step: false, lamp: false, canopy: 0.5, leaf: lm('door'), plateMat: textCard((k + 1) + 'F', 0.28, 0.18) });
-    pd(S.v, W, zc - 0.62, zc + 0.62, y, y + 2.3, -0.085, -0.075, 'F'); hit(S, x0 - 0.04, y + 0.01, z1 + 0.01, 0.06, 2.4, bz1 - z1 - 0.02);     // closed, whether or not the slab's wall is there
+    const pd = face('E', x0 - 0.02);                       // the slab's end wall: teaching-slab.js cuts the doorway to its corridor there and draws frame and leaves
+    pd(S.v, CP, zc - 0.7, zc + 0.7, y + 2.45, y + 2.55, 0, 0.6, 'FLRUD'); card(S.d, pd, textCard((k + 1) + 'F', 0.28, 0.18), zc - 0.14, zc + 0.14, y + 2.18, y + 2.36, 0.014);
     stain(S, face('E', bx1), z1, bz1, y - 0.03, 0.4);
   }
 

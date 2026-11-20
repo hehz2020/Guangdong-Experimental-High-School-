@@ -18,8 +18,8 @@
 //
 // IMAGINED (the owner asked for a finished, usable walkway; nothing of this is in a reference):
 //   - how one gets onto it: a footbridge at deck level from the glass stair block beside the clock tower (its stair is real,
-//     see stair-core.js); short spurs to a door in the west end wall of each teaching slab at its third-storey landing (the
-//     doors are drawn closed: those walls belong to teaching-slab.js and have no opening); and, north of the end bay, an
+//     see stair-core.js); short spurs to a door in the west end wall of each teaching slab at its third-storey landing
+//     (teaching-slab.js cuts the doorway and draws its frame and leaves; one walks from the deck into the slab); and, north of the end bay, an
 //     open-air dog-leg stair from the ground (two storeys of 3.9 m, a landing under the end bay at 3.9 m, a dark-red blade
 //     wall behind the half landings, a store under the first flight);
 //   - the end bay (the small white rectangle of the satellite image) drawn as the deck's last bay under a flat white roof
@@ -196,13 +196,12 @@ export function build(item, ctx) {
   };
   if (bridge) { piece(bridge.x0, bridge.x1a + 0.02, bridge.x0, bridge.x1b + 0.02, bridge.z0, bridge.z1, false); if (ctx.occupy) ctx.occupy([[bridge.x0, bridge.z0 - 0.3], [bridge.x1b, bridge.z0 - 0.3], [bridge.x1b, bridge.z1 + 0.3], [bridge.x0, bridge.z1 + 0.3]]); }
   for (const sp of spurs) {
-    piece(sp.xa - 0.02, sp.wallX - 0.02, sp.xb - 0.02, sp.wallX - 0.02, sp.z0, sp.z1, true);
+    piece(sp.xa - 0.02, sp.wallX, sp.xb - 0.02, sp.wallX, sp.z0, sp.z1, true);
     if (ctx.occupy) ctx.occupy([[sp.xa, sp.z0 - 0.3], [sp.wallX, sp.z0 - 0.3], [sp.wallX, sp.z1 + 0.3], [sp.xa, sp.z1 + 0.3]]);
-    // a closed door on the slab's wall, where its third-storey landing lies behind
-    const put = face('W', sp.wallX - 0.09);
-    doorSet(S, put, sp.zd, { w: 1.3, h: 2.1, y0: DECK, rev: 0.05, canopy: 0.75, step: false, plateMat: textCard('3F', 0.28, 0.18) });
-    put(S.v, WH, sp.zd - 0.9, sp.zd + 0.9, DECK, DECK + 2.4, -0.085, -0.075, 'F');                                // the wall face behind the frame
-    hit(S, sp.wallX - 0.1, DECK + 0.01, sp.z0 - 0.15, 0.08, 2.6, sp.z1 - sp.z0 + 0.3);                           // closed, whether or not the slab's wall is there
+    // the doorway into the slab's stair hall on its third storey is cut by teaching-slab.js; here: a canopy over it, a lamp, a storey plate
+    const put = face('W', sp.wallX);
+    put(S.v, CP, sp.zd - 1.0, sp.zd + 1.0, DECK + 2.5, DECK + 2.62, 0, 0.8, 'FLRUD'); put(S.d, LAMP, sp.zd - 0.14, sp.zd + 0.14, DECK + 2.43, DECK + 2.5, 0.25, 0.45, 'FLRD');
+    card(S.d, put, textCard('3F', 0.28, 0.18), sp.zd - 0.14, sp.zd + 0.14, DECK + 2.2, DECK + 2.38, 0.014);
   }
 
   // ---- planter boxes on the deck at two bends (near view)

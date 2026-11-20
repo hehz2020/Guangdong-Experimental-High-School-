@@ -22,7 +22,11 @@
 //     units above the corridor windows, a wash trough with a mirror at the west end, hose cabinets, bins, exit signs;
 //   - the plan: a staircase in the west bay with windows at its half landings, one classroom and a teachers' office in the
 //     western part, three classrooms in the eastern part, a hot-water niche in the east end pier, two closed doors in the
-//     east end wall of the corridor;
+//     east end wall of the corridor (ground and top storey; on storeys 2 to 4 the doorway described next takes their place);
+//   - doorways out of the end walls, so that the neighbouring builders' stairs join the corridors: on storeys 2 to 4 a
+//     door 0.9 m wide at the east end of the corridor leads onto the balcony of the stair tower (stair-tower.js); on
+//     storey 3 a door 1.3 m wide in the west wall of the stair hall leads onto the spur of the elevated walkway
+//     (walkway.js). Timber frames as on the classroom doors, leaves folded back against the wall, an exit pictogram over each;
 //   - every interior: terrazzo floors with brass strips, painted walls with a glossy dado, teaching platform, chalkboard
 //     (blank, wiped), console with a monitor, lectern with a globe, projector and screen, clock (no numerals), blank duty
 //     and timetable frames, loudspeakers, fans (they turn), lamps, curtains, air-conditioners, lockers, a book corner,
@@ -435,8 +439,26 @@ export function build(item, ctx) {
     yy = ya + 1.5;
   }
   // ---- end walls ----
-  F(v, W, INSET, 0, zN, WALL, yTop, zS - zN, 'WNS'); F(v, PL, INSET, 0, zN, WALL, yTop, zS - zN, 'E'); hit(INSET, 0, zN, WALL, yTop, zS - zN);
-  F(v, W, xEnd, 0, zN, WALL, yTop, zS - zN, 'ENS'); F(v, CO, xEnd, 0, zN, WALL, yTop, zS - zN, 'W'); hit(xEnd, 0, zN, WALL, yTop, zS - zN);
+  // Each end wall has doorways that lead out of the building: at the east end of the corridor onto the stair tower's balconies
+  // (storeys 2 to 4, builder stair-tower.js), in the west wall of the stair hall onto the spur of the elevated walkway (storey 3,
+  // builder walkway.js). zdE, zdW: their centre lines; the openings are 1.0 m and 1.4 m wide and 2.1 m high, frames included.
+  const zdE = D - 1.6, zdW = D - 2.6, eDoor = k => k >= 1 && k <= 3, wDoor = k => k === 2;
+  const endWall = (xw, out, inMat, zd, hw, has) => {        // xw: low-x face of the wall; out: its outer face, 'E' or 'W'
+    const inn = out === 'E' ? 'W' : 'E';
+    const piece = (ya, yb, za, zb, ends = '') => { if (yb - ya < 0.001) return; F(v, W, xw, ya, za, WALL, yb - ya, zb - za, out + ends); F(v, inMat, xw, ya, za, WALL, yb - ya, zb - za, inn); hit(xw, ya, za, WALL, yb - ya, zb - za); };
+    piece(0, yTop, zN, zd - hw, 'N'); piece(0, yTop, zd + hw, zS, 'S');
+    let y = 0;
+    for (let k = 0; k < FLOORS; k++) if (has(k)) {
+      const yk = k * FH;
+      piece(y, yk, zd - hw, zd + hw);                                                    // the wall between one doorway and the next
+      for (const zz of [zd - hw, zd + hw - 0.05]) F(v, M.DFR, xw - 0.01, yk, zz, WALL + 0.02, 2.1, 0.05, 'NSEW');   // timber frame, as on the classroom doors
+      F(v, M.DFR, xw - 0.01, yk + 2.05, zd - hw + 0.05, WALL + 0.02, 0.05, 2 * hw - 0.1, 'EWD');
+      F(v, M.CB, xw - 0.01, yk, zd - hw + 0.05, WALL + 0.02, 0.02, 2 * hw - 0.1, 'UEW');                           // threshold: level with the corridor floor
+      y = yk + 2.1;
+    }
+    piece(y, yTop, zd - hw, zd + hw);
+  };
+  endWall(INSET, 'W', PL, zdW, 0.7, wDoor); endWall(xEnd, 'E', CO, zdE, 0.5, eDoor);
   F(v, R, L - INSET, 0.2, zN + 1.0, 0.03, yTop - 0.6, 1.2, 'ENS'); F(v, R, INSET - 0.03, 0.2, zN + 1.0, 0.03, yTop - 0.6, 1.2, 'WNS');
   // ---- partitions between the rooms (full height) ----
   for (const xp of [x0, ...rooms.map(r => r.b)]) { F(v, PL, xp - 0.1, 0, zi, 0.2, yTop, zw - zi, 'EW'); hit(xp - 0.1, 0, zi, 0.2, yTop, zw - zi); }
@@ -602,13 +624,24 @@ export function build(item, ctx) {
       F(ex, AL, xE + dx + 0.04, y + 0.7, zw - 0.17, 0.34, 0.03, 0.1, 'SEWUD');
       if (!low) for (const tx of [0.12, 0.26]) F(fx, AL, xE + dx + tx, y + 0.84, zw - 0.17, 0.03, 0.06, 0.05, 'SEWUD');
     }
-    [zc + 0.2, zc + 1.4].forEach((z0, i) => {
+    if (eDoor(k)) {                                                                // the doorway to the stair tower's balcony: two leaves folded back against the wall, an exit pictogram
+      for (const [z0, len] of [[zdE - 0.96, 0.45], [zdE + 0.51, 0.4]]) {
+        F(ex, M.door, xEnd - 0.045, y + 0.02, z0, 0.04, 2.03, len, 'WNSU'); F(ex, AL, xEnd - 0.049, y + 0.02, z0, 0.004, 0.22, len, 'W'); F(fx, AL, xEnd - 0.1, y + 1.0, z0 + len / 2 - 0.05, 0.055, 0.03, 0.1, 'WNSUD');
+      }
+      quadW(ex, M.EXIT, xEnd - 0.006, y + 2.2, y + 2.35, zdE - 0.2, zdE + 0.2);
+    } else [zc + 0.2, zc + 1.4].forEach((z0, i) => {
       F(ex, M.door, xEnd - 0.03, y + 0.02, z0, 0.03, 2.05, 0.85, 'WNSU'); F(ex, M.DFR, xEnd - 0.05, y, z0 - 0.06, 0.05, 2.13, 0.06, 'WNS'); F(ex, M.DFR, xEnd - 0.05, y, z0 + 0.85, 0.05, 2.13, 0.06, 'WNS');
       F(ex, M.DFR, xEnd - 0.05, y + 2.07, z0, 0.05, 0.06, 0.85, 'WD'); F(ex, AL, xEnd - 0.034, y + 0.02, z0, 0.004, 0.22, 0.85, 'W');
       if (!eastWC) F(ex, i ? M.PLTR : M.PLT, xEnd - 0.012, y + 2.2, z0 + 0.3, 0.012, 0.14, 0.25, 'WNSUD');
       F(fx, AL, xEnd - 0.08, y + 1.0, z0 + (i ? 0.08 : 0.67), 0.05, 0.03, 0.1, 'WNSUD');
     });
-    if (eastWC) quadW(ex, M.WC, xEnd - 0.006, y + 2.2, y + 2.45, zc + 0.975, zc + 1.475);
+    if (eastWC && !eDoor(k)) quadW(ex, M.WC, xEnd - 0.006, y + 2.2, y + 2.45, zc + 0.975, zc + 1.475);
+    if (wDoor(k)) {                                                                // the doorway to the walkway's spur, in the west wall of the stair hall
+      for (const [z0, len] of [[zdW - 1.36, 0.65], [zdW + 0.71, 0.65]]) {
+        F(ex, M.door, xW + 0.005, y + 0.02, z0, 0.04, 2.03, len, 'ENSU'); F(ex, AL, xW + 0.045, y + 0.02, z0, 0.004, 0.22, len, 'E'); F(fx, AL, xW + 0.045, y + 1.0, z0 + len / 2 - 0.05, 0.055, 0.03, 0.1, 'ENSUD');
+      }
+      quadE(ex, M.EXIT, xW + 0.006, y + 2.2, y + 2.35, zdW - 0.2, zdW + 0.2);
+    }
     F(ex, M.PLT, x0 - 0.115, y + 1.55, zl + 0.4, 0.015, 0.3, 0.3, 'WNSUD');                                                      // blank floor plate facing the stairs
     // exit sign hanging before the stair hall
     F(ex, DK, x0 - 0.42, cy - 0.63, zl0 - 0.22, 0.04, 0.19, 0.44, 'NSEWUD'); quadE(ex, M.EXIT, x0 - 0.378, cy - 0.61, cy - 0.46, zl0 - 0.2, zl0 + 0.2);

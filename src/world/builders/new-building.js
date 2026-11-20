@@ -373,6 +373,50 @@ function inside(pt, poly) {
   return ok;
 }
 
+// ---------------------------------------------------------------- instanced furniture
+// Chairs, stools, stands: one geometry per kind, drawn as two instanced meshes: "body" takes a colour per piece (the
+// upholstery), "frame" keeps its own colours (legs, steel). All pieces face their local +x and stand on y = 0.
+const shapeCache = {}, _v = new THREE.Vector3();
+function shapeOf(key) {
+  if (shapeCache[key]) return shapeCache[key];
+  const body = new Batch(), frame = new Batch(), WH = C(0xffffff), WD = C(0x8a6a48), DK = C(0x2a2c2f), ST = C(0x8f959b);
+  const legs = (b, m, hx, hz, h, t = 0.03, splay = 0.03) => { for (const sx of [-1, 1]) for (const sz of [-1, 1]) bar(b, m, [sx * hx, h, sz * hz], [sx * (hx + splay), 0, sz * (hz + splay)], t); };
+  if (key === 'tub') {                                               // tub chair of the library (frames 40-41): round cushion, wrap-round back, splayed wooden legs
+    body.cyl(WH, 0, 0.36, 0, 0.27, 0.1, 12); ringWall(body, WH, 0, 0, 0.31, Math.PI - 1.75, Math.PI + 1.75, 0.33, 0.8, 9, true); ringWall(body, WH, 0, 0, 0.26, Math.PI - 1.75, Math.PI + 1.75, 0.44, 0.8, 9, false);
+    ringTop(body, WH, 0, 0, 0.26, 0.31, Math.PI - 1.75, Math.PI + 1.75, 0.8, 9); legs(frame, WD, 0.16, 0.16, 0.36, 0.035, 0.06);
+  } else if (key === 'task') {                                       // swivel chair
+    body.box(WH, 0, 0.46, 0, 0.46, 0.07, 0.46); body.box(WH, -0.22, 0.78, 0, 0.05, 0.46, 0.42);
+    frame.cyl(DK, 0, 0.08, 0, 0.03, 0.36, 6, false); for (let i = 0; i < 5; i++) bar(frame, DK, [0, 0.1, 0], [0.3 * Math.cos(i * 1.257), 0.04, 0.3 * Math.sin(i * 1.257)], 0.035); bar(frame, DK, [-0.2, 0.46, 0], [-0.24, 0.6, 0], 0.04);
+  } else if (key === 'stool') {
+    body.cyl(WH, 0, 0.44, 0, 0.17, 0.035, 10); legs(frame, ST, 0.1, 0.1, 0.44, 0.022, 0.05); frame.box(ST, 0, 0.16, 0, 0.3, 0.015, 0.3, 'UD');
+  } else if (key === 'chair') {                                      // plain four-legged chair
+    body.box(WH, 0, 0.445, 0, 0.42, 0.035, 0.42); body.box(WH, -0.2, 0.76, 0, 0.03, 0.3, 0.4);
+    legs(frame, ST, 0.18, 0.18, 0.43, 0.024, 0.01); for (const z of [-0.18, 0.18]) bar(frame, ST, [-0.19, 0.43, z], [-0.21, 0.9, z], 0.024);
+  } else if (key === 'seat') {                                       // fixed lecture seat with a writing tablet
+    body.box(WH, 0.02, 0.43, 0, 0.44, 0.08, 0.46); body.box(WH, -0.22, 0.72, 0, 0.07, 0.52, 0.46);
+    for (const z of [-0.26, 0.26]) frame.box(DK, -0.02, 0.33, z, 0.5, 0.66, 0.035, 'D'); frame.box(WD, 0.14, 0.68, 0.28, 0.26, 0.02, 0.3);
+  } else if (key === 'easel') {
+    const E = C(0xb98a55); for (const z of [-0.3, 0.3]) bar(frame, E, [0.1, 0, z], [-0.1, 1.85, z * 0.15], 0.04); bar(frame, E, [-0.75, 0, 0], [-0.1, 1.8, 0], 0.04);
+    frame.box(E, 0.07, 0.74, 0, 0.09, 0.03, 0.72); frame.box(E, -0.07, 1.62, 0, 0.05, 0.05, 0.3);
+  } else if (key === 'mstand') {
+    frame.cyl(DK, 0, 0, 0, 0.012, 1.05, 6, false); for (let i = 0; i < 3; i++) bar(frame, DK, [0, 0.25, 0], [0.26 * Math.cos(i * 2.094), 0, 0.26 * Math.sin(i * 2.094)], 0.015); frame.box(DK, 0.015, 1.2, 0, 0.012, 0.3, 0.46);
+  }
+  const geo = b => { const g = mergeFlat(b.build({ castShadow: false }), false); return g.children.length ? g.children[0].geometry : null; };
+  return (shapeCache[key] = { body: geo(body), frame: geo(frame) });
+}
+class Inst {
+  constructor() { this.list = new Map(); }
+  put(key, m4, hex = 0xffffff) { let l = this.list.get(key); if (!l) this.list.set(key, (l = [])); l.push([m4, hex]); }
+  build(group, name) {
+    const col = new THREE.Color();
+    for (const [key, l] of this.list) { const sh = shapeOf(key);
+      for (const part of ['body', 'frame']) { if (!sh[part]) continue; const im = new THREE.InstancedMesh(sh[part], flatMat('matte'), l.length);
+        l.forEach(([m, hex], i) => { im.setMatrixAt(i, m); if (part === 'body') im.setColorAt(i, col.setHex(hex)); });
+        im.name = name + '-' + key + '-' + part; im.castShadow = false; im.receiveShadow = true; im.frustumCulled = false; group.add(im); } }
+    return group;
+  }
+}
+
 export function build(item, ctx) {
   const { A, B, D, E } = FOOT;
   // ---- frames. L: origin at the south-west corner E, +X along the south face toward D, +Z out of the building (south), -Z into it.
@@ -720,20 +764,24 @@ export function build(item, ctx) {
       x += w;
     }
   };
-  /** Bookcase standing at (X, Z), its length along the direction yaw; books on both faces unless oneSided. Collides. */
-  const shelf = (X, Z, yaw, len, rows = 5, oneSided = false, y = F0, pitch = ROW) => {
+  /** Bookcase in the current frames of b (carcass and books) and bl (strip lights; may be null): its length along x, centred on the origin; books on both faces unless oneSided (then they look toward +z). */
+  const bookcase = (b, bl, len, rows = 5, oneSided = false, pitch = ROW) => {
     const h = 0.1 + rows * pitch + 0.04, d = oneSided ? 0.34 : 0.6, nb = Math.max(1, Math.round(len / 0.9)), LMP = lm('lamp');
-    at(fu, X, Z, yaw, y); at(fx, X, Z, yaw, y);
-    fu.box(WL, 0, 0.05, 0, len, 0.1, d - 0.06, 'D'); fu.box(WL, 0, h - 0.02, 0, len + 0.02, 0.04, d + 0.02);                  // plinth and top
-    for (let i = 0; i <= nb; i++) fu.box(WL, -len / 2 + 0.015 + (len - 0.03) * i / nb, h / 2 + 0.03, 0, 0.03, h - 0.1, d, 'UD');   // uprights
-    fu.box(WL, 0, h / 2 + 0.03, oneSided ? -d / 2 + 0.012 : 0, len - 0.04, h - 0.1, 0.02, 'UDEW');                                 // back board
+    b.box(WL, 0, 0.05, 0, len, 0.1, d - 0.06, 'D'); b.box(WL, 0, h - 0.02, 0, len + 0.02, 0.04, d + 0.02);                         // plinth and top
+    for (let i = 0; i <= nb; i++) b.box(WL, -len / 2 + 0.015 + (len - 0.03) * i / nb, h / 2 + 0.03, 0, 0.03, h - 0.1, d, 'UD');     // uprights
+    b.box(WL, 0, h / 2 + 0.03, oneSided ? -d / 2 + 0.012 : 0, len - 0.04, h - 0.1, 0.02, 'UDEW');                                   // back board
     for (let r = 0; r < rows; r++) {
-      const yb = 0.1 + r * pitch; if (r) fu.box(WL, 0, yb - 0.011, 0, len - 0.04, 0.022, d - 0.02, 'EW');
+      const yb = 0.1 + r * pitch; if (r) b.box(WL, 0, yb - 0.011, 0, len - 0.04, 0.022, d - 0.02, 'EW');
       for (const dir of oneSided ? [1] : [1, -1]) {
-        for (let i = 0; i < nb; i++) bookRow(fu, -len / 2 + 0.03 + (len - 0.03) * i / nb, -len / 2 + (len - 0.03) * (i + 1) / nb, yb, dir * (d / 2 - 0.035), dir, pitch - 0.06);
-        if (!low) fx.box(LMP, 0, yb + pitch - 0.026, dir * (d / 2 - 0.03), len - 0.12, 0.008, 0.014, 'UEW');                        // strip light under the board above
+        for (let i = 0; i < nb; i++) bookRow(b, -len / 2 + 0.03 + (len - 0.03) * i / nb, -len / 2 + (len - 0.03) * (i + 1) / nb, yb, dir * (d / 2 - 0.035), dir, pitch - 0.06);
+        if (bl && !low) bl.box(LMP, 0, yb + pitch - 0.026, dir * (d / 2 - 0.03), len - 0.12, 0.008, 0.014, 'UEW');                  // strip light under the board above
       }
     }
+    return [h, d];
+  };
+  /** Bookcase of the library standing at (X, Z), its length along the direction yaw. Collides. */
+  const shelf = (X, Z, yaw, len, rows = 5, oneSided = false, y = F0, pitch = ROW) => {
+    at(fu, X, Z, yaw, y); at(fx, X, Z, yaw, y); const [h, d] = bookcase(fu, fx, len, rows, oneSided, pitch);
     home(fu); home(fx); at(c, X, Z, yaw, y); c.box(G, 0, h / 2, 0, len, h, d); home(c);
   };
   /** Upholstered armchair on wooden legs, facing the direction yaw (0 = local +X). */
@@ -1032,6 +1080,282 @@ export function build(item, ctx) {
     home(v); home(c);
   }
 
+  // ================================================================= ROOMS OF STOREYS 3 TO 6 (all imagined)
+  // One batch and one set of instanced furniture per storey; a storey's rooms are drawn only while the viewer is on or near that storey.
+  const RB = UPF.map(() => { const b = new Batch(); home(b); return b; }), RI = UPF.map(() => new Inst()), RP = UPF.map(() => []);      // RP: potted plants [x, y, z, radius] in world coordinates
+  const yawN = Math.atan2(-uN[1], uN[0]), INNER = lm('inner'), ALU = C(0xc9cdd0, 'metal'), DKM = C(0x2a2c2f), WOOD = C(0xd9bd8c, 'gloss'), GREYM = C(0x5a6068, 'metal');
+  /** A room: frame with the origin in the corner on the corridor wall, +x along that wall, +z toward the windows, y = 0 on its floor. */
+  const mkRoom = (k, o, yaw, W, D) => {
+    const b = RB[k], y = UPF[k], co = Math.cos(yaw), si = Math.sin(yaw), fr = () => at(b, o[0], o[1], yaw, y);
+    const R = { k, b, y, W, D, fr,
+      toL: (x, z) => [o[0] + x * co + z * si, o[1] - x * si + z * co],
+      sub: (x, z, a = 0, y0 = 0) => { const p = R.toL(x, z); at(b, p[0], p[1], yaw + a, y + y0); },                 // a frame inside the room, turned by a
+      put: (key, x, z, a = 0, hex = 0xffffff, y0 = 0, s = 1) => { fr(); RI[k].put(key, b.m.clone().multiply(_m.makeRotationY(a).setPosition(x, y0, z)).scale(_v.set(s, s, s)), hex); },
+      col: (x0, z0, x1, z1, h = 1, y0 = 0) => { at(c, o[0], o[1], yaw, y); c.slab(G, Math.min(x0, x1), y0, Math.min(z0, z1), Math.abs(x1 - x0), h, Math.abs(z1 - z0)); home(c); },
+      pot: (x, z, r = 0.3, y0 = 0, hp = 0.4) => { fr(); b.cyl(C(0xf1efe9, 'gloss'), x, y0, z, r * 0.62, hp, 10); const w = toW(R.toL(x, z)); RP[k].push([w[0], y + y0 + hp, w[1], r]); } };
+    fr(); return R;
+  };
+  /** Wall in the plane z of the current frame, looking toward +z (sg 1) or -z (sg -1), from x0 to x1, with holes [[xa, xb, ya, yb]...]. */
+  const zWall = (b, z, sg, x0, x1, holes, m = WU, h = CU) => {
+    const cuts = [x0, x1]; for (const q of holes) cuts.push(q[0], q[1]); cuts.sort((a, e) => a - e);
+    for (let i = 0; i < cuts.length - 1; i++) { const a = cuts[i], e = cuts[i + 1]; if (e - a < 0.01) continue;
+      const hs = holes.filter(q => (a + e) / 2 > q[0] && (a + e) / 2 < q[1]).sort((p, q) => p[2] - q[2]); let y0 = 0;
+      for (const q of [...hs, [0, 0, h, h]]) { if (q[2] - y0 > 0.01) { if (sg > 0) b.quad(m, [a, y0, z], [e, y0, z], [e, q[2], z], [a, q[2], z]); else b.quad(m, [e, y0, z], [a, y0, z], [a, q[2], z], [e, q[2], z]); } y0 = q[3]; } }
+  };
+  /** The same in the plane x, looking toward +x (sg 1) or -x (sg -1), from z0 to z1. */
+  const xWall = (b, x, sg, z0, z1, holes, m = WU, h = CU) => {
+    const cuts = [z0, z1]; for (const q of holes) cuts.push(q[0], q[1]); cuts.sort((a, e) => a - e);
+    for (let i = 0; i < cuts.length - 1; i++) { const a = cuts[i], e = cuts[i + 1]; if (e - a < 0.01) continue;
+      const hs = holes.filter(q => (a + e) / 2 > q[0] && (a + e) / 2 < q[1]).sort((p, q) => p[2] - q[2]); let y0 = 0;
+      for (const q of [...hs, [0, 0, h, h]]) { if (q[2] - y0 > 0.01) { if (sg > 0) b.quad(m, [x, y0, e], [x, y0, a], [x, q[2], a], [x, q[2], e]); else b.quad(m, [x, y0, a], [x, y0, e], [x, q[2], e], [x, q[2], a]); } y0 = q[3]; } }
+  };
+  /** Floor, ceiling, walls of a room seen from inside; doors [[x, width]...] in the corridor wall, ribbons [[xa, xb]...] = the ribbon windows of the face. */
+  const roomShell = (R, floor, doors, ribbons, wall = WU) => {
+    const { b, W, D } = R;
+    b.quad(floor, [0, 0.004, D], [W, 0.004, D], [W, 0.004, 0], [0, 0.004, 0]); b.quad(CEU, [0, CU, 0], [W, CU, 0], [W, CU, D], [0, CU, D]);
+    xWall(b, 0, 1, 0, D, [], wall); xWall(b, W, -1, 0, D, [], wall); zWall(b, 0, 1, 0, W, doors.map(([x, w]) => [x, x + w, 0, 2.17]), wall);
+    const holes = []; for (const [xa, xb] of ribbons) { const w = xb - xa; holes.push([xa, xb, 1.0, 2.45], [xa, xa + w / 3 - 0.25, 2.9, 3.4], [xa + w / 3 + 0.25, xa + 2 * w / 3 - 0.25, 2.9, 3.4], [xa + 2 * w / 3 + 0.25, xb, 2.9, 3.4]); }
+    zWall(b, D, -1, 0, W, holes, wall);
+    for (const [xa, xb] of ribbons) {                                // the room side of a ribbon window: a pane one looks out through, sashes, a sill board
+      b.quad(INNER, [xb, 1.0, D + 0.02], [xa, 1.0, D + 0.02], [xa, 2.45, D + 0.02], [xb, 2.45, D + 0.02]);
+      for (let x = xa; x < xb + 0.01; x += 0.8) b.box(ALU, Math.min(x, xb), 1.725, D + 0.01, 0.05, 1.45, 0.05, 'UD');
+      b.box(MW, (xa + xb) / 2, 1.0, D - 0.07, xb - xa + 0.1, 0.04, 0.18); b.box(ALU, (xa + xb) / 2, 2.44, D + 0.01, xb - xa, 0.05, 0.05); b.box(ALU, (xa + xb) / 2, 1.02, D + 0.01, xb - xa, 0.04, 0.05);
+    }
+    R.col(-0.2, 0, 0, D, CU); R.col(W, 0, W + 0.2, D, CU);
+  };
+  /** Curtain hanging in the plane z from xa to xb: pleats as a zigzag of strips, seen from the room (-z side). */
+  const drape = (b, xa, xb, z, hex, y0 = 0.95, y1 = 2.62) => { const n = Math.max(2, Math.round((xb - xa) / 0.11)), A = C(hex), B2 = C(hex);
+    for (let i = 0; i < n; i++) { const x0 = xa + (xb - xa) * i / n, x1 = xa + (xb - xa) * (i + 1) / n, z0 = z - (i % 2 ? 0.035 : 0), z1 = z - (i % 2 ? 0 : 0.035); b.quad(i % 2 ? A : B2, [x1, y0, z1], [x0, y0, z0], [x0, y1, z0], [x1, y1, z1]); }
+    b.box(ALU, (xa + xb) / 2, y1 + 0.02, z - 0.02, xb - xa + 0.1, 0.03, 0.03); };
+  /** Light panels in the ceiling of a room, nx by nz. */
+  const ceilLights = (R, nx, nz, w = 1.2, d = 0.3) => { for (let i = 0; i < nx; i++) for (let j = 0; j < nz; j++) R.b.box(LAMP, R.W * (i + 0.5) / nx, CU - 0.012, R.D * (j + 0.5) / nz, w, 0.02, d); };
+  /** Table: a top on four legs, low corner (x, z). */
+  const tbl = (b, x, z, w, d, h = 0.74, top = WOOD, leg = GREYM, t = 0.04) => { b.slab(top, x, h - t, z, w, t, d); for (const [lx, lz] of [[x + 0.04, z + 0.04], [x + w - 0.08, z + 0.04], [x + 0.04, z + d - 0.08], [x + w - 0.08, z + d - 0.08]]) b.slab(leg, lx, 0, lz, 0.04, h - t, 0.04, 'UD'); };
+  const scr = i => U('scr' + i, 128, 80, (g, W, Hh) => { const r = rng(300 + i * 17);
+    if (i === 0) { BX(g, 0, 0, W, Hh, '#1e2430'); BX(g, 0, 0, 26, Hh, '#161b24'); for (let q = 0; q < 9; q++) { g.fillStyle = ['#7fb7ff', '#c8a2ff', '#9be3a8', '#f2c57c', '#e6e6e6'][Math.floor(r() * 5)]; g.fillRect(32 + (q % 3) * 6, 8 + q * 7.5, 20 + r() * 56, 3); } }
+    else if (i === 1) { const gr = g.createLinearGradient(0, 0, W, Hh); gr.addColorStop(0, '#2b6cb0'); gr.addColorStop(1, '#63b3ed'); g.fillStyle = gr; g.fillRect(0, 0, W, Hh); BX(g, 20, 12, 78, 50, '#f7f7f5', '#555', 1); BX(g, 20, 12, 78, 7, '#3a4a5c'); ROWS(g, 26, 26, 64, 5, 6, '#8b8f96', 2, r); BX(g, 0, Hh - 7, W, 7, '#1c2530'); }
+    else if (i === 2) { BX(g, 0, 0, W, Hh, '#f4f6f4'); BX(g, 0, 0, W, 9, '#1f7a45'); for (let y = 14; y < Hh; y += 7) { g.fillStyle = '#c9cfcc'; g.fillRect(0, y, W, 1); } for (let x = 18; x < W; x += 22) { g.fillStyle = '#c9cfcc'; g.fillRect(x, 9, 1, Hh); } for (let q = 0; q < 14; q++) BX(g, 20 + Math.floor(r() * 5) * 22, 16 + Math.floor(r() * 9) * 7, 16, 4, '#6d7f77'); }
+    else { BX(g, 0, 0, W, Hh, '#101418'); BX(g, 6, 6, 74, 46, '#2f6f8f'); BX(g, 86, 6, 36, 21, '#8f5f2f'); BX(g, 86, 31, 36, 21, '#3f7f4f'); for (let q = 0; q < 12; q++) BX(g, 6 + q * 10, 60, 7, 4 + r() * 12, '#7fdf9f'); } });
+  /** A flat screen on a stand, facing dir (+1: toward +x, -1: toward -x) with its foot at (x, z) on a table at height y, and a keyboard in front of it. */
+  const pcAt = (b, x, y, z, dir, kind = 0, kb = true) => { b.box(DKM, x, y + 0.01, z, 0.18, 0.02, 0.22); b.box(DKM, x, y + 0.12, z, 0.03, 0.2, 0.05); b.box(DKM, x, y + 0.34, z, 0.03, 0.32, 0.52);
+    cardX(b, scr(kind), x + dir * 0.017, y + 0.2, z - 0.24, 0.48, 0.28, dir, true); if (kb) { b.box(C(0x3a3d42), x + dir * 0.3, y + 0.012, z, 0.14, 0.02, 0.42); b.box(C(0x3a3d42), x + dir * 0.3, y + 0.012, z + 0.32, 0.1, 0.03, 0.06); } };
+  /** A pile of books or exercise books. */
+  const pile = (b, x, y, z, n, seed, w = 0.2, d = 0.28) => { const r = rng(seed * 31 + 7), cols = [0x2f5fa8, 0xb8322a, 0x2f8a55, 0xe0b020, 0xf2efe6, 0x7a4fa0, 0xd9772b, 0x3a3d42]; let yy = y;
+    for (let i = 0; i < n; i++) { const t = 0.012 + r() * 0.02; b.box(C(cols[Math.floor(r() * cols.length)]), x + (r() - 0.5) * 0.03, yy + t / 2, z + (r() - 0.5) * 0.03, w * (0.85 + 0.15 * r()), t, d * (0.85 + 0.15 * r()), 'D'); yy += t; } };
+  const poster = (title, col, i = 0) => U('po' + title, 200, 280, (g, W, Hh) => { const r = rng(911 + i * 37 + title.length); BX(g, 0, 0, W, Hh, '#f6f3ea', 'rgba(0,0,0,0.3)', 2); BX(g, 0, 0, W, 46, col); TX(g, title, W / 2, 24, title.length > 6 ? 20 : 26, '#fff', CJK, 'center', 'bold');
+    let y = 58; while (y < Hh - 30) { if (r() < 0.35 && y < Hh * 0.6) { const ph = 44 + r() * 20; for (let q = 0; q < 2; q++) { const hue = Math.floor(r() * 360), gr = g.createLinearGradient(0, y, 0, y + ph); gr.addColorStop(0, `hsl(${hue},40%,72%)`); gr.addColorStop(1, `hsl(${(hue + 40) % 360},35%,42%)`); g.fillStyle = gr; g.fillRect(14 + q * 90, y, 82, ph); } y += ph + 10; }
+      else { BX(g, 14, y, 60 + r() * 60, 6, col); y += 12; const n = 3 + Math.floor(r() * 4); ROWS(g, 14, y, W - 28, n, 9, '#8b8880', 3.5, r); y += n * 9 + 8; } } });
+
+  // ---- toilets in the plain north wing of every upper storey (the face there has only thin high slots, frames 55-57)
+  const TILEW = pbr('tiles', [0xeef0ec, 4, 1.2, 0.3]), TILEF = pbr('tiles', [0x9aa3a6, 4, 1.2, 0.5]), PART = C(0xcfd8dc, 'gloss'), CER = C(0xfafaf7, 'gloss');
+  const wcSign = () => U('wc', 240, 100, (g, W, Hh) => { BX(g, 0, 0, W, Hh, '#1d4f9c'); g.fillStyle = '#fff'; for (const [x, f] of [[42, 0], [198, 1]]) { g.beginPath(); g.arc(x, 24, 9, 0, TAU); g.fill(); if (f) { g.beginPath(); g.moveTo(x, 34); g.lineTo(x + 17, 70); g.lineTo(x - 17, 70); g.closePath(); g.fill(); g.fillRect(x - 8, 70, 6, 22); g.fillRect(x + 2, 70, 6, 22); } else { g.fillRect(x - 12, 36, 24, 32); g.fillRect(x - 10, 68, 8, 26); g.fillRect(x + 2, 68, 8, 26); } }
+    TX(g, '卫生间', W / 2, 40, 30, '#fff', CJK, 'center', 'bold'); TX(g, 'Toilets', W / 2, 74, 18, '#fff', CJK, 'center'); });
+  UPF.forEach((y, k) => {
+    const R = mkRoom(k, Nf(0.6, DN - 0.2), yawN, 9.6, DN - 0.65), { b, W, D } = R, xm = 5.3, zv = 2.9, gx0 = 33.4 - 23.25 - 1.2 - 0.6;      // xm: wall between the two rooms; zv: depth of the wash room; the way in at x gx0 .. gx0 + 1.2
+    b.quad(TILEF, [0, 0.004, D], [W, 0.004, D], [W, 0.004, 0], [0, 0.004, 0]); b.quad(CEU, [0, CU, 0], [W, CU, 0], [W, CU, D], [0, CU, D]);
+    xWall(b, 0, 1, 0, D, [], TILEW); xWall(b, W, -1, 0, D, [], TILEW); zWall(b, 0, 1, 0, W, [[gx0, gx0 + 1.2, 0, 2.3]], TILEW); zWall(b, D, -1, 0, W, [[1.5, W - 1.2, 3.22, 3.45]], TILEW);
+    // partitions: men's room on the left (x < xm), the wash room behind the way in, women's room beyond it
+    xWall(b, xm - 0.06, -1, 0, D, [[1.1, 2.0, 0, 2.1]], TILEW); xWall(b, xm + 0.06, 1, 0, D, [[1.1, 2.0, 0, 2.1]], TILEW); zWall(b, zv - 0.06, -1, xm, W, [[7.4, 8.3, 0, 2.1]], TILEW); zWall(b, zv + 0.06, 1, xm, W, [[7.4, 8.3, 0, 2.1]], TILEW);
+    R.col(xm - 0.1, 0, xm + 0.1, 1.1, CU); R.col(xm - 0.1, 2.0, xm + 0.1, D, CU); R.col(xm, zv - 0.1, 7.4, zv + 0.1, CU); R.col(8.3, zv - 0.1, W, zv + 0.1, CU); R.col(-0.2, 0, 0, D, CU); R.col(W, 0, W + 0.2, D, CU); R.col(0, D, W, D + 0.2, CU);
+    for (const [x, z, sx, sz] of [[xm, 1.1, 0.14, 0.05], [xm, 2.0, 0.14, 0.05], [7.4, zv, 0.05, 0.14], [8.3, zv, 0.05, 0.14]]) b.box(MW, x, 1.05, z, sx, 2.1, sz, 'D');
+    cardX(b, plateCard('男', '卫生间'), xm + 0.07, 1.5, 2.15, 0.34, 0.116, 1); cardZ(b, plateCard('女', '卫生间'), 6.95, 1.5, zv - 0.07, 0.34, 0.116, -1);
+    // wash room: a trough of basins under a mirror, a hand dryer, a bin
+    b.slab(CER, xm + 0.3, 0.78, zv - 0.62, 1.9, 0.1, 0.5); b.slab(C(0xd9dee0, 'gloss'), xm + 0.34, 0.82, zv - 0.58, 1.82, 0.065, 0.42, 'D'); b.slab(MW, xm + 0.3, 0, zv - 0.5, 1.9, 0.78, 0.3, 'U'); for (const x of [xm + 0.75, xm + 1.75]) { b.cyl(STL, x, 0.88, zv - 0.14, 0.012, 0.16, 6); b.box(STL, x, 1.03, zv - 0.2, 0.02, 0.02, 0.14); }
+    b.quad('glassClear', [xm + 2.2, 1.1, zv - 0.07], [xm + 0.3, 1.1, zv - 0.07], [xm + 0.3, 2.0, zv - 0.07], [xm + 2.2, 2.0, zv - 0.07]); b.box(ALU, xm + 1.25, 1.55, zv - 0.065, 1.96, 0.96, 0.01, 'N');
+    b.box(MW, W - 0.1, 1.25, 1.6, 0.18, 0.3, 0.26); b.cyl(GREYM, W - 0.3, 0, 0.5, 0.16, 0.5, 10); R.col(xm + 0.3, zv - 0.65, xm + 2.2, zv - 0.1, 0.9);
+    cardZ(b, signCard('节约用水', '#eaf6ee', '#1a7a3c', 200, 70), xm + 2.45, 1.5, zv - 0.07, 0.4, 0.14, -1);
+    // men's room: urinals with screens on the outer wall, three cubicles at the far end, basins, a mop sink
+    for (let i = 0; i < 4; i++) { const z = 3.2 + i * 0.85; b.box(CER, 0.16, 0.75, z, 0.3, 0.7, 0.36); b.box(CER, 0.2, 0.42, z, 0.36, 0.1, 0.4); b.box(STL, 0.06, 1.22, z, 0.06, 0.1, 0.06); if (i) b.box(PART, 0.22, 0.95, z - 0.425, 0.42, 0.9, 0.025); }
+    R.col(0, 2.8, 0.42, 6.2, 1.2);
+    const cubicles = (x0, z0, n, alongX, depth, open) => { for (let i = 0; i <= n; i++) { if (alongX) b.box(PART, x0 + i * 1.0, 1.15, z0 + depth / 2, 0.03, 2.0, depth, ''); else b.box(PART, x0 + depth / 2, 1.15, z0 + i * 1.0, depth, 2.0, 0.03, ''); }
+      for (let i = 0; i < n; i++) { const a = i === open ? 0.5 : 0;                                   // doors (one stands ajar), a pan in each
+        if (alongX) { b.box(PART, x0 + i * 1.0 + 0.5 - a * 0.3, 1.15, z0 + a * 0.3, 0.66 * (1 - a * 0.5), 2.0, 0.025); b.box(PART, x0 + i * 1.0 + 0.09, 1.15, z0, 0.16, 2.0, 0.03); b.box(PART, x0 + i * 1.0 + 0.91, 1.15, z0, 0.16, 2.0, 0.03); b.box(CER, x0 + i * 1.0 + 0.5, 0.2, z0 + depth - 0.45, 0.38, 0.4, 0.6); b.box(CER, x0 + i * 1.0 + 0.5, 0.6, z0 + depth - 0.12, 0.42, 0.4, 0.18); }
+        else { b.box(PART, x0 + a * 0.3, 1.15, z0 + i * 1.0 + 0.5 - a * 0.3, 0.025, 2.0, 0.66 * (1 - a * 0.5)); b.box(PART, x0, 1.15, z0 + i * 1.0 + 0.09, 0.03, 2.0, 0.16); b.box(PART, x0, 1.15, z0 + i * 1.0 + 0.91, 0.03, 2.0, 0.16); b.box(CER, x0 + depth - 0.45, 0.2, z0 + i * 1.0 + 0.5, 0.6, 0.4, 0.38); b.box(CER, x0 + depth - 0.12, 0.6, z0 + i * 1.0 + 0.5, 0.18, 0.4, 0.42); } } };
+    cubicles(0.15, D - 1.5, 3, true, 1.5, 1); R.col(0, D - 1.55, 3.2, D, 2.2);
+    b.slab(CER, 3.9, 0.3, D - 0.6, 0.8, 0.3, 0.55); b.slab(MW, 3.9, 0, D - 0.6, 0.8, 0.3, 0.55, 'U'); b.box(STL, 4.3, 0.95, D - 0.08, 0.03, 0.5, 0.03); R.col(3.85, D - 0.65, 4.75, D, 0.7);
+    for (const z of [4.6, 5.6]) { b.box(CER, xm - 0.32, 0.8, z, 0.44, 0.14, 0.52); b.box(STL, xm - 0.14, 0.98, z, 0.03, 0.14, 0.03); } b.quad('glassClear', [xm - 0.07, 1.1, 4.2], [xm - 0.07, 1.1, 6.0], [xm - 0.07, 2.0, 6.0], [xm - 0.07, 2.0, 4.2]); R.col(xm - 0.55, 4.3, xm - 0.1, 5.9, 0.95);
+    // women's room: four cubicles along the east wall, basins opposite
+    cubicles(W - 1.55, zv + 0.5, 4, false, 1.55, 2); R.col(W - 1.6, zv + 0.45, W, zv + 4.55, 2.2);
+    for (const z of [zv + 1.3, zv + 2.3]) { b.box(CER, xm + 0.38, 0.8, z, 0.44, 0.14, 0.52); b.box(STL, xm + 0.2, 0.98, z, 0.03, 0.14, 0.03); } b.quad('glassClear', [xm + 0.07, 1.1, zv + 2.7], [xm + 0.07, 1.1, zv + 0.9], [xm + 0.07, 2.0, zv + 0.9], [xm + 0.07, 2.0, zv + 2.7]); R.col(xm + 0.1, zv + 1.0, xm + 0.6, zv + 2.6, 0.95);
+    for (const [x, z] of [[2.6, 2.4], [2.6, 6.5], [7.4, 1.4], [7.2, 5.4], [7.2, 8.6]]) b.box(LAMP, x, CU - 0.012, z, 0.6, 0.02, 0.6);
+    // the sign over the way in, seen from the corridor
+    along(uf, A3, A4, y); cardZ(uf, wcSign(), 23.25 + 0.2, 2.42, (dot(sub(Nf(20, DN + 1.5), A3), [-(A4[1] - A3[1]), A4[0] - A3[0]]) > 0 ? 1 : -1) * 0.02, 0.8, 0.333, dot(sub(Nf(20, DN + 1.5), A3), [-(A4[1] - A3[1]), A4[0] - A3[0]]) > 0 ? 1 : -1); home(uf);
+  });
+
+  // ---- the furnished rooms: A = the room behind the fourth ribbon of the south face, B = the room behind the western ribbon of the north-west face
+  const roomA = k => mkRoom(k, [29.1, ZS + 0.2], 0, 9.55, -0.45 - ZS - 0.2), roomB = k => mkRoom(k, Nf(25.25, DN - 0.2), yawN, 8.05, DN - 0.65);
+  const DA = [[0.7, 1], [7.8, 1]], RIBA = [[0.9, 8.9]], DB = [[0.75, 1], [6.35, 1]], RIBB = [[0.45, 7.65]];
+  const slide = (title, lines, bg) => U('sl' + title, 400, 225, (g, W, Hh) => { BX(g, 0, 0, W, Hh, bg); BX(g, 0, 0, W, 44, 'rgba(255,255,255,0.12)'); TX(g, title, 20, 24, 22, '#ffffff', CJK, 'left', 'bold'); lines.forEach((s, i) => { BX(g, 22, 66 + i * 34, 8, 8, '#f2c94c'); TX(g, s, 40, 70 + i * 34, 19, '#e8eef2', CJK); }); TX(g, '广东实验中学', W - 14, Hh - 14, 11, 'rgba(255,255,255,0.5)', CJK, 'right'); });
+  const art = i => U('art' + i, 160, 120, (g, W, Hh) => { const r = rng(500 + i * 13);
+    if (i === 0) { const gr = g.createLinearGradient(0, 0, 0, Hh); gr.addColorStop(0, '#3b2a6b'); gr.addColorStop(0.55, '#f08a3c'); gr.addColorStop(1, '#f6d06a'); g.fillStyle = gr; g.fillRect(0, 0, W, Hh); g.fillStyle = '#fff3c4'; g.beginPath(); g.arc(104, 70, 16, 0, TAU); g.fill(); g.fillStyle = '#2a2433'; g.beginPath(); g.moveTo(0, Hh); g.lineTo(0, 86); g.lineTo(46, 70); g.lineTo(90, 92); g.lineTo(130, 78); g.lineTo(W, 96); g.lineTo(W, Hh); g.fill(); }
+    else if (i === 1) { BX(g, 0, 0, W, Hh, '#f4f1e6'); for (const [x, y, w, h, c2] of [[0, 0, 60, 50, '#c8262c'], [64, 0, 96, 30, '#f4f1e6'], [64, 34, 40, 86, '#1f4fa0'], [108, 34, 52, 50, '#f2c230'], [0, 54, 60, 66, '#f4f1e6'], [108, 88, 52, 32, '#111']]) BX(g, x, y, w, h, c2, '#111', 3); }
+    else if (i === 2) { BX(g, 0, 0, W, Hh, '#cfc3a6'); BX(g, 0, 78, W, 42, '#7a5a3c'); for (const [x, c2] of [[46, '#c8362c'], [72, '#d9a22b'], [96, '#7fa83a']]) { g.fillStyle = c2; g.beginPath(); g.arc(x, 74, 13, 0, TAU); g.fill(); } BX(g, 118, 30, 14, 50, '#2f5f4a'); BX(g, 121, 18, 8, 14, '#2f5f4a'); }
+    else if (i === 3) { for (let y = 0; y < Hh; y += 6) { g.fillStyle = y < 50 ? shade([150, 200, 235], 0.9 + r() * 0.15) : shade([40, 110, 170], 0.8 + r() * 0.3); g.fillRect(0, y, W, 6); } g.fillStyle = '#fff'; g.beginPath(); g.moveTo(84, 22); g.lineTo(84, 66); g.lineTo(112, 66); g.fill(); BX(g, 70, 68, 50, 7, '#7a4a2a'); }
+    else if (i === 4) { BX(g, 0, 0, W, Hh, '#f6efe0'); for (let q = 0; q < 9; q++) { const x = 20 + q * 15 + r() * 6, y = 30 + r() * 40; g.strokeStyle = '#3f7a3a'; g.lineWidth = 3; g.beginPath(); g.moveTo(x, Hh); g.lineTo(x + (r() - 0.5) * 10, y); g.stroke(); g.fillStyle = ['#e0465a', '#f2a03c', '#c86ad0', '#f2d23c'][q % 4]; g.beginPath(); g.arc(x, y, 8 + r() * 4, 0, TAU); g.fill(); } }
+    else { BX(g, 0, 0, W, Hh, '#efe6d0'); g.strokeStyle = '#222'; g.lineCap = 'round'; for (let q = 0; q < 4; q++) { const x = 30 + q * 30; g.lineWidth = 6; g.beginPath(); g.moveTo(x, Hh); g.lineTo(x + 10, 8); g.stroke(); g.lineWidth = 3; for (let e = 0; e < 4; e++) { const y = 20 + e * 22; g.beginPath(); g.moveTo(x + 4, y); g.lineTo(x + 24, y - 10); g.moveTo(x + 4, y); g.lineTo(x - 16, y - 8); g.stroke(); } } BX(g, 132, 84, 16, 16, '#b3261e'); } });
+  const sketch = i => U('sk' + i, 120, 160, (g, W, Hh) => { const r = rng(40 + i); BX(g, 0, 0, W, Hh, '#f1ece0'); g.strokeStyle = 'rgba(60,60,64,0.75)'; g.lineWidth = 1.6; g.beginPath(); g.ellipse(60, 118, 46, 12, 0, 0, TAU); g.stroke(); g.strokeRect(30 + i * 4, 84, 26, 26); g.beginPath(); g.ellipse(74, 76 - i * 3, 14, 30, 0, 0, TAU); g.stroke(); g.beginPath(); g.moveTo(84, 110); g.lineTo(98, 64); g.lineTo(108, 110); g.stroke();
+    for (let q = 0; q < 26 + i * 12; q++) { const x = 20 + r() * 80, y = 60 + r() * 60; g.strokeStyle = 'rgba(60,60,64,0.25)'; g.beginPath(); g.moveTo(x, y); g.lineTo(x + 10, y - 8); g.stroke(); } });
+
+  // ---- storey 3, room A: computer room
+  { const R = roomA(0), { b, W, D } = R; roomShell(R, lm('carpet'), DA, RIBA);
+    cardX(b, slide('信息技术 · Python 入门', ['for i in range(10):', '    print(i * i)', '列表、循环与函数', '今日任务：猜数字游戏'], '#17324d'), 0.02, 0.95, 3.4, 3.9, 2.2, 1, true); b.box(ALU, 0.012, 2.05, 5.35, 0.02, 2.28, 3.98, 'W');
+    tbl(b, 1.1, 7.6, 0.7, 1.6); pcAt(b, 1.6, 0.74, 8.4, -1, 1); R.put('task', 0.72, 8.4, 0, 0x3a4a5c); pile(b, 1.4, 0.74, 7.9, 6, 3); R.col(1.1, 7.6, 1.8, 9.2, 0.8);
+    b.slab(DKM, 0.1, 0, 9.9, 0.7, 2.0, 0.8); for (let i = 0; i < 8; i++) b.box(i % 3 ? C(0x3fd07a) : C(0xf2a03c), 0.805, 0.4 + i * 0.19, 10.0 + (i % 4) * 0.15, 0.01, 0.02, 0.03); R.col(0.1, 9.9, 0.8, 10.7, 2);
+    const GR = C(0x9aa3ab), TOP = C(0xe9e6dc, 'gloss'), cols = [0x2f4f7f, 0x35588c, 0x2b4a70];
+    [3.1, 4.7, 6.3, 7.9].forEach((xr, row) => { for (const z0 of [1.3, 6.0]) {
+      b.slab(TOP, xr - 0.35, 0.7, z0, 0.65, 0.04, 3.3); b.slab(GR, xr - 0.35, 0.1, z0, 0.02, 0.6, 3.3); b.slab(GR, xr - 0.35, 0, z0, 0.65, 0.7, 0.03, 'U'); b.slab(GR, xr - 0.35, 0, z0 + 3.27, 0.65, 0.7, 0.03, 'U'); R.col(xr - 0.35, z0, xr + 0.3, z0 + 3.3, 0.8);
+      for (let i = 0; i < 4; i++) { const zc = z0 + 0.41 + i * 0.826; pcAt(b, xr - 0.15, 0.74, zc, 1, (i + row) % 3); b.slab(DKM, xr - 0.3, 0.02, zc + 0.24, 0.4, 0.38, 0.17); R.put('task', xr + 0.62, zc + ((i * 7 + row * 3) % 5 - 2) * 0.03, Math.PI + ((i + row) % 3 - 1) * 0.25, cols[(i + row) % 3]); } } });
+    b.slab(C(0xd9d6ca), W - 0.45, 0, 1.0, 0.45, 1.9, 3.0); for (let i = 1; i < 4; i++) b.box(DKM, W - 0.455, 0.95, 1.0 + i * 0.75, 0.01, 1.86, 0.012); R.col(W - 0.45, 1.0, W, 4.0, 2);
+    cardX(b, poster('上机守则', '#1f6fb5'), W - 0.012, 1.25, 5.0, 0.6, 0.84, -1); cardX(b, poster('网络安全', '#b3261e', 1), W - 0.012, 1.25, 5.8, 0.6, 0.84, -1);
+    b.slab(MW, W - 0.5, 0, 9.9, 0.5, 1.8, 0.6); b.box(DKM, W - 0.505, 1.55, 10.2, 0.01, 0.12, 0.44); R.col(W - 0.5, 9.9, W, 10.5, 1.8);
+    tbl(b, 3.0, 0.1, 1.6, 0.6); b.slab(C(0xe6e4dc), 3.2, 0.74, 0.18, 0.5, 0.28, 0.42); b.box(DKM, 3.45, 0.9, 0.61, 0.3, 0.06, 0.01); pile(b, 4.2, 0.74, 0.4, 5, 9, 0.22, 0.3); R.col(3.0, 0.1, 4.6, 0.7, 0.8);
+    b.box(MW, 2.8, CU - 0.22, 5.35, 0.36, 0.12, 0.3); b.box(MW, 2.8, CU - 0.08, 5.35, 0.04, 0.16, 0.04); ceilLights(R, 3, 3);
+    drape(b, 0.9, 1.9, D - 0.07, 0x8fa8c0); drape(b, 7.9, 8.9, D - 0.07, 0x8fa8c0); R.pot(2.3, 10.4, 0.36); }
+
+  // ---- storey 3, room B: maker space
+  { const R = roomB(0), { b, W, D } = R; roomShell(R, lm('concrete'), DB, RIBB);
+    const TT = C(0xc9a878, 'gloss'), sc = [0xd9482b, 0xe0b020, 0x2f6fb5, 0x2f8a55];
+    [[1.9, 1.7], [4.6, 1.7], [1.9, 4.5], [4.6, 4.5]].forEach(([x, z], t) => { tbl(b, x, z, 1.8, 0.9, 0.78, TT, DKM, 0.06); R.col(x, z, x + 1.8, z + 0.9, 0.82);
+      [[0.45, -0.32], [1.35, -0.32], [0.45, 1.22], [1.35, 1.22]].forEach(([dx, dz], i) => R.put('stool', x + dx, z + dz, i, sc[(i + t) % 4]));
+      if (t === 0) { b.box(C(0x2f6fb5), x + 0.5, 0.83, z + 0.4, 0.24, 0.05, 0.15); for (const [wx, wz] of [[-0.08, -0.09], [0.08, -0.09], [-0.08, 0.09], [0.08, 0.09]]) b.box(DKM, x + 0.5 + wx, 0.81, z + 0.4 + wz, 0.07, 0.07, 0.03); b.box(MW, x + 0.6, 0.87, z + 0.4, 0.04, 0.03, 0.08);
+        b.box(C(0xe9e6da), x + 1.2, 0.786, z + 0.3, 0.17, 0.012, 0.06); for (let i = 0; i < 5; i++) bar(b, C(sc[i % 4]), [x + 1.14 + i * 0.03, 0.8, z + 0.3], [x + 1.0 + i * 0.05, 0.8, z + 0.55], 0.006); b.box(C(0x1f7a6a), x + 1.05, 0.786, z + 0.6, 0.11, 0.012, 0.07); }
+      if (t === 1) { b.box(C(0xb8322a), x + 0.5, 0.87, z + 0.45, 0.42, 0.18, 0.2); b.box(DKM, x + 0.5, 0.98, z + 0.45, 0.2, 0.03, 0.03); b.box(C(0x2f7a55), x + 1.25, 0.783, z + 0.45, 0.6, 0.006, 0.45, 'D'); b.box(ALU, x + 1.2, 0.79, z + 0.5, 0.32, 0.004, 0.03); }
+      if (t === 2) { b.box(C(0x8f959b), x + 0.5, 0.79, z + 0.45, 0.32, 0.016, 0.22); cardZ(b, scr(0), x + 0.34, 0.8, z + 0.345, 0.32, 0.2, 1, true); b.box(C(0x8f959b), x + 0.5, 0.9, z + 0.335, 0.33, 0.21, 0.01); b.box(DKM, x + 1.3, 0.82, z + 0.4, 0.14, 0.08, 0.12); bar(b, ALU, [x + 1.4, 0.8, z + 0.6], [x + 1.48, 0.95, z + 0.6], 0.012); }
+      if (t === 3) { const P = C(0xe2c58f); b.box(P, x + 0.9, 0.8, z + 0.45, 0.9, 0.03, 0.09); b.box(P, x + 0.8, 0.805, z + 0.45, 0.16, 0.012, 0.8); b.box(P, x + 1.3, 0.83, z + 0.45, 0.012, 0.09, 0.1); b.box(P, x + 1.28, 0.8, z + 0.45, 0.1, 0.012, 0.3); pile(b, x + 0.3, 0.78, z + 0.6, 4, 21, 0.3, 0.22); } });
+    b.slab(TT, 2.3, 0.86, 0.05, 3.6, 0.05, 0.6); b.slab(C(0x4a6a8a), 2.3, 0, 0.1, 3.6, 0.86, 0.5); for (let i = 1; i < 6; i++) b.box(DKM, 2.3 + i * 0.6, 0.45, 0.605, 0.012, 0.8, 0.01); R.col(2.3, 0, 5.9, 0.65, 0.95);
+    cardZ(b, U('pegboard', 480, 195, (g, W2, Hh) => { BX(g, 0, 0, W2, Hh, '#c9a878'); g.fillStyle = 'rgba(60,40,20,0.35)'; for (let x = 8; x < W2; x += 12) for (let y = 8; y < Hh; y += 12) g.fillRect(x, y, 2, 2);
+      g.strokeStyle = '#2a2c2f'; g.lineCap = 'round'; for (let i = 0; i < 7; i++) { const x = 30 + i * 30; g.lineWidth = 5; g.beginPath(); g.moveTo(x, 30); g.lineTo(x, 110 + (i % 3) * 14); g.stroke(); g.fillStyle = ['#d9482b', '#e0b020', '#2f6fb5'][i % 3]; g.fillRect(x - 5, 100 + (i % 3) * 14, 10, 40); }
+      for (let i = 0; i < 4; i++) { const x = 262 + i * 34; g.fillStyle = '#8f959b'; g.fillRect(x, 26, 22, 14); g.fillStyle = '#7a5a3c'; g.fillRect(x + 8, 40, 6, 70); } g.strokeStyle = '#8f959b'; g.lineWidth = 6; for (let i = 0; i < 3; i++) { g.beginPath(); g.arc(424, 46 + i * 50, 16 - i * 3, 0.6, 5.6); g.stroke(); } BX(g, 240, 136, 150, 40, '#e9e6da', '#555', 2); TX(g, '工具用后归位', 315, 157, 20, '#b3261e', CJK, 'center', 'bold'); }), 2.5, 1.1, 0.012, 3.2, 1.3, 1);
+    b.box(GREYM, 5.5, 1.2, 0.4, 0.06, 0.7, 0.06); b.box(GREYM, 5.5, 1.5, 0.3, 0.16, 0.2, 0.3); b.box(GREYM, 5.5, 0.93, 0.3, 0.26, 0.04, 0.3); b.box(C(0x2f6fb5), 3.0, 0.97, 0.45, 0.2, 0.12, 0.14); b.box(GREYM, 3.0, 1.0, 0.56, 0.1, 0.04, 0.1);
+    b.slab(TT, W - 0.7, 0.76, 1.2, 0.7, 0.04, 4.8); b.slab(C(0xe3e0d4), W - 0.66, 0, 1.25, 0.62, 0.76, 4.7); R.col(W - 0.7, 1.2, W, 6.0, 0.85);
+    for (const z of [1.8, 3.0, 4.2]) { for (const [dx, dz] of [[-0.2, -0.2], [0.2, -0.2], [-0.2, 0.2], [0.2, 0.2]]) b.box(DKM, W - 0.35 + dx, 1.05, z + dz, 0.035, 0.5, 0.035, 'UD'); b.box(DKM, W - 0.35, 0.815, z, 0.46, 0.03, 0.46); b.box(DKM, W - 0.35, 1.315, z, 0.46, 0.03, 0.46); b.box(ALU, W - 0.35, 0.9, z, 0.3, 0.01, 0.3); b.box(C(0xf2801c), W - 0.35, 0.94, z, 0.08, 0.07 + (z % 1) * 0.1, 0.08); b.box(LAMP, W - 0.35, 1.295, z, 0.3, 0.008, 0.04, 'U'); }
+    b.slab(C(0x8f959b), W - 0.68, 0.8, 4.9, 0.64, 0.34, 0.9); b.box(C(0x20262b, 'gloss'), W - 0.36, 1.145, 5.35, 0.5, 0.01, 0.6); cardX(b, signCard('激光 · 当心', '#f4d21f', '#222222', 200, 70), W - 0.685, 0.88, 5.1, 0.4, 0.14, -1);
+    b.slab(TT, W - 0.3, 1.55, 1.4, 0.3, 0.03, 4.2); for (let i = 0; i < 9; i++) b.cyl(C(sc[i % 4]), W - 0.15, 1.58 + (i % 2) * 0.07, 1.6 + Math.floor(i / 2) * 0.5, 0.1, 0.065, 10);
+    b.slab(MW, 0.6, 0, D - 0.5, 6.8, 0.85, 0.45); b.slab(TT, 0.58, 0.85, D - 0.52, 6.84, 0.03, 0.5); for (let i = 0; i < 14; i++) for (let j = 0; j < 3; j++) b.box(C([0xd9482b, 0xe0b020, 0x2f6fb5, 0x2f8a55, 0x8f959b][(i * 3 + j * 2) % 5]), 0.86 + i * 0.48, 0.16 + j * 0.27, D - 0.505, 0.42, 0.22, 0.012, 'S'); R.col(0.6, D - 0.55, 7.4, D, 0.9);
+    cardX(b, U('wbMaker', 360, 156, (g, W2, Hh) => { BX(g, 0, 0, W2, Hh, '#fbfbf8', '#9aa0a6', 4); TX(g, '桥梁承重挑战  ·  第三周', 14, 20, 16, '#1f4fa0', KAI, 'left', 'bold'); g.strokeStyle = '#b3261e'; g.lineWidth = 2; g.beginPath(); g.moveTo(30, 110); g.lineTo(170, 110); for (let i = 0; i < 7; i++) { g.moveTo(30 + i * 20, 110); g.lineTo(40 + i * 20, 80); g.lineTo(50 + i * 20, 110); } g.moveTo(40, 80); g.lineTo(160, 80); g.stroke();
+      ['1. 画草图', '2. 激光切割', '3. 胶合、测试', '4. 改进再测'].forEach((s, i) => TX(g, s, 200, 52 + i * 24, 15, '#222', KAI)); TX(g, 'F', 100, 62, 14, '#1a7a3c', KAI, 'center'); }), 0.02, 0.95, 2.6, 3.0, 1.3, 1);
+    cardX(b, scr(3), 0.035, 1.25, 6.6, 1.6, 1.0, 1, true); b.box(DKM, 0.02, 1.75, 7.4, 0.03, 1.06, 1.66, 'W');
+    cardY(b, U('track', 320, 274, (g, W2, Hh) => { BX(g, 0, 0, W2, Hh, '#f7f7f3'); g.strokeStyle = '#111'; g.lineWidth = 9; g.lineJoin = 'round'; g.beginPath(); g.moveTo(50, 60); g.bezierCurveTo(160, 10, 290, 60, 250, 130); g.bezierCurveTo(220, 190, 300, 230, 220, 244); g.bezierCurveTo(120, 262, 30, 230, 70, 160); g.bezierCurveTo(100, 110, 10, 100, 50, 60); g.stroke(); BX(g, 140, 120, 34, 34, '#d9482b'); BX(g, 20, 20, 26, 26, '#2f8a55'); }), 2.6, 0.012, 6.6, 2.8, 2.4);
+    for (const [x, z, sx, sz] of [[4.0, 6.55, 2.9, 0.05], [4.0, 9.05, 2.9, 0.05], [2.575, 7.8, 0.05, 2.5], [5.425, 7.8, 0.05, 2.5]]) b.box(TT, x, 0.04, z, sx, 0.08, sz, 'D');
+    for (const [x, z, h] of [[3.4, 7.2, 0x2f6fb5], [4.7, 8.4, 0xd9482b]]) { b.box(C(h), x, 0.07, z, 0.2, 0.06, 0.14); b.box(DKM, x, 0.05, z, 0.12, 0.08, 0.18); }
+    cardX(b, poster('安全操作规程', '#c2410c', 2), W - 0.012, 1.3, 6.6, 0.6, 0.84, -1); cardX(b, poster('创客马拉松', '#6d3fa0', 3), W - 0.012, 1.3, 7.4, 0.6, 0.84, -1);
+    b.box(ALU, W / 2, CU - 0.3, D / 2, 0.3, 0.05, D - 1); ceilLights(R, 2, 3); R.pot(0.4, 9.6, 0.34, 0.88, 0.25); }
+
+  // ---- storey 4, room A: art studio
+  { const R = roomA(1), { b, W, D } = R, CX = 5.2, CZ = 5.6, r = rng(81), CER2 = C(0xf3f1ea); roomShell(R, lm('boards'), DA, RIBA);
+    b.cyl(C(0x8a6a48), CX, 0, CZ, 0.07, 0.7, 8); b.cyl(WOOD, CX, 0.7, CZ, 0.65, 0.04, 20); lathe(b, C(0x6a86b8), CX, CZ, [[0.72, 0.42], [0.7, 0.6], [0.67, 0.745], [0.2, 0.752]], 14);            // still life on a draped table
+    lathe(b, CER2, CX - 0.15, CZ - 0.1, [[0.12, 0.75], [0.14, 0.8], [0.09, 0.86], [0.16, 0.95], [0.17, 1.02], [0.06, 1.07], [0.1, 1.14], [0.115, 1.22], [0.09, 1.3], [0.02, 1.33]], 10);
+    lathe(b, C(0x2f5f9a, 'gloss'), CX + 0.25, CZ + 0.15, [[0.06, 0.75], [0.11, 0.82], [0.1, 0.92], [0.04, 1.0], [0.055, 1.03]], 10); b.box(CER2, CX + 0.2, 0.812, CZ - 0.2, 0.12, 0.12, 0.12); lathe(b, CER2, CX, CZ + 0.32, [[0.09, 0.752], [0.005, 0.95]], 10);
+    for (const [dx, dz, h] of [[-0.2, 0.26, 0xc8362c], [-0.3, 0.16, 0xd9a22b], [-0.12, 0.34, 0x7fa83a]]) lathe(b, C(h), CX + dx, CZ + dz, [[0.005, 0.752], [0.045, 0.77], [0.05, 0.8], [0.03, 0.835], [0.005, 0.84]], 8);
+    R.col(CX - 0.6, CZ - 0.6, CX + 0.6, CZ + 0.6, 0.8); bar(b, DKM, [3.7, 0, 3.9], [3.7, 1.9, 3.9], 0.03); b.box(DKM, 3.8, 1.9, 4.0, 0.22, 0.16, 0.22); b.box(LAMP, 3.86, 1.84, 4.06, 0.14, 0.02, 0.14);
+    for (let i = 0; i < 9; i++) { const f = -2.0 + i * 0.5, px = CX + 2.9 * Math.cos(f), pz = CZ + 2.9 * Math.sin(f); R.put('easel', px, pz, -f); R.put('stool', CX + 3.65 * Math.cos(f), CZ + 3.65 * Math.sin(f), i, [0x8a6a48, 0x5a6068, 0xb5653a][i % 3]);
+      R.sub(px, pz, -f); b.box(C(0xe9e4d6), 0.03, 1.16, 0, 0.02, 0.78, 0.6); cardX(b, i % 3 === 2 ? art(2) : sketch(i % 4), 0.045, 0.79, -0.28, 0.56, 0.74, 1); R.fr(); }
+    for (let i = 0; i < 10; i++) { const z = 2.3 + (i % 5) * 1.25, y = i < 5 ? 1.0 : 1.85; cardX(b, art((i * 5 + 1) % 6), 0.03, y, z, 0.86, 0.645, 1); b.box(C(0x8a6a48), 0.015, y + 0.3225, z + 0.43, 0.03, 0.72, 0.94, 'W'); }
+    tbl(b, 1.0, 8.6, 0.7, 1.5); pile(b, 1.3, 0.74, 9.0, 5, 12, 0.3, 0.4); for (let i = 0; i < 5; i++) b.cyl(C([0xd9482b, 0xe0b020, 0x2f6fb5, 0x2f8a55, 0xf2f2ee][i]), 1.2 + (i % 2) * 0.12, 0.74, 9.6 + i * 0.09, 0.035, 0.11, 8); R.col(1.0, 8.6, 1.7, 10.1, 0.8);
+    b.slab(C(0xb9a888), 2.4, 0, 0.05, 2.4, 0.95, 0.75); for (let i = 1; i < 8; i++) b.box(DKM, 3.6, i * 0.118, 0.805, 2.3, 0.008, 0.01); for (let i = 0; i < 6; i++) b.cyl(C(0xf1ece0), 2.7 + i * 0.13, 0.95, 0.3 + (i % 2) * 0.12, 0.045, 0.75, 8); R.col(2.4, 0, 4.8, 0.82, 1);
+    for (const x of [5.2, 6.8]) b.box(GREYM, x, 0.8, 0.35, 0.03, 1.6, 0.6); for (let i = 0; i < 7; i++) { b.box(GREYM, 6.0, 0.25 + i * 0.2, 0.35, 1.6, 0.012, 0.6); if (i % 3 !== 1) b.box(C([0xf1ece0, 0xe6d9b8, 0xdfe6ea][i % 3]), 5.9 + (i % 2) * 0.2, 0.262 + i * 0.2, 0.35, 1.1, 0.006, 0.5); } R.col(5.2, 0, 6.8, 0.7, 1.7);
+    b.slab(C(0xe3e0d4), W - 0.6, 0, 1.5, 0.6, 0.85, 4.0); b.slab(STL, W - 0.62, 0.85, 1.5, 0.62, 0.03, 4.0); for (const z of [2.3, 4.3]) { b.box(C(0x55595e), W - 0.32, 0.882, z, 0.42, 0.006, 0.6); bar(b, STL, [W - 0.08, 0.88, z], [W - 0.08, 1.12, z], 0.025); bar(b, STL, [W - 0.08, 1.12, z], [W - 0.24, 1.12, z], 0.025); }
+    for (let i = 0; i < 14; i++) b.cyl(C([0xd9482b, 0xe0b020, 0x2f6fb5, 0x2f8a55, 0xf2f2ee, 0x7a4fa0, 0x111111][i % 7]), W - 0.12, 0.88, 2.8 + i * 0.085, 0.032, 0.13, 7); for (let i = 0; i < 3; i++) { b.cyl(C(0x9fc3cc), W - 0.4, 0.88, 4.9 + i * 0.16, 0.05, 0.12, 8); bar(b, C(0x8a6a48), [W - 0.4, 0.95, 4.9 + i * 0.16], [W - 0.44, 1.2, 4.93 + i * 0.16], 0.012); }
+    R.col(W - 0.62, 1.5, W, 5.5, 0.9); b.slab(WOOD, W - 0.35, 1.5, 1.6, 0.35, 0.03, 3.8); lathe(b, CER2, W - 0.18, 2.2, [[0.005, 1.53], [0.13, 1.6], [0.14, 1.68], [0.08, 1.78], [0.005, 1.8]], 10); b.cyl(CER2, W - 0.18, 1.53, 3.0, 0.09, 0.26, 12); lathe(b, CER2, W - 0.18, 3.8, [[0.11, 1.53], [0.005, 1.8]], 10); b.box(CER2, W - 0.18, 1.63, 4.6, 0.2, 0.2, 0.2);
+    for (let i = 0; i < 4; i++) { b.slab(WOOD, W - 0.5, 0.05 + i * 0.5, 6.2, 0.5, 0.03, 3.6); if (i < 3) pile(b, W - 0.25, 0.08 + i * 0.5, 6.7 + i * 0.9, 6, 30 + i, 0.4, 0.5); } for (const z of [6.2, 9.77]) b.slab(WOOD, W - 0.5, 0, z, 0.5, 1.6, 0.03); R.col(W - 0.5, 6.2, W, 9.8, 1.6);
+    for (let i = 0; i < 16; i++) b.box(C([0xd9482b, 0xe0b020, 0x2f6fb5, 0x2f8a55, 0xf2f2ee][i % 5]), 1.5 + r() * 7, 0.007, 1.5 + r() * 8.5, 0.08 + r() * 0.25, 0.002, 0.06 + r() * 0.2, 'D');
+    ceilLights(R, 3, 3); drape(b, 0.9, 1.6, D - 0.07, 0xf1eee4); drape(b, 8.2, 8.9, D - 0.07, 0xf1eee4); R.pot(0.45, 2.0, 0.34); }
+
+  // ---- storey 4, room B: music room
+  { const R = roomB(1), { b, W, D } = R, PN = C(0x141518, 'gloss'), RIS = C(0x9a7b55); roomShell(R, lm('boards'), DB, RIBB);
+    for (let j = 0; j < 3; j++) { const x0 = W - 2.95 + j * 0.95, h = 0.2 * (j + 1); b.slab(RIS, x0, 0, 1.0, j < 2 ? 0.94 : 0.95 + 0.1, h, D - 2.0, 'D'); b.slab(DKM, x0 - 0.01, h - 0.04, 1.0, 0.03, 0.045, D - 2.0, 'D'); R.col(x0, 1.0, x0 + 0.94, D - 1.0, h);
+      for (let i = 0; i < 7; i++) R.put('chair', x0 + 0.5, 1.7 + i * 1.2, Math.PI, 0x8a2f2b, h); }
+    R.sub(2.0, 8.0, 0.45); polyPrism(b, PN, [[-0.75, -0.72], [-0.75, 0.72], [0.25, 0.72], [0.8, 0.55], [1.08, 0.2], [1.02, -0.35], [0.6, -0.72]], 0.62, 0.94, true, true);              // grand piano
+    b.box(PN, -0.87, 0.71, 0, 0.26, 0.1, 1.44); { const u = U('keys', 512, 44, (g, W2, Hh) => { BX(g, 0, 0, W2, Hh, '#fbfbf6'); for (let i = 0; i < 52; i++) { g.fillStyle = '#9a9a94'; g.fillRect(i * W2 / 52, 0, 1, Hh); if (![2, 6].includes(i % 7)) BX(g, (i + 0.7) * W2 / 52, 0, W2 / 52 * 0.6, Hh * 0.62, '#111'); } });
+      texQuad(b, PR, [-0.99, 0.765, -0.7], [-0.99, 0.765, 0.7], [-0.84, 0.765, 0.7], [-0.84, 0.765, -0.7], u[0], u[1], u[2], u[3]); }
+    b.box(PN, -0.6, 1.08, 0, 0.02, 0.26, 0.8); cardX(b, U('score', 100, 70, (g, W2, Hh) => { BX(g, 0, 0, W2, Hh, '#fbfaf2'); for (let s = 0; s < 4; s++) { for (let l = 0; l < 5; l++) { g.fillStyle = '#333'; g.fillRect(6, 8 + s * 16 + l * 2, W2 - 12, 0.6); } for (let n = 0; n < 9; n++) { g.beginPath(); g.ellipse(12 + n * 9.5, 9 + s * 16 + ((n * 5 + s * 3) % 9), 2, 1.5, -0.3, 0, TAU); g.fill(); } } }), -0.612, 0.97, -0.3, 0.6, 0.4, -1);
+    for (const [x, z] of [[-0.5, -0.55], [-0.5, 0.55], [0.8, 0]]) b.cyl(PN, x, 0, z, 0.045, 0.62, 8); b.box(PN, -1.5, 0.47, 0, 0.36, 0.07, 0.8); for (const z of [-0.33, 0.33]) b.box(PN, -1.5, 0.22, z, 0.3, 0.44, 0.04, 'UD'); R.fr(); R.col(1.0, 6.9, 3.2, 9.2, 1.0);
+    b.slab(RIS, 2.1, 0, 4.4, 0.9, 0.15, 0.9); R.col(2.1, 4.4, 3.0, 5.3, 0.15); R.put('mstand', 3.15, 4.85, Math.PI);
+    for (let i = 0; i < 6; i++) { const z = 2.0 + i * 1.15; R.put('chair', 4.35, z, Math.PI, 0x2f4f7f); R.put('mstand', 3.8, z, 0); R.sub(3.8, z, 0); cardX(b, U('score'), 0.024, 1.07, -0.2, 0.4, 0.27, 1); R.fr(); }
+    cardX(b, U('staff', 440, 156, (g, W2, Hh) => { BX(g, 0, 0, W2, Hh, '#fbfbf8', '#9aa0a6', 4); for (let s = 0; s < 3; s++) for (let l = 0; l < 5; l++) { g.fillStyle = '#b9bcc0'; g.fillRect(16, 24 + s * 46 + l * 7, W2 - 32, 1.5); }
+      g.fillStyle = '#1d1d1f'; for (let n = 0; n < 14; n++) { const x = 60 + n * 24, y = 24 + ((n * 3) % 6) * 3.5; g.beginPath(); g.ellipse(x, y + 14, 5, 3.6, -0.35, 0, TAU); g.fill(); g.fillRect(x + 4, y - 8, 1.6, 22); } TX(g, '《送别》  李叔同', 150, 84, 15, '#1f4fa0', KAI, 'left', 'bold'); TX(g, '4/4   ♩ = 72', 18, 84, 14, '#b3261e', KAI); TX(g, '长亭外，古道边，芳草碧连天', 18, 130, 16, '#222', KAI); }), 0.02, 0.95, 2.4, 3.6, 1.276, 1);
+    for (const z of [1.5, 6.9]) { b.box(DKM, 0.16, 2.7, z, 0.26, 0.42, 0.3); b.box(C(0x55595e), 0.295, 2.7, z, 0.01, 0.3, 0.2); }
+    b.slab(C(0x9a7b55), 2.2, 0, 0.05, 2.8, 2.0, 0.5); b.quad(GRL, [2.25, 0.5, 0.56], [4.95, 0.5, 0.56], [4.95, 1.95, 0.56], [2.25, 1.95, 0.56]); for (let i = 0; i < 5; i++) lathe(b, C([0xb5653a, 0x8a2f2b, 0xd9a22b][i % 3]), 2.5 + i * 0.55, 0.3, [[0.1, 1.0], [0.13, 1.25], [0.15, 1.38], [0.14, 1.4]], 10); R.col(2.2, 0, 5.0, 0.6, 2);
+    for (const x of [1.3, 2.9]) { b.box(DKM, x + 0.65, 0.76, D - 0.5, 1.3, 0.1, 0.32); const u = U('keys'); texQuad(b, PR, [x + 1.28, 0.812, D - 0.62], [x + 0.02, 0.812, D - 0.62], [x + 0.02, 0.812, D - 0.5], [x + 1.28, 0.812, D - 0.5], u[0], u[1], u[2], u[3]); for (const s of [0.2, 1.1]) { bar(b, DKM, [x + s, 0.72, D - 0.62], [x + s, 0, D - 0.3], 0.03); bar(b, DKM, [x + s, 0.72, D - 0.38], [x + s, 0, D - 0.7], 0.03); } R.put('stool', x + 0.65, D - 1.0, 0, 0x2a2c2f); }
+    R.col(1.3, D - 0.7, 4.2, D, 0.85);
+    for (let i = 0; i < 5; i++) { b.box(C([0x4f7396, 0xc27a2c][i % 2]), W - 0.02, 2.4, 1.6 + i * 1.9, 0.03, 1.0, 1.4, 'E'); }
+    for (let i = 0; i < 12; i++) b.box(C([0xb8322a, 0xe0b020, 0x2f8a55, 0x2f6fb5][i % 4]), 5.0 - 0.3, 0.86, 9.2 + i * 0.07 - 0.4, 0.5 - i * 0.02, 0.02, 0.055); b.box(DKM, 4.7, 0.42, 9.2, 0.5, 0.84, 0.9, 'U');
+    ceilLights(R, 2, 3); drape(b, 0.45, 1.7, D - 0.08, 0x7a2f3a, 0.1, 3.3); drape(b, 6.4, 7.65, D - 0.08, 0x7a2f3a, 0.1, 3.3); R.pot(0.45, 0.5, 0.3); }
+
+  // ---- storey 5, room A: lecture room with stepped rows
+  { const R = roomA(2), { b, W, D } = R, CP = C(0x49536a), cols = [0x2f4f7f, 0x35588c, 0x2b4a70]; roomShell(R, lm('carpet'), DA, RIBA);
+    for (let j = 1; j <= 5; j++) { const x0 = 3.2 + j + 0.005, x1 = j < 5 ? x0 + 0.99 : W, h = 0.16 * j; b.slab(CP, x0, 0, 0, x1 - x0, h, D, 'D'); R.col(x0, 0, x1, D, h); for (const z of [0.55, 5.5, 10.4]) b.box(LAMP, x0 - 0.004, h - 0.035, z, 0.012, 0.02, 0.9, 'E'); }
+    for (let j = 0; j < 6; j++) for (const z0 of [1.2, 6.1]) { for (let i = 0; i < 6; i++) R.put('seat', 3.75 + j, z0 + 0.31 + i * 0.62, Math.PI, cols[(i + j) % 3], 0.16 * j); R.col(3.45 + j, z0, 4.05 + j, z0 + 3.72, 0.9, 0.16 * j); }
+    cardX(b, slide('光合作用 —— 细胞的能量工厂', ['叶绿体：类囊体与基质', '光反应 → ATP、NADPH', '暗反应：卡尔文循环', '思考：影响速率的因素？'], '#12303a'), 0.02, 1.0, 3.4, 4.0, 2.25, 1, true); b.box(ALU, 0.012, 2.125, 5.4, 0.02, 2.33, 4.08, 'W');
+    b.slab(C(0x8a6a48, 'gloss'), 1.5, 0, 2.3, 0.5, 1.1, 0.6); b.box(C(0x8f959b), 1.75, 1.115, 2.6, 0.3, 0.014, 0.22); bar(b, DKM, [1.6, 1.1, 2.4], [1.72, 1.36, 2.42], 0.014); R.col(1.5, 2.3, 2.0, 2.9, 1.1);
+    tbl(b, 1.3, 4.3, 0.8, 2.6, 0.9, C(0x2a2d30, 'gloss'), GREYM); R.col(1.3, 4.3, 2.1, 6.9, 0.9); for (let i = 0; i < 4; i++) lathe(b, C([0x9fc3cc, 0xb7e0c8, 0xf2d27c, 0xe6a6a0][i]), 1.7, 4.8 + i * 0.5, [[0.05, 0.9], [0.07, 0.94], [0.02, 1.02], [0.02, 1.1]], 8); b.box(C(0x8f959b), 1.7, 0.96, 6.6, 0.16, 0.12, 0.12);
+    for (let z = 0.3; z < D - 0.2; z += 0.14) b.box(C(0xb98a55), W - 0.03, 2.1, z, 0.04, 2.5, 0.06, 'UDE');
+    for (const [x, z] of [[2.6, 2.9], [2.6, 8.0], [5.6, 2.9], [5.6, 8.0], [8.3, 2.9], [8.3, 8.0]]) { b.box(MW, x, CU - 0.32, z, 2.2, 0.05, 3.6); for (const [dx, dz] of [[-0.6, -1], [0.6, -1], [-0.6, 1], [0.6, 1]]) b.box(LAMP, x + dx, CU - 0.35, z + dz, 0.22, 0.012, 0.22, 'U'); }
+    b.box(MW, 3.4, CU - 0.5, 5.4, 0.36, 0.12, 0.3); for (const z of [2.2, 8.6]) b.box(DKM, 0.15, 2.8, z, 0.24, 0.4, 0.28);
+    drape(b, 0.9, 6.8, D - 0.08, 0x3d4a66, 0.1, 3.3); cardX(b, poster('学术讲座预告', '#0f7a6a', 4), W - 0.06, 1.3, 0.3, 0.6, 0.84, -1); }
+
+  // ---- storey 5, room B: staff room
+  { const R = roomB(2), { b, W, D } = R, SC = C(0x6f7c88), SOFA = C(0x4a5a6e), TOPG = C(0xe9e6dc, 'gloss'); roomShell(R, lm('tile'), DB, RIBB);
+    [[2.4, 2.4], [5.6, 2.4], [2.4, 5.4], [5.6, 5.4]].forEach(([xc, zc], q) => { b.box(SC, xc, 0.62, zc, 0.04, 1.24, 2.44); b.box(SC, xc, 0.62, zc, 1.4, 1.24, 0.04); R.col(xc - 0.7, zc - 1.2, xc + 0.7, zc + 1.2, 1.25);
+      for (const sx of [-1, 1]) for (const sz of [-1, 1]) { const i = (sx + 1) + (sz + 1) / 2 + q; b.slab(TOPG, sx > 0 ? xc + 0.03 : xc - 0.68, 0.7, sz > 0 ? zc + 0.03 : zc - 1.2, 0.65, 0.04, 1.17); b.box(GREYM, xc + sx * 0.66, 0.35, zc + sz * 1.185, 0.03, 0.7, 0.03, 'UD');
+        pcAt(b, xc + sx * 0.2, 0.74, zc + sz * 0.55, sx, i % 3); pile(b, xc + sx * 0.42, 0.74, zc + sz * 1.0, 4 + (i * 3) % 8, i * 7 + 2, 0.19, 0.26); b.cyl(C([0xd9482b, 0x2f6fb5, 0xf2f2ee, 0x2f8a55][i % 4]), xc + sx * 0.5, 0.74, zc + sz * 0.16, 0.04, 0.1, 8);
+        R.put('task', xc + sx * 1.02, zc + sz * 0.6 + (i % 3 - 1) * 0.06, sx > 0 ? Math.PI + (i % 3 - 1) * 0.3 : (i % 3 - 1) * 0.3, [0x3a4a5c, 0x2a2c2f, 0x5a3f3a][i % 3]); } });
+    b.slab(C(0xd9d6ca), 2.2, 0, 0.05, 3.8, 1.95, 0.45); cardZ(b, U('binders', 256, 62, (g, W2, Hh) => { const r = rng(61); BX(g, 0, 0, W2, Hh, '#b9b6aa'); let x = 2; while (x < W2 - 6) { const w = 7 + r() * 5; BX(g, x, 3, w - 1, Hh - 6, ['#2f5fa8', '#b8322a', '#2f8a55', '#3a3d42', '#e0b020', '#f2efe6'][Math.floor(r() * 6)]); BX(g, x + 1.5, 10, w - 4, 16, '#fff'); x += w; } }), 2.25, 1.0, 0.505, 3.7, 0.9, 1);
+    for (let i = 1; i < 5; i++) b.box(DKM, 2.2 + i * 0.76, 0.5, 0.505, 0.012, 0.96, 0.01); R.col(2.2, 0, 6.0, 0.55, 2);
+    cardX(b, U('wbSched', 360, 160, (g, W2, Hh) => { BX(g, 0, 0, W2, Hh, '#fbfbf8', '#9aa0a6', 4); TX(g, '本周工作安排', 14, 18, 16, '#b3261e', KAI, 'left', 'bold'); g.strokeStyle = '#1f4fa0'; g.lineWidth = 1.2; for (let i = 0; i <= 5; i++) { g.beginPath(); g.moveTo(14 + i * 66, 34); g.lineTo(14 + i * 66, 150); g.stroke(); } for (let j = 0; j <= 4; j++) { g.beginPath(); g.moveTo(14, 34 + j * 29); g.lineTo(344, 34 + j * 29); g.stroke(); }
+      ['周一', '周二', '周三', '周四', '周五'].forEach((s, i) => TX(g, s, 47 + i * 66, 48, 13, '#1f4fa0', KAI, 'center', 'bold')); [['教研会', 0, 1], ['公开课', 1, 2], ['月考命题', 2, 1], ['家长会', 4, 3], ['集体备课', 3, 2], ['值周', 0, 3]].forEach(([s, i, j]) => TX(g, s, 47 + i * 66, 48 + j * 29, 12, '#222', KAI, 'center')); }), 0.02, 0.95, 2.8, 2.9, 1.29, 1);
+    cardX(b, poster('教师发展中心通知', '#1f6fb5', 5), 0.02, 1.2, 6.2, 0.6, 0.84, 1); cardX(b, poster('党建园地', '#b3261e', 6), 0.02, 1.2, 7.0, 0.6, 0.84, 1);
+    b.slab(C(0xe6e4dc), W - 0.65, 0, 1.3, 0.6, 1.0, 0.6); b.box(DKM, W - 0.35, 1.02, 1.6, 0.56, 0.04, 0.5); b.box(C(0x3fb0e0), W - 0.6, 0.9, 1.45, 0.02, 0.08, 0.14); b.slab(MW, W - 0.36, 0, 2.5, 0.32, 1.0, 0.32); b.cyl(C(0x7fb7e6), W - 0.2, 1.0, 2.66, 0.13, 0.36, 10);
+    b.slab(MW, W - 0.64, 0, 3.3, 0.6, 1.65, 0.62); b.box(STL, W - 0.65, 1.0, 3.4, 0.02, 0.4, 0.03); R.col(W - 0.7, 1.2, W, 4.0, 1.7);
+    b.slab(SOFA, W - 0.95, 0.12, 7.6, 0.9, 0.3, 2.2); b.slab(SOFA, W - 0.25, 0.12, 7.6, 0.2, 0.75, 2.2); for (const z of [7.4, 9.8]) b.slab(SOFA, W - 0.95, 0.12, z, 0.9, 0.5, 0.2); for (let i = 0; i < 3; i++) b.slab(C(0x566880), W - 0.9, 0.42, 7.63 + i * 0.725, 0.62, 0.1, 0.7); R.col(W - 0.95, 7.4, W, 10.0, 0.8);
+    tbl(b, W - 2.25, 8.15, 0.6, 1.1, 0.42, C(0x8a6a48, 'gloss'), DKM); pile(b, W - 1.95, 0.42, 8.5, 3, 77, 0.22, 0.3); b.cyl(MW, W - 1.9, 0.42, 9.0, 0.045, 0.09, 8); b.box(C(0x8a7a6a), W - 1.9, 0.006, 8.7, 2.9, 0.004, 2.8, 'D');
+    R.put('tub', W - 3.2, 8.2, 0, 0x5f7f8f, 0, 1.2); R.put('tub', W - 3.2, 9.3, 0.3, 0x5f7f8f, 0, 1.2); R.pot(W - 0.45, 10.25, 0.42); R.pot(0.5, 10.0, 0.4); R.pot(0.4, 0.45, 0.3);
+    b.box(MW, 0.03, 2.55, 1.2, 0.03, 0.3, 0.3); ceilLights(R, 2, 3); drape(b, 0.45, 1.3, D - 0.07, 0xe6dcc0); drape(b, 6.8, 7.65, D - 0.07, 0xe6dcc0); }
+
+  // ---- storey 6, room B: the school's television studio with its control room
+  { const R = roomB(3), { b, W, D } = R, DW = C(0x3b3f45), XP = 5.4, DESK = C(0x1f4f8a, 'gloss'); roomShell(R, lm('carpet'), DB, [], DW);
+    xWall(b, XP - 0.04, -1, 0, D, [[0.4, 1.3, 0, 2.1], [2.0, 8.0, 1.0, 2.2]], DW); xWall(b, XP + 0.04, 1, 0, D, [[0.4, 1.3, 0, 2.1], [2.0, 8.0, 1.0, 2.2]], DW); b.quad(GRL, [XP, 1.0, 2.0], [XP, 1.0, 8.0], [XP, 2.2, 8.0], [XP, 2.2, 2.0]);
+    for (const [z, y0, y1] of [[2.0, 1.0, 2.2], [8.0, 1.0, 2.2], [0.4, 0, 2.1], [1.3, 0, 2.1]]) b.box(ALU, XP, (y0 + y1) / 2, z, 0.12, y1 - y0, 0.05); b.box(ALU, XP, 1.0, 5, 0.12, 0.05, 6); b.box(ALU, XP, 2.2, 5, 0.12, 0.05, 6); R.col(XP - 0.1, 1.3, XP + 0.1, D, CU); R.col(XP - 0.1, 0, XP + 0.1, 0.4, CU);
+    cardX(b, U('backdrop', 440, 220, (g, W2, Hh) => { const gr = g.createLinearGradient(0, 0, W2, Hh); gr.addColorStop(0, '#0b2a5c'); gr.addColorStop(0.6, '#1f5fa8'); gr.addColorStop(1, '#3fa0d8'); g.fillStyle = gr; g.fillRect(0, 0, W2, Hh); g.strokeStyle = 'rgba(255,255,255,0.18)'; g.lineWidth = 2; for (let i = 0; i < 9; i++) { g.beginPath(); g.arc(330, 250, 60 + i * 26, 3.3, 5.6); g.stroke(); }
+      TX(g, '校园电视台', 34, 84, 50, '#ffffff', CJK, 'left', 'bold'); TX(g, 'CAMPUS  TV', 36, 132, 22, '#cfe6ff', CJK, 'left', 'bold'); BX(g, 34, 154, 150, 4, '#f2c94c'); TX(g, '校园新闻  每周五播出', 34, 180, 16, '#e8f2ff', CJK); }), 0.03, 0.55, 3.1, 4.4, 2.2, 1, true);
+    ringWall(b, DESK, 0.4, 5.3, 2.32, -0.6, 0.6, 0, 0.75, 10, true); ringWall(b, DESK, 0.4, 5.3, 1.78, -0.6, 0.6, 0, 0.75, 10, false); ringTop(b, MW, 0.4, 5.3, 1.75, 2.36, -0.6, 0.6, 0.76, 10); ringWall(b, LAMP, 0.4, 5.3, 2.325, -0.6, 0.6, 0.1, 0.14, 10, true); R.col(1.85, 4.0, 2.75, 6.6, 0.8);
+    for (const z of [4.75, 5.85]) { R.put('task', 1.55, z, 0, 0x8a2f2b); bar(b, DKM, [2.3, 0.77, z], [2.38, 0.95, z], 0.012); b.box(DKM, 2.39, 0.96, z, 0.03, 0.03, 0.03); } b.box(C(0x8f959b), 2.15, 0.77, 5.3, 0.22, 0.014, 0.3);
+    for (const [x, z, pr] of [[4.2, 3.5, 0], [4.5, 5.3, 1], [4.2, 7.1, 0]]) { R.sub(x, z, Math.PI + (z - 5.3) * 0.12); for (let i = 0; i < 3; i++) bar(b, DKM, [0, 1.15, 0], [0.5 * Math.cos(i * 2.094 + 1), 0, 0.5 * Math.sin(i * 2.094 + 1)], 0.03);
+      b.box(DKM, 0, 1.36, 0, 0.5, 0.22, 0.2); b.box(DKM, 0.32, 1.36, 0, 0.16, 0.14, 0.14); b.box(C(0x4f6f9a, 'gloss'), 0.405, 1.36, 0, 0.01, 0.1, 0.1); b.box(DKM, -0.2, 1.52, 0.02, 0.16, 0.1, 0.03); b.box(LAMP, 0.26, 1.5, 0, 0.02, 0.02, 0.02);
+      if (pr) { b.box(DKM, 0.5, 1.36, 0, 0.03, 0.34, 0.44); b.box(C(0x16181a), 0.52, 1.36, 0, 0.005, 0.3, 0.4); } R.fr(); }
+    for (const x of [1.5, 3.4]) bar(b, GREYM, [x, 3.1, 0.6], [x, 3.1, 8.0], 0.05); for (const z of [2.0, 5.3, 7.6]) bar(b, GREYM, [0.6, 3.14, z], [4.8, 3.14, z], 0.05);
+    for (const [x, z] of [[1.5, 3.6], [1.5, 5.3], [1.5, 7.0], [3.4, 3.2], [3.4, 5.3], [3.4, 7.4]]) { b.box(DKM, x, 2.9, z, 0.22, 0.26, 0.22); b.box(LAMP, x, 2.765, z, 0.16, 0.012, 0.16, 'U'); bar(b, DKM, [x, 3.03, z], [x, 3.1, z], 0.03); }
+    b.quad(C(0x2fb44a), [XP - 0.06, 0, D - 0.02], [0.02, 0, D - 0.02], [0.02, 3.2, D - 0.02], [XP - 0.06, 3.2, D - 0.02]); b.box(C(0x2fb44a), XP / 2, 0.008, D - 1.2, XP - 0.2, 0.004, 2.4, 'D');
+    bar(b, DKM, [1.0, 0, 8.4], [1.0, 1.9, 8.4], 0.03); b.box(DKM, 1.0, 1.95, 8.45, 0.7, 0.9, 0.08); b.box(LAMP, 1.0, 1.95, 8.495, 0.62, 0.82, 0.012, 'N'); R.put('stool', 2.6, 9.6, 0, 0x2a2c2f);
+    cardZ(b, U('onair', 160, 60, (g, W2, Hh) => { BX(g, 0, 0, W2, Hh, '#2a0606', '#ff3b30', 4); TX(g, '直播中 ON AIR', W2 / 2, Hh / 2 + 1, 20, '#ff5a4f', CJK, 'center', 'bold'); }), 0.95, 2.3, 0.02, 0.6, 0.225, 1, true);
+    for (const [a, e] of [[[2.9, 0.012, 1.2], [4.2, 0.012, 3.4]], [[4.2, 0.012, 3.4], [4.6, 0.012, 5.2]], [[1.2, 0.012, 8.2], [3.9, 0.012, 7.2]]]) bar(b, C(0x16181a), a, e, 0.025);
+    b.slab(C(0x3a3d42), XP + 0.1, 0.72, 2.2, 0.8, 0.04, 5.6); for (const z of [2.2, 5.0, 7.77]) b.slab(C(0x3a3d42), XP + 0.1, 0, z, 0.8, 0.72, 0.03); R.col(XP + 0.1, 2.2, XP + 0.9, 7.8, 0.8);
+    b.box(DKM, XP + 0.55, 0.81, 5.0, 0.5, 0.1, 1.7); cardY(b, U('mixer', 340, 100, (g, W2, Hh) => { BX(g, 0, 0, W2, Hh, '#1c1e22'); for (let i = 0; i < 24; i++) { const x = 10 + i * 13.5; BX(g, x + 2, 8, 2, 60, '#55595e'); BX(g, x, 14 + (i * 17 % 40), 7, 10, ['#e6e6e6', '#f2a03c', '#3fd07a'][i % 3]); BX(g, x, 78, 7, 7, i % 4 ? '#b8322a' : '#3fd07a'); } }), XP + 0.3, 0.862, 4.15, 1.7, 0.5);
+    for (const [z, kd] of [[2.9, 3], [3.6, 1], [6.4, 3], [7.1, 0]]) pcAt(b, XP + 0.28, 0.76, z, 1, kd, false); R.put('task', XP + 1.3, 3.4, Math.PI, 0x2a2c2f); R.put('task', XP + 1.3, 6.0, Math.PI - 0.3, 0x2a2c2f);
+    for (let i = 0; i < 4; i++) { cardX(b, scr([3, 1, 3, 2][i]), W - 0.03, 1.3 + (i % 2) * 0.62, 2.6 + Math.floor(i / 2) * 1.0, 0.92, 0.56, -1, true); }
+    b.slab(DKM, W - 0.65, 0, 8.6, 0.6, 2.0, 0.7); for (let i = 0; i < 9; i++) b.box(i % 3 ? C(0x3fd07a) : C(0xf2a03c), W - 0.655, 0.4 + i * 0.17, 8.75 + (i % 4) * 0.13, 0.01, 0.02, 0.03); R.col(W - 0.65, 8.6, W, 9.3, 2);
+    for (const [x, z] of [[XP + 1.3, 2.4], [XP + 1.3, 6.4]]) b.box(LAMP, x, CU - 0.012, z, 0.5, 0.02, 0.5); }
+
+  // ---- storey 6, room A: reading and seminar room
+  { const R = roomA(3), { b, W, D } = R, SOFA = C(0x8a5a3c), wc = [0xb5653a, 0x3f6f5a, 0xcdb994, 0x5a4a6e]; roomShell(R, pbr('rubber', [0x7a6652, 2]), DA, RIBA);
+    for (const zc of [2.3, 5.5, 8.7]) { R.sub(W - 0.19, zc, -Math.PI / 2); bookcase(b, null, 3.1, 5, true, ROW); R.fr(); } R.col(W - 0.4, 0.7, W, 10.3, 2.2);
+    [[2.9, 3.0], [5.9, 3.0], [2.9, 6.4], [5.9, 6.4]].forEach(([x, z], t) => { b.cyl(WOOD, x, 0.7, z, 0.62, 0.04, 20); b.cyl(DKM, x, 0.03, z, 0.06, 0.67, 8, false); b.cyl(DKM, x, 0, z, 0.3, 0.03, 12); R.col(x - 0.55, z - 0.55, x + 0.55, z + 0.55, 0.75);
+      for (let i = 0; i < 4; i++) { const f = 0.785 + i * 1.571; R.put('chair', x + 0.95 * Math.cos(f), z + 0.95 * Math.sin(f), Math.PI - f, wc[(i + t) % 4]); }
+      pile(b, x + 0.2, 0.74, z - 0.15, 3 + t, 90 + t, 0.2, 0.27); if (t === 1) { b.cyl(C(0xc9a45c), x - 0.2, 0.74, z + 0.1, 0.07, 0.02, 10); bar(b, C(0xc9a45c), [x - 0.2, 0.76, z + 0.1], [x - 0.2, 0.86, z + 0.1], 0.015); lathe(b, C(0x2f6fb5, 'gloss'), x - 0.2, z + 0.1, [[0.005, 0.86], [0.1, 0.9], [0.15, 1.01], [0.1, 1.12], [0.005, 1.16]], 12); }
+      if (t === 2) { b.box(C(0x8f959b), x - 0.15, 0.748, z + 0.15, 0.32, 0.016, 0.22); cardZ(b, scr(1), x - 0.31, 0.76, z + 0.04, 0.32, 0.2, 1, true); b.box(C(0x8f959b), x - 0.15, 0.86, z + 0.03, 0.33, 0.21, 0.01); } });
+    b.slab(SOFA, 0.25, 0.12, 7.5, 0.9, 0.3, 2.2); b.slab(SOFA, 0.05, 0.12, 7.5, 0.2, 0.75, 2.2); b.slab(SOFA, 1.6, 0.12, D - 1.05, 2.2, 0.3, 0.9); b.slab(SOFA, 1.6, 0.12, D - 0.3, 2.2, 0.75, 0.2); for (let i = 0; i < 3; i++) { b.slab(C(0xa06a48), 0.3, 0.42, 7.53 + i * 0.725, 0.62, 0.1, 0.7); b.slab(C(0xa06a48), 1.63 + i * 0.725, 0.42, D - 1.0, 0.7, 0.1, 0.62); }
+    R.col(0.05, 7.5, 1.15, 9.7, 0.8); R.col(1.6, D - 1.05, 3.8, D, 0.8); tbl(b, 1.7, 8.3, 1.1, 0.6, 0.42, C(0x8a6a48, 'gloss'), DKM); b.box(C(0x9a6f5a), 2.2, 0.006, 8.7, 3.2, 0.004, 2.6, 'D');
+    const mag = i => U('mag' + i, 90, 120, (g, W2, Hh) => { const hue = (i * 67) % 360; BX(g, 0, 0, W2, Hh, `hsl(${hue},45%,${i % 2 ? 34 : 86}%)`); TX(g, ['读者', '科学', '少年', '博物', '作文', '英语'][i], W2 / 2, 22, 26, i % 2 ? '#fff' : '#b3261e', KAI, 'center', 'bold'); const gr = g.createLinearGradient(0, 40, W2, Hh); gr.addColorStop(0, `hsl(${(hue + 40) % 360},50%,60%)`); gr.addColorStop(1, `hsl(${(hue + 150) % 360},40%,40%)`); g.fillStyle = gr; g.fillRect(8, 40, W2 - 16, 62); ROWS(g, 10, 106, W2 - 20, 2, 5, i % 2 ? '#eee' : '#555', 2); });
+    cardY(b, mag(0), 1.8, 0.425, 8.4, 0.21, 0.28); cardY(b, mag(3), 2.3, 0.425, 8.5, 0.21, 0.28);
+    bar(b, C(0xc9a45c), [0.5, 0, 10.3], [0.5, 1.5, 10.3], 0.03); b.cyl(C(0xc9a45c), 0.5, 0, 10.3, 0.16, 0.03, 12); lathe(b, lm('shadeWarm'), 0.5, 10.3, [[0.22, 1.42], [0.13, 1.72]], 14);
+    cardX(b, U('map', 480, 250, (g, W2, Hh) => { const r = rng(7); BX(g, 0, 0, W2, Hh, '#9cc7e0', '#6a5a3c', 6); g.fillStyle = '#b9d49a'; for (const [x, y, rx, ry] of [[110, 90, 62, 46], [150, 170, 30, 44], [250, 80, 46, 30], [262, 150, 34, 50], [352, 96, 76, 52], [400, 196, 30, 20]]) { g.beginPath(); for (let a = 0; a <= 24; a++) { const k = 0.75 + 0.5 * r(), t = a / 24 * TAU; g.lineTo(x + Math.cos(t) * rx * k, y + Math.sin(t) * ry * k); } g.fill(); }
+      g.strokeStyle = 'rgba(255,255,255,0.5)'; g.lineWidth = 1; for (let i = 1; i < 8; i++) { g.beginPath(); g.moveTo(i * 60, 6); g.lineTo(i * 60, Hh - 6); g.stroke(); } for (let j = 1; j < 5; j++) { g.beginPath(); g.moveTo(6, j * 50); g.lineTo(W2 - 6, j * 50); g.stroke(); } TX(g, '世界地图（示意）', 16, 20, 14, '#3a3a3a', KAI, 'left', 'bold'); }), 0.02, 1.0, 2.2, 3.65, 1.9, 1);
+    b.slab(C(0x8a6a48, 'gloss'), 0.05, 0, 2.4, 0.42, 0.8, 3.2); for (let i = 0; i < 3; i++) lathe(b, C(0xd9a520, 'metal'), 0.26, 2.9 + i * 1.1, [[0.07, 0.8], [0.02, 0.86], [0.02, 0.95], [0.09, 1.02], [0.1, 1.12]], 8); R.col(0.05, 2.4, 0.5, 5.6, 0.85);
+    b.slab(WOOD, 2.4, 0, 0.02, 4.0, 2.0, 0.08); for (let t = 0; t < 3; t++) { b.slab(WOOD, 2.4, 0.42 + t * 0.52, 0.1, 4.0, 0.03, 0.14); for (let i = 0; i < 10; i++) cardZ(b, mag((i + t * 2) % 6), 2.5 + i * 0.39, 0.46 + t * 0.52, 0.2 - 0.004 * i % 0.02, 0.3, 0.4, 1); } R.col(2.4, 0, 6.4, 0.3, 2);
+    tbl(b, 6.0, 9.2, 0.8, 0.8, 0.5, WOOD, DKM); cardY(b, U('go', 160, 160, (g, S2) => { const r = rng(19); BX(g, 0, 0, S2, S2, '#dcb46a'); g.strokeStyle = '#3a2a14'; g.lineWidth = 1; for (let i = 0; i < 19; i++) { const q = 8 + i * 8; g.beginPath(); g.moveTo(q, 8); g.lineTo(q, 152); g.moveTo(8, q); g.lineTo(152, q); g.stroke(); } for (let i = 0; i < 46; i++) { g.fillStyle = i % 2 ? '#111' : '#f7f7f3'; g.beginPath(); g.arc(8 + Math.floor(r() * 19) * 8, 8 + Math.floor(r() * 19) * 8, 3.4, 0, TAU); g.fill(); } }), 6.1, 0.506, 9.3, 0.6, 0.6);
+    R.put('stool', 6.4, 8.85, 0, 0x8a6a48); R.put('stool', 6.4, 10.3, 0, 0x8a6a48); R.col(6.0, 9.2, 6.8, 10.0, 0.5);
+    R.pot(0.45, 6.6, 0.36); R.pot(4.6, 10.4, 0.4); R.pot(1.9, 0.5, 0.3); ceilLights(R, 3, 3); drape(b, 0.9, 1.7, D - 0.07, 0xd9c7a0); drape(b, 8.0, 8.9, D - 0.07, 0xd9c7a0); }
+
   // ================================================================= OUTSIDE: plaza, sculpture, aprons, garden, driveway
   home(v);
   const PZ = lm('plaza'), BAND = lm('band'), SG = lm('stone'), KERB = lm('kerb'), GRATE = C(0x3a3e42, 'metal'), LINE = C(0xf0f0ea);
@@ -1143,6 +1467,13 @@ export function build(item, ctx) {
   if (blooms.length) gxG.add(flowers(blooms, [0xd22a36, 0xe2485c, 0xc21f4a], { seed: 3, size: 0.42, y: 0.18 }));
   ctx.detail(gxG, mid[0], mid[1], 170);
   if (trees.length) ctx.add(broadleafTrees(trees, { seed: 9, low }).group);
+  // rooms of storeys 3 to 6: shown only while the viewer is on or near that storey (and near the building)
+  const ctrW = toW([32, -17]), M4 = new THREE.Matrix4(), P3 = new THREE.Vector3(), Q4 = new THREE.Quaternion(), S3 = new THREE.Vector3();
+  const potted = (list, seed) => { const im = shrubs(list.map(([x, , z, r]) => [x, z, r]), { seed }); list.forEach(([, yy], i) => { im.getMatrixAt(i, M4); M4.decompose(P3, Q4, S3); P3.y = yy + 0.16 * S3.x; im.setMatrixAt(i, M4.compose(P3, Q4, S3)); }); im.castShadow = false; return im; };
+  const roomGroups = UPF.map((y, k) => { const g = mergeFlat(RB[k].build({ name: item.id + '-rooms-' + (k + 3), castShadow: false }), false); RI[k].build(g, item.id + '-rooms-' + (k + 3)); if (RP[k].length) g.add(potted(RP[k], 40 + k));
+    g.traverse(o => { if (o.isMesh && o.material.transparent) o.renderOrder = 1; }); return ctx.add(g); });
+  if (ctx.animate) ctx.animate((dt, t, env) => { const p = env && env.camera ? env.camera.position : null; if (!p) return; const near = Math.hypot(p.x - ctrW[0], p.z - ctrW[1]) < 62;
+    roomGroups.forEach((g, k) => { g.visible = near && p.y > UPF[k] - 4.2 && p.y < UPF[k] + 4.4; }); });
   const cg = ctx.add(c.build({ name: item.id + '-colliders' })); cg.visible = false;
   cg.traverse(o => { if (o.isMesh) ctx.collide(o); });
   // after dusk the lights are on: the indoor finishes glow a little more (the lighting module lights the glass and the lamps)

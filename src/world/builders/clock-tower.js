@@ -86,6 +86,9 @@ export function build(item, ctx) {
   E.win(r.n + sz * 0.13, r.n + sz * 0.51, H - 23.3 * k, H - 21.7 * k, { n: 2, glass: lm('glassWin') });                 // the small three-pane window (SEEN)
   E.door(r.cz, { w: 1.2, h: 2.15, y0: 0.3, canopy: 0.9, leaf: lm('green'), stepOut: 0.9 });
   PE(S.v, lm('concrete'), r.cz - 1.1, r.cz + 1.1, 0, 0.16, 0, 1.3, 'FLRU'); apron(ctx, 'E', r.e, r.cz, 2.8, 1.6);           // lower step
+  // A clearing for the view of the tower from the south (the menu place 钟楼下 stands at its south end, 4 m west and 18 m south of
+  // the shaft's centre): the grounds keep trees and lamps off this strip. Nothing is built on it.
+  if (ctx.occupy) ctx.occupy([[r.cx - 6.2, r.cz + 20.2], [r.cx - 1.8, r.cz + 20.2], [r.cx + 2.9, r.s + 0.65], [r.w + 0.1, r.s + 0.65], [r.w - 0.1, r.cz + 10.55]]);
   const gx0 = r.e - 0.3 - Math.min(2.8, sx - 0.6), gx1 = r.e - 0.3, gy0 = H - 16.7 * k, gy1 = H - 11 * k;
   N.win(gx0, gx1, gy0, gy1, { n: 2, transom: (gy1 - gy0) / 2, glass: GG, sill: false, rev: 0.12 });                       // green glazed panel on the north face (SEEN)
   for (const f of [0.25, 0.75]) PN(S.v, FR, gx0, gx1, gy0 + (gy1 - gy0) * f - 0.02, gy0 + (gy1 - gy0) * f + 0.02, -0.12, -0.08, 'FUD');
