@@ -336,7 +336,7 @@ export function doorSet(S, put, uc, o = {}) {
       }
     }
   }
-  if (o.step !== false) put(S.v, lm('stone'), ua - 0.25, ub + 0.25, Math.max(0, y0 - 0.14), y0 + 0.02, back, o.stepOut ?? 0.55, 'FLRU');
+  if (o.step !== false) put(S.v, lm('concrete'), ua - 0.25, ub + 0.25, Math.max(0, y0 - 0.14), y0 + 0.02, back, o.stepOut ?? 0.55, 'FLRU');
   if (o.canopy) {                                          // flat concrete canopy with a drip edge, on two brackets
     const c = o.canopy, yc = yt + 0.32;
     put(S.v, lm('cope'), ua - 0.45, ub + 0.45, yc, yc + 0.12, 0, c, 'FLRUD'); put(S.v, lm('cope'), ua - 0.45, ub + 0.45, yc + 0.12, yc + 0.2, c - 0.08, c, 'FBLRU');
@@ -533,7 +533,7 @@ export function punch(A, u0, u1, floors, FH, { cols = 2, w = 1.2, h = 1.4, sill 
 export function doorOn(S, side, plane, uc, o = {}) {
   const out = side === 'N' || side === 'W' ? -1 : 1, put = face(side, plane + out * 0.14), w = o.w ?? 1.4;
   const h = doorSet(S, put, uc, { rev: 0.05, canopy: 1.0, ...o, w });
-  put(S.v, o.wall || lm('white'), h[0] - 0.02, h[1] + 0.02, h[2], h[3], -0.07, -0.05, 'F');
+  put(S.v, o.wall || lm('white'), h[0] - 0.02, h[1] + 0.02, h[2], h[3], -0.12, -0.1, 'F');
   return h;
 }
 /** Dark base course along a facade, left out where the doors are. */
@@ -675,13 +675,13 @@ function lobby(S, ctx, r, side, q, uc, o = {}) {
   const plane = planeOf(r, side), put = face(side, plane), alongX = side === 'N' || side === 'S', [u0, u1] = alongX ? [q.x0, q.x1] : [q.z0, q.z1], t = 0.14, PL = lm('plaster');
   const hole = doorSet(S, put, uc, { w: o.w ?? 1.7, h: 2.3, glazed: true, t, rev: t / 2, fan: 0.45, swing: 'in', canopy: o.canopy ?? 1.4, step: false, plate: false, bars: lm('frameDark') });
   curtain(S, put, u0, u1, 0.3, q.h, [0, q.h + 0.4], [hole], { t, glass: lm('glassLobby'), pitch: 1.5 }); put(S.v, lm('base'), u0, hole[0], 0, 0.3, -t, 0.02, 'FBU'); put(S.v, lm('base'), hole[1], u1, 0, 0.3, -t, 0.02, 'FBU');
-  wallHit(S, put, u0, u1, 0, q.h, [hole], t); put(S.v, lm('stone'), uc - 1.4, uc + 1.4, 0, 0.03, 0, 1.5, 'FLRU'); apron(ctx, side, plane, uc, 3.2, 2.6);
+  wallHit(S, put, u0, u1, 0, q.h, [hole], t); put(S.v, lm('concrete'), uc - 1.4, uc + 1.4, 0, 0.03, 0, 1.5, 'FLRU'); apron(ctx, side, plane, uc, 3.2, 2.6);
   // inside: floor, ceiling, the three walls (the fourth is the glass)
-  F(S.v, lm('graniteLight'), q.x0, 0, q.z0, q.x1 - q.x0, 0.02, q.z1 - q.z0, 'U'); F(S.v, lm('ceil'), q.x0, q.h, q.z0, q.x1 - q.x0, 0.02, q.z1 - q.z0, 'D');
+  F(S.v, lm('tread'), q.x0, 0, q.z0, q.x1 - q.x0, 0.02, q.z1 - q.z0, 'U'); F(S.d, lm('graniteLight'), q.x0, 0.02, q.z0, q.x1 - q.x0, 0.004, q.z1 - q.z0, 'U'); F(S.v, lm('ceil'), q.x0, q.h, q.z0, q.x1 - q.x0, 0.02, q.z1 - q.z0, 'D');
   const walls = { N: [q.x0, q.h, q.z0 - 0.01, q.x1 - q.x0, 0.01, 'S'], S: [q.x0, q.h, q.z1, q.x1 - q.x0, 0.01, 'N'], W: [q.x0 - 0.01, q.h, q.z0, 0.01, q.z1 - q.z0, 'E'], E: [q.x1, q.h, q.z0, 0.01, q.z1 - q.z0, 'W'] };
   for (const s of 'NSEW') if (s !== side) { const [x, h, z, sx, sz, fc] = walls[s]; F(S.v, PL, x, 0, z, sx, h, sz, fc); }
   const nx = Math.max(1, Math.round((q.x1 - q.x0) / 3.2)), nz = Math.max(1, Math.round((q.z1 - q.z0) / 3.2));
-  for (let i = 0; i < nx; i++) for (let j = 0; j < nz; j++) { const x = q.x0 + (q.x1 - q.x0) * (i + 0.5) / nx, z = q.z0 + (q.z1 - q.z0) * (j + 0.5) / nz; F(S.v, lm('frame'), x - 0.3, q.h - 0.035, z - 0.3, 0.6, 0.035, 0.6, 'NSEW'); F(S.v, lm('lamp'), x - 0.27, q.h - 0.045, z - 0.27, 0.54, 0.012, 0.54, 'D'); }
+  for (let i = 0; i < nx; i++) for (let j = 0; j < nz; j++) { const x = q.x0 + (q.x1 - q.x0) * (i + 0.5) / nx, z = q.z0 + (q.z1 - q.z0) * (j + 0.5) / nz; F(S.v, lm('frame'), x - 0.3, q.h - 0.035, z - 0.3, 0.6, 0.035, 0.6, 'NSEWD'); F(S.d, lm('lamp'), x - 0.27, q.h - 0.045, z - 0.27, 0.54, 0.012, 0.54, 'D'); }
   return hole;
 }
 

@@ -277,7 +277,7 @@ function glyphs() {
   const g = c.getContext('2d'); g.font = `bold ${Math.round(S * 0.84)}px ${CJK}`; g.textAlign = 'center'; g.textBaseline = 'middle'; g.fillStyle = g.strokeStyle = '#ffffff'; g.lineWidth = S * 0.03; g.lineJoin = 'round';
   chars.forEach((ch, i) => { const x = (i % cols + 0.5) * S, y = (Math.floor(i / cols) + 0.5) * S + S * 0.04; g.fillText(ch, x, y); g.strokeText(ch, x, y); });
   const t = new THREE.CanvasTexture(c); t.colorSpace = THREE.SRGBColorSpace; t.anisotropy = 8;
-  const red = new THREE.MeshStandardMaterial({ map: t, color: 0xc0261e, alphaTest: 0.4, roughness: 0.55 }); red.name = 'hifi-dormletters';
+  const red = new THREE.MeshStandardMaterial({ map: t, color: 0xc0261e, alphaTest: 0.4, roughness: 0.55, polygonOffset: true, polygonOffsetFactor: -2, polygonOffsetUnits: -4 }); red.name = 'hifi-dormletters';   // offset: the letters lie 3 cm off the wall and are seen from 300 m
   const uv = ch => { const i = chars.indexOf(ch), cx = i % cols, cy = Math.floor(i / cols); return [cx / cols, 1 - (cy + 1) / rows, (cx + 1) / cols, 1 - cy / rows]; };
   return (GLYPHS = { red, uv });
 }
@@ -422,20 +422,20 @@ export function build(item, ctx) {
 
   // ================= base: a dark plinth 0.3 m high under the whole block, a step along the courtyard =================
   const xG1 = bridge ? L - FACE : xb;                                     // east end of the galleries
-  box(v, m.plinth, FACE, L - FACE, FACE, gx, 0, BASE, 'WEFK'); 
-  box(v, m.stone, FACE, L - FACE, gx, gx + 0.32, 0, BASE / 2, 'UKWE'); 
+  box(v, m.plinth, FACE, L - FACE, FACE, gx, 0, BASE, 'WEFK');
+  box(v, m.stone, FACE, L - FACE, gx, gx + 0.32, 0, BASE / 2, 'UKWE');
   { const en = sections.find(s => s.kind === 'common' && s.lobby), xm = en ? (en.x0 + en.x1) / 2 : 0, x1 = col ? L - col : L - FACE;   // base course on the street face
     if (en) { box(v, m.plinth, FACE, xm - 3.0, FACE - 0.03, FACE, 0, 0.55, 'FUWE'); box(v, m.plinth, xm + 3.0, x1, FACE - 0.03, FACE, 0, 0.55, 'FUWE'); } else box(v, m.plinth, FACE, x1, FACE - 0.03, FACE, 0, 0.55, 'FUWE'); }
   if (bridge) { box(v, m.stone, L - FACE, L - FACE + 0.32, court, gx, 0, BASE / 2, 'UEFK'); }
 
   // ================= roof deck and fascia =================
   const lobbySec = sections.find(s => s.kind === 'lobby'), gd = FACE + PORCH;                                   // the glass wall behind the colonnade
-  box(v, m.roof, 0.3, L - 0.3, 0.3, D - 0.3, yDeck - 0.05, yDeck, 'U'); 
+  box(v, m.roof, 0.3, L - 0.3, 0.3, D - 0.3, yDeck - 0.05, yDeck, 'U');
   // fascia: a white band standing out to the roof outline on all four sides; its inner faces are the roof parapet
   const xF1 = col ? L - col : L, yFa = yF - 0.3;
   box(v, m.tile, 0, xF1, 0, 0.3, yFa, H, 'FKUDWE'); box(v, m.tile, 0, L, D - 0.3, D, yFa, H, 'FKUDWE');
   box(v, m.tile, 0, 0.3, 0.3, D - 0.3, yFa, H, 'WEUD'); box(v, m.tile, L - 0.3, L, col ? 6.0 : 0.3, D - 0.3, yFa, H, 'WEUD');
-  
+
   for (let x = 0; x < xF1 - 0.5; x += 9.6) stain(x, Math.min(xF1, x + 9.6), 0, yFa, H, -1, 0.9);
   for (let x = 0; x < L - 0.5; x += 9.6) stain(x, Math.min(L, x + 9.6), D, yFa, H, 1, 0.9);
 
@@ -453,7 +453,7 @@ export function build(item, ctx) {
       if (openGallery) box(v, m.gwall, x0, x1, court - 0.02, court, y, y + CEIL, 'K');
       else { box(v, m.tile, x0, x1, court, gx, y, y + FH, out + 'K'); box(v, m.gwall, x0, x1, court, gx - 0.12, y, y + CEIL, inn); }
     }
-    
+
   };
   endWall(FACE, xa, 'W', false);
   endWall(xb, L - FACE, 'E', !!bridge);
@@ -470,15 +470,14 @@ export function build(item, ctx) {
       stain(o.a - 0.1, o.b + 0.1, FACE, o.y0 - 1.3, o.y0 - 0.05, -1, 0.75);
     }
     stain(s.x0, s.x1, FACE, 0.55, 1.5, -1, 0.6, true);
-    
+
   };
-  /** Gallery wall of a section on storey k with openings; doors: [[a, b, height]] left open for the walker. */
-  const galleryWall = (s, k, ops, inner, doors) => {
+  /** Gallery wall of a section on storey k with its openings; inner: the material of its inside face (enterable spaces). */
+  const galleryWall = (s, k, ops, inner) => {
     const y = level(k);
     wall(v, 'x', s.x0, s.x1, court - WALL, court, y, y + CEIL, ops, inner, m.gwall);
     let x = s.x0;                                                         // dado between the door openings
-    for (const o of [...ops.filter(q => q.y0 < y + 0.2).sort((p, q) => p.a - q.a), { a: s.x1 }]) { box(v, m.dado, x, o.a, court, court + 0.006, y, y + 1.15, 'KU'); x = o.b; }
-    
+    for (const o of [...ops.filter(q => q.y0 < y + 0.2).sort((p, q) => p.a - q.a), { a: s.x1 }]) { box(v, m.dado, x, o.a, court, court + 0.012, y, y + 1.15, 'KU'); x = o.b; }
   };
   /** Closed door leaf in a gallery wall opening, with its frame. */
   const closedDoor = (a, b, y, h = 2.1, double = false) => {
@@ -500,15 +499,12 @@ export function build(item, ctx) {
       // ---- closed service room: white bay, one closed door on the gallery ----
       whiteBay(s);
       const xm = (s.x0 + s.x1) / 2;
-      for (let k = 0; k < FLOORS; k++) { galleryWall(s, k, [{ a: xm - 0.45, b: xm + 0.45, y0: level(k), y1: level(k) + 2.1 }], null, []); closedDoor(xm - 0.45, xm + 0.45, level(k)); }
+      for (let k = 0; k < FLOORS; k++) { galleryWall(s, k, [{ a: xm - 0.45, b: xm + 0.45, y0: level(k), y1: level(k) + 2.1 }], null); closedDoor(xm - 0.45, xm + 0.45, level(k)); }
     } else if (s.kind === 'rooms') {
       for (let k = 0; k < FLOORS; k++) box(v, m.ceil, s.x0, s.x1, FACE, back, level(k) + CEIL, level(k) + CEIL + 0.02, 'D');     // balcony ceilings
       for (const r of s.rooms) {
         const pc = (r.px0 + r.px1) / 2;
-                                       // the wet cell is closed
-        if (r.wetW && r.j < s.n - 1) {                                                                        // fin between two balconies: the white post
-          box(v, m.tile, r.x1 - 0.06, r.x1 + 0.06, FACE, back, BASE, yF - SLAB, 'WEF'); 
-        }
+        if (r.wetW && r.j < s.n - 1) box(v, m.tile, r.x1 - 0.06, r.x1 + 0.06, FACE, back, BASE, yF - SLAB, 'WEF');   // fin between two balconies: the white post
         stain(r.px0, r.px1, FACE, level(1), yFa, -1, 0.35 + 0.5 * rnd());
         box(ex2, m.pvc, (r.wetW ? r.px0 : r.px1) - 0.035, (r.wetW ? r.px0 : r.px1) + 0.035, FACE - 0.1, FACE - 0.03, 0.4, yFa, 'FWE');   // drain stack on the pier
         for (let k = 0; k < FLOORS; k++) {
@@ -522,7 +518,7 @@ export function build(item, ctx) {
           box(ex2, m.pvc, Math.min(xfl, xfl + fs * 0.025), Math.max(xfl, xfl + fs * 0.025), FACE + 0.4, FACE + 1.1, y + 0.02, y + 2.0, (r.wetW ? 'E' : 'W') + 'FKU');
           if (rnd() < 0.86) acAt(pc, y + 0.74);
           // balcony: front upstand with a rail, floor, back wall with a glazed door and a window
-          box(v, m.tile, r.bx0, r.bx1, FACE, FACE + 0.1, y - SLAB, y + 0.95, 'FKU'); 
+          box(v, m.tile, r.bx0, r.bx1, FACE, FACE + 0.1, y - SLAB, y + 0.95, 'FKU');
           stain(r.bx0, r.bx1, FACE, y - SLAB, y + 0.95, -1, 0.3 + 0.6 * rnd());
           box(ex2, m.inox, r.bx0, r.bx1, FACE + 0.03, FACE + 0.07, y + 1.07, y + 1.11); for (const t of [0.25, 0.75]) box(ex2, m.inox, r.bx0 + (r.bx1 - r.bx0) * t - 0.015, r.bx0 + (r.bx1 - r.bx0) * t + 0.015, FACE + 0.035, FACE + 0.065, y + 0.95, y + 1.07, 'WEFK');
           box(v, m.floor, r.bx0, r.bx1, FACE + 0.1, back, y - 0.02, y, 'U');
@@ -530,7 +526,6 @@ export function build(item, ctx) {
           wall(v, 'x', r.bx0, r.bx1, back, back + WALL, y, y + CEIL, [bd, bw], m.maroon, open ? m.plaster : null);
           pane(v, 'x', bw.a, bw.b, bw.y0, bw.y1, back + 0.1, m.win); frame(ex2, 'x', bw.a, bw.b, bw.y0, bw.y1, back + 0.06, back + 0.12, m.frame, 1);
           if (open) {
-            
             const ha = r.wetW ? bd.a - 0.84 : bd.b, hb = r.wetW ? bd.a : bd.b + 0.84;                          // the open leaf lies against the wall inside
             pane(v, 'x', ha + 0.03, hb - 0.03, y + 0.05, y + 2.05, back + WALL + 0.03, m.win); frame(ex2, 'x', ha, hb, y + 0.02, y + 2.08, back + WALL + 0.01, back + WALL + 0.05, m.frame, 0, y + 1.0);
             frame(ex2, 'x', bd.a - 0.04, bd.b + 0.04, y - 0.04, y + 2.14, back + 0.04, back + 0.14, m.frame);
@@ -538,10 +533,7 @@ export function build(item, ctx) {
             // the room's shell: floor, ceiling, the two party walls
             floorCeil(r.x0 + 0.1, r.x1 - 0.1, back + WALL, court - WALL, y);
             box(v, m.plaster, r.x0 - 0.1, r.x0 + 0.1, back + WALL, court - WALL, y, y + CEIL, 'E'); box(v, m.plaster, r.x1 - 0.1, r.x1 + 0.1, back + WALL, court - WALL, y, y + CEIL, 'W');
-          } else {
-            
-            pane(v, 'x', bd.a, bd.b, bd.y0, bd.y1, back + 0.1, m.win); frame(ex2, 'x', bd.a, bd.b, bd.y0, bd.y1, back + 0.06, back + 0.12, m.frame, 0, y + 1.0);
-          }
+          } else { pane(v, 'x', bd.a, bd.b, bd.y0, bd.y1, back + 0.1, m.win); frame(ex2, 'x', bd.a, bd.b, bd.y0, bd.y1, back + 0.06, back + 0.12, m.frame, 0, y + 1.0); }
           // drying rails under the balcony ceiling, with washing
           for (const dd of [0.5, 0.9]) box(ex2, m.inox, r.bx0 + 0.12, r.bx1 - 0.12, FACE + dd - 0.012, FACE + dd + 0.012, y + 2.5, y + 2.524);
           if (!low) for (let q = 0, n = Math.floor(rnd() * 5.5), xw = r.bx0 + 0.3 + rnd() * 0.2; q < n && xw < r.bx1 - 0.45; q++) {
@@ -552,7 +544,7 @@ export function build(item, ctx) {
           }
           // gallery side: door with a glazed transom, a high window; open rooms have their leaf swung in
           const gdoor = { a: r.door[0], b: r.door[1], y0: y, y1: y + 2.6 }, gw = { a: r.win[0], b: r.win[1], y0: y + 1.55, y1: y + 2.45 };
-          galleryWall({ x0: r.x0, x1: r.x1 }, k, [gdoor, gw], open ? m.plaster : null, open ? [[gdoor.a, gdoor.b, 2.6]] : []);
+          galleryWall({ x0: r.x0, x1: r.x1 }, k, [gdoor, gw], open ? m.plaster : null);
           pane(v, 'x', gw.a, gw.b, gw.y0, gw.y1, court - 0.1, m.win); frame(ex2, 'x', gw.a, gw.b, gw.y0, gw.y1, court - 0.14, court - 0.06, m.frame, 1);
           pane(v, 'x', gdoor.a, gdoor.b, y + 2.15, y + 2.6, court - 0.1, m.win); frame(ex2, 'x', gdoor.a, gdoor.b, y - 0.04, y + 2.6, court - 0.15, court - 0.05, m.doorDark, 0, y + 2.12, 0.045);
           if (open) box(v, m.door, gdoor.a + 0.05, gdoor.a + 0.09, court - WALL - 0.9, court - WALL, y + 0.01, y + 2.08, 'WEFU');
@@ -566,7 +558,7 @@ export function build(item, ctx) {
       const xm = (s.x0 + s.x1) / 2;
       for (let k = 0; k < FLOORS; k++) {
         const y = level(k);
-        galleryWall(s, k, [{ a: xm - 0.6, b: xm + 0.6, y0: y, y1: y + 2.2 }], m.white, [[xm - 0.6, xm + 0.6, 2.2]]);
+        galleryWall(s, k, [{ a: xm - 0.6, b: xm + 0.6, y0: y, y1: y + 2.2 }], m.white);
         floorCeil(s.x0 + 0.1, s.x1 - 0.1, FACE + WALL, court - WALL, y);
       }
     } else if (s.kind === 'common') {
@@ -582,7 +574,7 @@ export function build(item, ctx) {
         for (let i = 1; i < nb; i++) { const xq = s.x0 + i * bw; if (!entry || Math.abs(xq - xm) > 1.25) box(v, m.frame, xq - 0.03, xq + 0.03, g0 - 0.12, g0 + 0.04, y + 0.12, y + CEIL, 'FWEK'); }
         box(v, m.frame, s.x0, s.x1, g0 - 0.06, g0 + 0.04, y + 2.36, y + 2.44, 'FUDK'); if (!entry) box(v, m.frame, s.x0, s.x1, g0 - 0.06, g0 + 0.04, y + 0.96, y + 1.04, 'FUDK');
         const ops = [dA, dB].map(q => ({ a: q[0], b: q[1], y0: y, y1: y + 2.2 })).concat(wins.map(q => ({ a: q[0], b: q[1], y0: y + 1.0, y1: y + 2.3 })));
-        galleryWall(s, k, ops, m.plaster, [[dA[0], dA[1], 2.2], [dB[0], dB[1], 2.2]]);
+        galleryWall(s, k, ops, m.plaster);
         for (const q of wins) { pane(v, 'x', q[0], q[1], y + 1.0, y + 2.3, court - 0.1, m.win); frame(ex2, 'x', q[0], q[1], y + 1.0, y + 2.3, court - 0.14, court - 0.06, m.frame, 2); }
         for (const q of [dA, dB]) { frame(ex2, 'x', q[0] - 0.04, q[1] + 0.04, y - 0.04, y + 2.24, court - 0.16, court - 0.04, m.doorDark, 0, 0, 0.045);      // double doors standing open
           box(v, m.door, q[0], q[0] + 0.04, court - WALL - 0.78, court - WALL, y + 0.01, y + 2.16, 'WEFU'); box(v, m.door, q[1] - 0.04, q[1], court - WALL - 0.78, court - WALL, y + 0.01, y + 2.16, 'WEFU'); }
@@ -611,7 +603,7 @@ export function build(item, ctx) {
     }
     if (A.kind === 'stair') box(v, m.gwall, X - 0.1, X, court - 0.02, court, BASE, yF - SLAB, 'K');
     if (B.kind === 'stair') box(v, m.gwall, X, X + 0.1, court - 0.02, court, BASE, yF - SLAB, 'K');
-    
+
   }
   for (const s of [sections[0], sections[sections.length - 1]]) if (s.kind !== 'end') {                         // an enterable section against an end wall
     const side = s === sections[0] ? 'W' : 'E', X = side === 'W' ? s.x0 : s.x1;
@@ -629,7 +621,7 @@ export function build(item, ctx) {
     box(v, m.floor, xa, xG1, court, gx - (k ? 0.12 : 0), y - 0.02, y, 'U'); box(v, m.ceil, xa, xG1, court, gx, y + CEIL, y + CEIL + 0.02, 'D');
     if (k) {                                                               // upstand with an edge beam, a steel rail on it
       box(v, m.tile, xa, xG1, gx - 0.12, gx, y - 0.45, y + 1.0, 'KUD'); box(v, m.gwall, xa, xG1, gx - 0.12, gx, y, y + 1.0, 'F');
-      
+
       for (let x = xa; x < xG1 - 0.5; x += 12.2) stain(x, Math.min(xG1, x + 12.2), gx, y - 0.45, y + 1.0, 1, 0.15 + 0.3 * rnd());
       box(ex2, m.inox, xa, xG1, gx - 0.085, gx - 0.035, y + 1.1, y + 1.14);
       for (let x = xa + 0.6; x < xG1 - 0.3; x += low ? 2.4 : 1.2) box(ex2, m.inox, x - 0.012, x + 0.012, gx - 0.072, gx - 0.048, y + 1.0, y + 1.1, 'WEFK');
@@ -644,7 +636,7 @@ export function build(item, ctx) {
   // ================= stair cores =================
   for (const s of sections) if (s.kind === 'stair') {
     const S = s.st, T = tier(s);
-    box(v, m.plaster, S.xw0, S.xw1, S.zb - WALL, S.zb, BASE, yF - SLAB, 'K'); 
+    box(v, m.plaster, S.xw0, S.xw1, S.zb - WALL, S.zb, BASE, yF - SLAB, 'K');
                                    // the well is closed for the walker
     box(v, m.floor, S.xw0, S.xw1, S.zb, S.zl, BASE - 0.02, BASE, 'U');
     box(v, m.plaster, S.xB0, S.xB1, S.zl - 0.1, S.zl, BASE, BASE + CEIL, 'K');   // store under the first flight
@@ -656,16 +648,16 @@ export function build(item, ctx) {
       box(v, m.gwall, s.x0, s.x1, court - WALL, court, y + 2.45, y + CEIL, 'KFD');                              // beam over the opening to the gallery
       box(T.fu, m.lamp, (S.xw0 + S.xw1) / 2 - 0.5, (S.xw0 + S.xw1) / 2 + 0.5, S.zl + 0.2, S.zl + 0.28, y + CEIL - 0.04, y + CEIL, 'DWEFK');
       if (last) {                                                           // guard over the void of the last flight
-        box(v, m.gwall, S.xA0, S.xA1, S.zl - 0.1, S.zl, y, y + 1.05, 'FKU'); 
+        box(v, m.gwall, S.xA0, S.xA1, S.zl - 0.1, S.zl, y, y + 1.05, 'FKU');
         box(T.fu, m.inox, S.xA0, S.xA1, S.zl - 0.075, S.zl - 0.025, y + 1.1, y + 1.14);
         continue;
       }
       // half landing
       box(v, m.floor, S.xw0, S.xw1, S.zb, S.zh, ym - 0.02, ym, 'U'); box(v, m.ceil, S.xw0, S.xw1, S.zb, S.zh, ym - SLAB, ym - 0.02, 'DK');
-      
+
       // flights: A (east half) rises toward the street, B (west half) comes back to the gallery
       incl(v, m.ceil, S.xA0, S.xA1, S.zl, y, S.zh, ym, 0.16, 'USN'); incl(v, m.ceil, S.xB0, S.xB1, S.zh, ym, S.zl, y1, 0.16, 'USN');
-      
+
       for (let i = 0; i < STEPS; i++) {
         box(T.fu, m.tread, S.xA0, S.xA1, S.zl - (i + 1) * GO, S.zl - i * GO, y + i * RISE, y + (i + 1) * RISE, 'UKW');
         box(T.fu, m.tread, S.xB0, S.xB1, S.zh + i * GO, S.zh + (i + 1) * GO, ym + i * RISE, ym + (i + 1) * RISE, 'UFE');
@@ -689,7 +681,7 @@ export function build(item, ctx) {
     for (let i = 0; i < N; i++) {
       const da = d0 + (d1 - d0) * i / N, db = d0 + (d1 - d0) * (i + 1) / N, xA = xe(da), xB = xe(db);
       quad(v, m.floor, [[x0, da, y], [xA, da, y], [xB, db, y], [x0, db, y]], [0, 0, 1]); quad(v, m.ceil, [[x0, da, y - SLAB], [xA, da, y - SLAB], [xB, db, y - SLAB], [x0, db, y - SLAB]], [0, 0, -1]);
-      
+
     }
     for (const [da, db, out] of [[d0, d0 + 0.12, 'F'], [d1 - 0.12, d1, 'K']]) {                                  // upstands on both edges
       const x1 = xe(out === 'F' ? da : db) + 0.05;
@@ -702,19 +694,19 @@ export function build(item, ctx) {
   if (lobbySec) {
     const s = lobbySec, x0 = s.x0, span = L - x0, yCol = H - 0.75, y = BASE;
     // porch: platform to the roof outline, a step along its front
-    box(v, m.plinth, x0, L - FACE, 0, FACE, 0, BASE, 'FWE'); box(v, m.floor, x0, xb, 0, gd, BASE - 0.02, BASE, 'U'); 
-    box(v, m.stone, x0, L - FACE, -0.36, 0, 0, BASE / 2, 'UFWE'); 
+    box(v, m.plinth, x0, L - FACE, 0, FACE, 0, BASE, 'FWE'); box(v, m.floor, x0, xb, 0, gd, BASE - 0.02, BASE, 'U');
+    box(v, m.stone, x0, L - FACE, -0.36, 0, 0, BASE / 2, 'UFWE');
     for (let i = 0; i < 6; i++) {                                           // six slender columns
       const cx = x0 + span / 12 + i * span / 6;
-      cyl(v, m.white, cx, FACE + 0.45, BASE, 0.3, yCol - BASE, 18, false); 
+      cyl(v, m.white, cx, FACE + 0.45, BASE, 0.3, yCol - BASE, 18, false);
       cyl(v, m.plinth, cx, FACE + 0.45, BASE, 0.36, 0.12, 18);
     }
     // glass wall: clear on the ground floor with two door openings, teal above, white bands at the floor lines
     const doors = [x0 + span / 3, x0 + 2 * span / 3].map(xc => [xc - 1.0, xc + 1.0]);
     let xg = x0 + 0.1;
     for (const [a, b] of doors) { pane(ex, 'x', xg, a, y + 0.02, y + CEIL, gd, m.clear); pane(ex, 'x', a, b, y + 2.4, y + CEIL, gd, m.clear); xg = b; }
-    pane(ex, 'x', xg, xb, y + 0.02, y + CEIL, gd, m.clear); 
-    box(v, m.teal, x0 + 0.1, xb, gd, gd + 0.02, level(1), yCol, 'F'); 
+    pane(ex, 'x', xg, xb, y + 0.02, y + CEIL, gd, m.clear);
+    box(v, m.teal, x0 + 0.1, xb, gd, gd + 0.02, level(1), yCol, 'F');
     for (let k = 1; k <= FLOORS; k++) box(v, m.tile, x0, xb, gd - 0.1, gd, level(k) - 0.38, level(k), 'FUD');
     const nm = Math.round((xb - x0) / 1.95);
     for (let i = 1; i < nm; i++) { const xq = x0 + i * (xb - x0) / nm, atDoor = doors.some(([a, b]) => xq > a + 0.05 && xq < b - 0.05); box(v, m.frame, xq - 0.035, xq + 0.035, gd - 0.07, gd + 0.03, atDoor ? y + 2.4 : y, yCol, 'FWEK'); }
@@ -728,14 +720,14 @@ export function build(item, ctx) {
     // the lobby's shell and its doors to the gallery
     floorCeil(x0 + 0.1, xb, gd, court - WALL, y);
     const gA = [x0 + 3.0, x0 + 4.8], gB = [xb - 4.8, xb - 3.0], gw = [[x0 + 7.0, x0 + 9.4], [x0 + 11.0, x0 + 13.4], [x0 + 15.0, x0 + 17.4]];
-    galleryWall(s, 0, [gA, gB].map(q => ({ a: q[0], b: q[1], y0: y, y1: y + 2.3 })).concat(gw.map(q => ({ a: q[0], b: q[1], y0: y + 1.0, y1: y + 2.3 }))), m.plaster, [[gA[0], gA[1], 2.3], [gB[0], gB[1], 2.3]]);
+    galleryWall(s, 0, [gA, gB].map(q => ({ a: q[0], b: q[1], y0: y, y1: y + 2.3 })).concat(gw.map(q => ({ a: q[0], b: q[1], y0: y + 1.0, y1: y + 2.3 }))), m.plaster);
     for (const q of gw) { pane(v, 'x', q[0], q[1], y + 1.0, y + 2.3, court - 0.1, m.win); frame(ex2, 'x', q[0], q[1], y + 1.0, y + 2.3, court - 0.14, court - 0.06, m.frame, 2); }
     for (const q of [gA, gB]) { frame(ex2, 'x', q[0] - 0.04, q[1] + 0.04, y - 0.04, y + 2.34, court - 0.16, court - 0.04, m.doorDark, 0, 0, 0.045);
       box(v, m.door, q[0], q[0] + 0.04, court - WALL - 0.88, court - WALL, y + 0.01, y + 2.26, 'WEFU'); box(v, m.door, q[1] - 0.04, q[1], court - WALL - 0.88, court - WALL, y + 0.01, y + 2.26, 'WEFU'); }
     box(v, m.plaster, xb - 0.01, xb + 0.01, gd, court - WALL, y, y + CEIL, 'W');
     for (let k = 1; k < FLOORS; k++) {                                      // rooms above the lobby: closed doors on the gallery
       const yk = level(k), ds = [x0 + 3.2, x0 + 11.2, xb - 4.4].map(a => [a, a + 1.2]);
-      galleryWall(s, k, ds.map(q => ({ a: q[0], b: q[1], y0: yk, y1: yk + 2.1 })).concat([[x0 + 6.0, x0 + 9.0], [x0 + 14.2, x0 + 17.2]].map(q => ({ a: q[0], b: q[1], y0: yk + 1.3, y1: yk + 2.3 }))), null, []);
+      galleryWall(s, k, ds.map(q => ({ a: q[0], b: q[1], y0: yk, y1: yk + 2.1 })).concat([[x0 + 6.0, x0 + 9.0], [x0 + 14.2, x0 + 17.2]].map(q => ({ a: q[0], b: q[1], y0: yk + 1.3, y1: yk + 2.3 }))), null);
       for (const q of ds) closedDoor(q[0], q[1], yk, 2.1, true);
       for (const q of [[x0 + 6.0, x0 + 9.0], [x0 + 14.2, x0 + 17.2]]) { pane(v, 'x', q[0], q[1], yk + 1.3, yk + 2.3, court - 0.1, m.win); frame(ex2, 'x', q[0], q[1], yk + 1.3, yk + 2.3, court - 0.14, court - 0.06, m.frame, 3); }
     }
@@ -744,16 +736,16 @@ export function build(item, ctx) {
   // ================= entrance of the other blocks: steps, a canopy on two columns, open glass doors =================
   for (const s of sections) if (s.kind === 'common' && s.lobby) {
     const xm = (s.x0 + s.x1) / 2, g0 = FACE + RECESS, y = BASE, a = xm - 3.0, b = xm + 3.0, dFront = -1.3;
-    box(v, m.plinth, a, b, dFront, FACE, 0, BASE, 'FWE'); box(v, m.floor, a, b, dFront, g0, BASE - 0.02, BASE, 'U'); 
-    box(v, m.stone, a, b, dFront - 0.36, dFront, 0, BASE / 2, 'UFWE'); 
+    box(v, m.plinth, a, b, dFront, FACE, 0, BASE, 'FWE'); box(v, m.floor, a, b, dFront, g0, BASE - 0.02, BASE, 'U');
+    box(v, m.stone, a, b, dFront - 0.36, dFront, 0, BASE / 2, 'UFWE');
     for (const sx of [-1, 1]) {
       const xc = xm + sx * 2.75;
-      cyl(v, m.white, xc, dFront + 0.25, BASE, 0.09, 2.78, 12, false); 
+      cyl(v, m.white, xc, dFront + 0.25, BASE, 0.09, 2.78, 12, false);
       box(v, m.stone, sx < 0 ? a - 0.5 : b, sx < 0 ? a : b + 0.5, dFront + 0.2, FACE - 0.03, 0, 0.62, 'FWEU');   // planter walls beside the steps
       frame(v, 'd', g0 + 0.03, g0 + 1.15, y + 0.02, y + 2.36, xm + sx * 1.18 - 0.02, xm + sx * 1.18 + 0.02, m.frame, 0, y + 1.05, 0.07); pane(ex, 'd', g0 + 0.1, g0 + 1.08, y + 0.09, y + 2.29, xm + sx * 1.18, m.clear);   // glazed leaves swung in
     }
     box(v, m.white, a - 0.3, b + 0.3, dFront - 0.25, FACE + 0.06, y + 2.78, y + 2.98); box(v, m.frame, a - 0.3, b + 0.3, dFront - 0.27, dFront - 0.25, y + 2.72, y + 3.3, 'FUDWE');
-    
+
     box(ex2, m.lamp, xm - 0.8, xm + 0.8, dFront + 0.5, dFront + 0.62, y + 2.74, y + 2.78, 'DWEFK'); LIT.push([...P.toWorld(xm, dFront - 1.2), 5]);
     box(v, m.frame, xm - 1.24, xm - 1.18, g0 - 0.06, g0 + 0.04, y, y + 2.4, 'FWEK'); box(v, m.frame, xm + 1.18, xm + 1.24, g0 - 0.06, g0 + 0.04, y, y + 2.4, 'FWEK');
     if (letters2 && P.name) [...('学生公寓' + P.name)].forEach((ch, i, all) => { const dir = streetNorth ? 1 : -1, off = ((all.length - 1) / 2 - i) * 0.5 + (i > 3 ? -0.12 : 0.12); card(letters2, glyphs().uv(ch), xm + dir * off, dFront - 0.275, y + 3.02, 0, -1, 0.4, 0.4); });
@@ -769,7 +761,7 @@ export function build(item, ctx) {
       incl(v, m.solar, x0, x1, dLo, yDeck + 0.45, dHi, yDeck + 1.75, 0.06, 'D'); box(v, m.frame, x0 - 0.05, x1 + 0.05, Math.min(dHi, dHi + (dHi - dLo) * 0.2), Math.max(dHi, dHi + (dHi - dLo) * 0.2), yDeck + 1.5, yDeck + 2.05, 'WEFKU');   // collector and its tank
       for (const xl of [x0, x1 - 0.05]) { box(ex2, m.inox, xl, xl + 0.05, dHi - 0.025, dHi + 0.025, yDeck, yDeck + 1.5, 'WEFK'); box(ex2, m.inox, xl, xl + 0.05, dLo - 0.025, dLo + 0.025, yDeck, yDeck + 0.42, 'WEFK'); }
     }
-    
+
   }
   for (const [x, d] of [[0.15, 0.15], [L - 0.15, D - 0.15], [0.15, D - 0.15], ...(col ? [] : [[L - 0.15, 0.15]]), [L / 2, D - 0.15], [L * 0.3, 0.15]]) cyl(ex2, m.inox, x, d, H, 0.018, 1.3, 5, false);
   box(ex2, m.dark, 0.5, xF1 - 0.5, 0.13, 0.17, H, H + 0.03, 'UFK'); box(ex2, m.dark, 0.5, L - 0.5, D - 0.17, D - 0.13, H, H + 0.03, 'UFK');   // lightning strip on the parapet
@@ -839,7 +831,7 @@ export function build(item, ctx) {
       // on the desk: a pile of books, a mug, a lamp, a laptop
       for (let i = 0, n = 1 + Math.floor(R() * 3), h = y + 0.76; i < n; i++, h += 0.03) box(X, tint(pick(BOOK), 0.85), ...XR(0.1 + R() * 0.03, 0.34 + R() * 0.03), dA + 0.1 + R() * 0.03, dA + 0.28 + R() * 0.03, h, h + 0.03, 'UWEFK');
       cyl(X, tint(pick(TOWEL), 0.4), XR(0.4, 0.4)[0], dA + 0.45, y + 0.76, 0.04, 0.09, 8);
-      if (R() < 0.6) { const xl = XR(0.12, 0.12)[0], dl = dB - 0.12; cyl(X, m.dark, xl, dl, y + 0.76, 0.07, 0.02, 8); rod(X, m.dark, [xl, dl, y + 0.78], [xl + side * 0.1, dl - 0.12, y + 1.1], 0.02); box(X, m.white, xl + side * 0.02, xl + side * 0.02 + 0.16 * side || xl, dl - 0.2, dl - 0.08, y + 1.09, y + 1.12); }
+      if (R() < 0.6) { const xl = XR(0.12, 0.12)[0], dl = dB - 0.12; cyl(X, m.dark, xl, dl, y + 0.76, 0.07, 0.02, 8); rod(X, m.dark, [xl, dl, y + 0.78], [xl + side * 0.1, dl - 0.12, y + 1.1], 0.02); box(X, m.white, Math.min(xl + side * 0.02, xl + side * 0.18), Math.max(xl + side * 0.02, xl + side * 0.18), dl - 0.2, dl - 0.08, y + 1.09, y + 1.12); }
       if (R() < 0.55) { box(X, tint(0x3a3d44, 0.4), ...XR(0.16, 0.42), dB - 0.75, dB - 0.4, y + 0.76, y + 0.775, 'UWEFK'); box(X, tint(0x26282c, 0.5), ...XR(0.13, 0.145), dB - 0.75, dB - 0.4, y + 0.775, y + 1.0, 'WEFKU'); box(X, tint(0x9db9dc, 0.3), ...XR(0.145, 0.148), dB - 0.73, dB - 0.42, y + 0.79, y + 0.985, ai); }
       for (let j = 0; j < nb; j++) bunk(F, X, C, XR, side, di0 + 1.45 + j * 2.05, y, R, steel, board, pick);
       // lockers by the door: body, door joints, handles, cases and boxes on top

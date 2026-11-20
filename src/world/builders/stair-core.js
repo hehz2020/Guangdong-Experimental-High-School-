@@ -115,7 +115,7 @@ function byTower(S, r, H, ctx) {
   // ---- doorways: the glazed entrance on the east face; at walkway level a doorway onto the footbridge
   const holes = [], br = bridgeSpec(ctx.campus);
   holes.push(doorSet(S, PE, gz, { w: 1.6, h: 2.3, glazed: true, t, rev: t / 2, fan: 0.45, swing: 'in', canopy: 1.3, step: false, plate: false, bars: lm('frameDark') }));
-  PE(S.v, lm('stone'), gz - 1.3, gz + 1.3, 0, 0.03, 0, 1.4, 'FLRU'); LIT.push([r.e + 1.4, gz, 4]); apron(ctx, 'E', r.e, gz, 3, 1.6);
+  PE(S.v, lm('concrete'), gz - 1.3, gz + 1.3, 0, 0.03, 0, 1.4, 'FLRU'); LIT.push([r.e + 1.4, gz, 4]); apron(ctx, 'E', r.e, gz, 3, 1.6);
   if (br) holes.push(doorSet(S, PE, (br.z0 + br.z1) / 2, { w: br.z1 - br.z0 - 0.34, h: 2.2, y0: br.y, glazed: true, t, rev: t / 2, fan: 0.4, swing: 'in', step: false, plate: false, lamp: false, bars: lm('frameDark') }));
   // ---- curtain walls on the north, east and west faces, on a dark base course
   curtain(S, PN, r.w + 0.5, r.e - 0.6, 0.3, yC, levels); curtain(S, PE, r.n + 0.62, zs, 0.3, yC, levels, holes); curtain(S, PW, r.n + 0.5, zs, 0.3, yC, levels);
@@ -164,7 +164,7 @@ function annex(S, r, H, ctx) {
   // ---- the glazed door on the east face (to the slab's paved apron)
   const zd = (hall.lanes[0] + hall.lanes[1]) / 2 + 0.2, holes = [];
   holes.push(doorSet(S, PE, zd, { w: 1.5, h: 2.25, glazed: true, t, rev: t / 2, fan: 0.4, swing: 'in', canopy: 1.1, step: false, plate: false, bars: lm('frameDark') }));
-  PE(S.v, lm('stone'), zd - 1.2, zd + 1.2, 0, 0.03, 0, 1.2, 'FLRU'); LIT.push([r.e + 1.2, zd, 3.5]); apron(ctx, 'E', r.e, zd, 3, 2.2);
+  PE(S.v, lm('concrete'), zd - 1.2, zd + 1.2, 0, 0.03, 0, 1.2, 'FLRU'); LIT.push([r.e + 1.2, zd, 3.5]); apron(ctx, 'E', r.e, zd, 3, 2.2);
   if (ctx.occupy) ctx.occupy([[r.w - 1, r.n - 0.3], [r.w + 0.3, r.n - 0.3], [r.w + 0.3, zf], [r.w - 1, zf]]);     // the two fins west of the measured outline
   // ---- curtain walls: west, south, east, and the north face west of the corridor ends; a dark base course
   curtain(S, PW, zf + 0.25, r.s - 0.5, 0.3, yT, levels); curtain(S, PS, r.w + 0.5, r.e - 0.5, 0.3, yT, levels); curtain(S, PE, zf + 0.25, r.s - 0.5, 0.3, yT, levels, holes);

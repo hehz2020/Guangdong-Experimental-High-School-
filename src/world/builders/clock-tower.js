@@ -47,6 +47,7 @@
 import { THREE, bbox } from '../../kit.js';
 import { emblemTexture } from '../../signs.js';
 import { LIT } from '../../street.js';
+import { fuse } from './plaza.js';
 import { F, lm, shell, finish, hit, facade, face, louvre, stain, rwp, ramp, apron } from './plain-block.js';
 
 let MAT = null;
@@ -84,7 +85,7 @@ export function build(item, ctx) {
   const N = facade(S, 'N', r.n, r.w, r.e, 0, yP - tP, { mat: W }), Sf = facade(S, 'S', r.s, r.w, r.e, 0, yP - tP, { mat: W });
   E.win(r.n + sz * 0.13, r.n + sz * 0.51, H - 23.3 * k, H - 21.7 * k, { n: 2, glass: lm('glassWin') });                 // the small three-pane window (SEEN)
   E.door(r.cz, { w: 1.2, h: 2.15, y0: 0.3, canopy: 0.9, leaf: lm('green'), stepOut: 0.9 });
-  PE(S.v, lm('stone'), r.cz - 1.1, r.cz + 1.1, 0, 0.16, 0, 1.3, 'FLRU'); apron(ctx, 'E', r.e, r.cz, 2.8, 1.6);           // lower step
+  PE(S.v, lm('concrete'), r.cz - 1.1, r.cz + 1.1, 0, 0.16, 0, 1.3, 'FLRU'); apron(ctx, 'E', r.e, r.cz, 2.8, 1.6);           // lower step
   const gx0 = r.e - 0.3 - Math.min(2.8, sx - 0.6), gx1 = r.e - 0.3, gy0 = H - 16.7 * k, gy1 = H - 11 * k;
   N.win(gx0, gx1, gy0, gy1, { n: 2, transom: (gy1 - gy0) / 2, glass: GG, sill: false, rev: 0.12 });                       // green glazed panel on the north face (SEEN)
   for (const f of [0.25, 0.75]) PN(S.v, FR, gx0, gx1, gy0 + (gy1 - gy0) * f - 0.02, gy0 + (gy1 - gy0) * f + 0.02, -0.12, -0.08, 'FUD');
@@ -127,11 +128,8 @@ export function build(item, ctx) {
 
   // ---- the clock: a dial on each long face of the head; four hands as one instanced mesh, set from the page's time
   const dr = 1.15 * k, dials = [{ x: hx0 - 0.03, y: H - 3.3 * k, z: (hz0 + hz1) / 2, n: -1 }, { x: hx1 + 0.14, y: yP + Math.max(dr + 0.2, (yCap - yP) * 0.22), z: (hz0 + r.s) / 2, n: 1 }];
-  const dialGeo = new THREE.CircleGeometry(dr, 40), rimGeo = new THREE.RingGeometry(dr * 0.98, dr * 1.06, 40);
-  for (const q of dials) {
-    const d = new THREE.Mesh(dialGeo, M.dial); d.position.set(q.x + q.n * 0.02, q.y, q.z); d.rotation.y = q.n * Math.PI / 2; S.vx.push(d);
-    const rim = new THREE.Mesh(rimGeo, M.hand); rim.position.set(q.x + q.n * 0.035, q.y, q.z); rim.rotation.y = q.n * Math.PI / 2; S.vx.push(rim);
-  }
+  const dialMesh = new THREE.Mesh(fuse(dials.map(q => [new THREE.CircleGeometry(dr, 40), new THREE.Matrix4().makeRotationY(q.n * Math.PI / 2).setPosition(q.x + q.n * 0.02, q.y, q.z)])), M.dial);
+  dialMesh.name = 'tower-dials'; S.vx.push(dialMesh);                                                  // both dials are one mesh; the bezel is part of the picture
   const hg = new THREE.BoxGeometry(1, 1, 1); hg.translate(0, 0.38, 0);                                // a hand: the pivot lies a little way up from its tail
   const hands = new THREE.InstancedMesh(hg, M.hand, 4); hands.name = 'tower-clock-hands'; hands.frustumCulled = false; S.vx.push(hands);
   const mx = new THREE.Matrix4(), qt = new THREE.Quaternion(), ax = new THREE.Vector3(1, 0, 0), pv = new THREE.Vector3(), sv = new THREE.Vector3();

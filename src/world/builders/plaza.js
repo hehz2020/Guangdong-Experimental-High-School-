@@ -27,7 +27,6 @@
 import { THREE, flat, bbox, itemPolygon } from '../../kit.js';
 import { Batch } from '../../batch.js';
 import { pbr } from '../../hifi.js';
-import { flatPoly, arc } from '../../shapes.js';
 import { royalPalms, broadleafTrees, shrubs, flowers } from '../../flora.js';
 import { gardenLamp, bench, bins, planter, treePit } from '../../street.js';
 import { lm, mergeFlat, classMaterial } from './plain-block.js';
@@ -126,7 +125,7 @@ export function build(item, ctx) {
   const b = bbox(item.points), low = !!ctx.lowPower;
   ctx.add(flat(item.points, 0.04, pavingMaterial()));
   const v = new Batch(), d = new Batch(), c = new Batch(), blocked = blockedBy(ctx, item, ['walkway']);
-  const WH = lm('frame'), GL = lm('graniteLight'), GD = lm('graniteDark'), GR = lm('graniteRed'), ST = lm('stoneLight'), SOIL = lm('soil');
+  const WH = lm('frame'), GL = lm('graniteLight'), GD = lm('graniteDark'), GR = lm('graniteRed'), ST = lm('graniteLight'), SOIL = lm('soil');
 
   // west edge of the walkway at this z, or the rectangle's east edge
   const walk = (ctx.campus ? ctx.campus.items : []).filter(i => i.style === 'walkway').map(i => itemPolygon(i));
@@ -168,8 +167,11 @@ export function build(item, ctx) {
   // ---- the centrepiece: two rings of darker paving, a flower bed in a granite kerb, the sphere on a drum
   if (big) {
     const band = bandMaterial();
-    for (const [r0, r1] of [[3.0, 3.3], [3.75, 3.9]]) ctx.add(flatPoly(arc(cx, cz, r1, 64), 0.047, band, { holes: [arc(cx, cz, r0, 64)], order: 1 }));
     v.frame(cx, cz);
+    for (const [r0, r1] of [[3.0, 3.3], [3.75, 3.9]]) for (let i = 0; i < 48; i++) {                    // the two rings, in the same mesh
+      const a0 = i / 48 * 2 * Math.PI, a1 = (i + 1) / 48 * 2 * Math.PI, Q = (rr, a) => [Math.cos(a) * rr, 0.047, Math.sin(a) * rr];
+      v.quad(band, Q(r1, a1), Q(r1, a0), Q(r0, a0), Q(r0, a1));
+    }
     // kerb ring (16 sides), soil, drum in two steps
     const N = 20, ro = 1.95, ri = 1.75;
     for (let i = 0; i < N; i++) {

@@ -118,7 +118,7 @@ export function build(item, ctx) {
   for (let k = 0; k < floors - 1; k++) E.win(z0 + 1.1, z0 + 2.3, k * FH + 1.9, k * FH + 3.5, { n: 1, transom: 1.15, glass: GG });
   for (let k = 0; k < floors; k++) { const top = k === floors - 1; E.win(zw - 0.4, zw + (top ? 1.2 : 0.4), k * FH + 1.4, k * FH + 2.4, { n: top ? 1 : 0, glass: lm('glassWin') }); }
   E.door(zdE, { w: 1.4, h: 2.2, glazed: true, swing: 'in', fan: 0.4, canopy: 1.2, plate: false, bars: lm('frameDark') });
-  PE(S.v, lm('stone'), zdE - 1.2, zdE + 1.2, 0, 0.03, 0, 1.3, 'FLRU'); LIT.push([x1 + 1.3, zdE, 3.5]); apron(ctx, 'E', x1, zdE, 3, 2.4);
+  PE(S.v, lm('concrete'), zdE - 1.2, zdE + 1.2, 0, 0.03, 0, 1.3, 'FLRU'); LIT.push([x1 + 1.3, zdE, 3.5]); apron(ctx, 'E', x1, zdE, 3, 2.4);
   if (ctx.occupy) ctx.occupy([[x0, z0], [x1, z0], [x1, z1 + 2.7], [x0, z1 + 2.7]]);                              // the body west of the measured outline, the balconies and the back door
   // south face: a window per storey, the back door on the ground floor, the balcony door on the storeys above
   const xdS = ix0 + 0.75;
@@ -139,7 +139,7 @@ export function build(item, ctx) {
   stain(S, PN, x0 + 0.6, x1, yP, 0.8); stain(S, PE, z0, zr, yP, 0.8);
 
   // ---- the stair: two flights per storey along the west wall, half landings at the north end; a wall east of it
-  stair(S, { x: ix0 + 1.5, z: zA, ang: Math.PI / 2, levels, w: 1.4, gap: 0.2, steps: 13, go: 0.28, landB: 1.5 });
+  stair(S, { x: ix0 + 1.5, z: zA, ang: Math.PI / 2, levels, w: 1.4, gap: 0.2, steps: 13, go: 0.28, landB: 1.5, landing: lm('tread') });
   F(S.d, PL, xd0, 0, iz0, 0.12, yL, zA - iz0, 'EW'); F(S.d, PL, xd0, 0, zA - 0.01, 0.12, yL, 0.01, 'S'); hit(S, xd0, 0, iz0, 0.12, yL + 1.75, zA - iz0);
   F(S.v, W, xd0, yL, iz0, 0.12, 1.05, zA - iz0, 'EWSU'); F(S.v, CP, xd0 - 0.02, yL + 1.05, iz0, 0.16, 0.05, zA - iz0 + 0.02, 'EWSUD');                       // the wall goes on as the guard of the stair's head in the loggia
   F(S.v, W, ix0 + 1.5, yL, zA - 0.12, xd0 - ix0 - 1.5, 1.05, 0.12, 'NSWU'); F(S.v, CP, ix0 + 1.48, yL + 1.05, zA - 0.14, xd0 - ix0 - 1.48, 0.05, 0.16, 'NSWUD'); hit(S, ix0 + 1.5, yL + 0.01, zA - 0.12, xd0 - ix0 - 1.5, 1.75, 0.12);
@@ -172,14 +172,14 @@ export function build(item, ctx) {
   // ---- balconies on the storeys above the ground: from the tower's south door along the slab's end wall to a (closed) door in it
   if (slab) for (let k = 1; k < floors; k++) {
     const y = k * FH, bx0 = x0 + 0.02, bx1 = x0 + 1.85, bz1 = z1 + 2.55, zc = z1 + 1.35;
-    F(S.v, FL, bx0, y - 0.02, z1, bx1 - bx0, 0.02, bz1 - z1, 'U'); F(S.v, W, bx0, y - 0.45, z1, bx1 - bx0, 0.43, bz1 - z1, 'ESD'); hit(S, bx0, y - 0.2, z1 + 0.01, bx1 - bx0, 0.2, bz1 - z1);
+    F(S.v, lm('tread'), bx0, y - 0.02, z1, bx1 - bx0, 0.02, bz1 - z1, 'U'); F(S.v, W, bx0, y - 0.45, z1, bx1 - bx0, 0.43, bz1 - z1, 'ESD'); hit(S, bx0, y - 0.2, z1 + 0.01, bx1 - bx0, 0.2, bz1 - z1);
     for (const [x, z, a, c, fc] of [[bx1 - 0.12, z1, 0.12, bz1 - z1, 'EW'], [bx0, bz1 - 0.12, bx1 - bx0 - 0.12, 0.12, 'NS']]) {
       F(S.v, W, x, y, z, a, 0.95, c, fc); F(S.v, CP, x - 0.02, y + 0.95, z - 0.02, a + 0.04, 0.05, c + 0.04, 'NSEWUD'); hit(S, x, y + 0.01, z, a, 1.75, c);
     }
     F(S.d, SS, bx1 - 0.08, y + 1.1, z1, 0.04, 0.04, bz1 - z1, 'EWUD'); F(S.d, SS, bx0, y + 1.1, bz1 - 0.08, bx1 - bx0, 0.04, 0.04, 'NSUD');
     const pd = face('E', x0 - 0.02 + 0.09);
     doorSet(S, pd, zc, { w: 0.9, h: 2.05, y0: y, rev: 0.05, step: false, lamp: false, canopy: 0.5, leaf: lm('door'), plateMat: textCard((k + 1) + 'F', 0.28, 0.18) });
-    pd(S.v, W, zc - 0.62, zc + 0.62, y, y + 2.3, -0.07, -0.05, 'F'); hit(S, x0 - 0.04, y + 0.01, z1 + 0.01, 0.06, 2.4, bz1 - z1 - 0.02);     // closed, whether or not the slab's wall is there
+    pd(S.v, W, zc - 0.62, zc + 0.62, y, y + 2.3, -0.085, -0.075, 'F'); hit(S, x0 - 0.04, y + 0.01, z1 + 0.01, 0.06, 2.4, bz1 - z1 - 0.02);     // closed, whether or not the slab's wall is there
     stain(S, face('E', bx1), z1, bz1, y - 0.03, 0.4);
   }
 

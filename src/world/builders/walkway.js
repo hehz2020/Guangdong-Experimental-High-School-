@@ -31,13 +31,18 @@
 // 1 m), the columns that would stand inside that building are left out.
 // Colliders: columns, the deck, the parapets (1.75 m tall for the player, so that a jump does not clear them), bridge and
 // spurs, the end bay's roof, the stair (ramps, landings, balustrades, blade wall, the store).
-import { flat, bbox, itemPolygon } from '../../kit.js';
+import { THREE, flat, bbox, itemPolygon } from '../../kit.js';
+import { polyGeometry } from '../../shapes.js';
 import { LIT } from '../../street.js';
 import { shrubs } from '../../flora.js';
 import { F, lm, shell, finish, hit, face, doorSet, stair, stainMat, textCard, card, apron } from './plain-block.js';
-import { pavingMaterial, blockedBy, inPoly } from './plaza.js';
+import { pavingMaterial, blockedBy, inPoly, fuse } from './plaza.js';
 
 export const DECK = 7.8;
+/** The paved strips under all walkway outlines as one mesh. */
+function pavedStrip(polys) {
+  const m = new THREE.Mesh(fuse(polys.map(p => [polyGeometry(p, 0.045), new THREE.Matrix4()])), pavingMaterial()); m.receiveShadow = true; m.name = 'walkway-paving'; return m;
+}
 const SLAB = 0.25, PARAPET = 1.05, COL = 0.4, GUARD = 1.75;
 
 /** x where the polygon's west ('W') or east ('E') side crosses the line z, or null. */
@@ -196,7 +201,7 @@ export function build(item, ctx) {
     // a closed door on the slab's wall, where its third-storey landing lies behind
     const put = face('W', sp.wallX - 0.09);
     doorSet(S, put, sp.zd, { w: 1.3, h: 2.1, y0: DECK, rev: 0.05, canopy: 0.75, step: false, plateMat: textCard('3F', 0.28, 0.18) });
-    put(S.v, WH, sp.zd - 0.9, sp.zd + 0.9, DECK, DECK + 2.4, -0.07, -0.05, 'F');                                // the wall face behind the frame
+    put(S.v, WH, sp.zd - 0.9, sp.zd + 0.9, DECK, DECK + 2.4, -0.085, -0.075, 'F');                                // the wall face behind the frame
     hit(S, sp.wallX - 0.1, DECK + 0.01, sp.z0 - 0.15, 0.08, 2.6, sp.z1 - sp.z0 + 0.3);                           // closed, whether or not the slab's wall is there
   }
 
@@ -254,6 +259,7 @@ export function build(item, ctx) {
   }
 
   // ---- paved strip on the ground under the deck
-  ctx.add(flat(pts, 0.045, pavingMaterial()));
+  if (!quad) { const all = [pts, ...others.map(o => o.points)]; ctx.add(all.length === 1 ? flat(pts, 0.045, pavingMaterial()) : pavedStrip(all)); }
+  else if (!others.length) ctx.add(flat(pts, 0.045, pavingMaterial()));
   finish(S, item, ctx, cxm, czm, (quad ? 12 : 30) + (S.low ? 45 : 75));
 }

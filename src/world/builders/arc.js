@@ -457,8 +457,8 @@ export function build(item, ctx) {
     for (const sx of main ? [-1, 1] : []) {                                                                                               // planters with clipped shrubs beside the steps
       const px = sx < 0 ? x0 - 2.6 : x1 + 1.4; v.slab(m.pave, px, 0, z0 + 0.3, 1.2, 0.6, 1.2, 'D').slab(m.hedge, px + 0.1, 0.6, z0 + 0.4, 1.0, 0.55, 1.0, 'D'); c.slab('generic', px, 0, z0 + 0.3, 1.2, 1.2, 1.2);
     }
-    v.slab(m.pave, x0 - 2.2, 0, z0 + 1.67, x1 - x0 + 4.4, 0.07, main ? 10 : 4.2, 'D');                                                     // paved forecourt
-    { const e2 = main ? 3.4 : 2.4, ze = z0 + 1.67 + (main ? 10 : 4.2) + 0.3; yards.push([world(A, B, x0 - e2, 0), world(A, B, x1 + e2, 0), world(A, B, x1 + e2, ze), world(A, B, x0 - e2, ze)]); }
+    v.slab(m.pave, x0 - 2.2, 0, z0 + 1.67, x1 - x0 + 4.4, 0.07, main ? 14.5 : 4.2, 'D');                                                     // paved forecourt
+    { const e2 = main ? 3.4 : 2.4, ze = z0 + 1.67 + (main ? 14.5 : 4.2) + 0.3; yards.push([world(A, B, x0 - e2, 0), world(A, B, x1 + e2, 0), world(A, B, x1 + e2, ze), world(A, B, x0 - e2, ze)]); }
   };
 
   // ---------- concave (south) face ----------

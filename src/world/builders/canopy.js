@@ -121,7 +121,7 @@ export function build(item, ctx) {
   const b = bbox(item.points), H = item.height, low = !!ctx.lowPower;
   const nx = Math.max(2, Math.round(b.sx / MODULE)), nz = Math.max(2, Math.round(b.sz / MODULE)), mx = b.sx / nx, mz = b.sz / nz;
   const yT = H - 0.3, yB = yT - DEPTH, o = 0.35;                         // chord centre lines; o: overhang of the sheets beyond the frame
-  const m = materials(mx, mz), W = lm('frame'), GD = lm('graniteDark'), GL = lm('graniteLight'), SS = lm('steel'), SH = lm('shade'), DK = lm('dark'), LAMP = lm('lamp');
+  const m = materials(mx, mz), W = lm('frame'), GD = lm('graniteDark'), GL = lm('graniteLight'), SS = lm('alu'), SH = lm('shade'), DK = lm('dark'), LAMP = lm('lamp');
   const top = (i, k) => [b.w + i * mx, yT, b.n + k * mz], bot = (i, k) => [b.w + (i + 0.5) * mx, yB, b.n + (k + 0.5) * mz];
   const v = new Batch(), c = new Batch(), d = new Batch();
 

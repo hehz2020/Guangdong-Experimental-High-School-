@@ -37,7 +37,7 @@ export function build(item, ctx) {
   grid(S, PW, r.n, r.s, floors, FH, { bay: 3.9, head: 3.0 });
   const nb = Math.round(b.sz / 3.9), ud = (r.n + r.s) / 2 + (nb % 2 ? 0 : b.sz / nb / 2);
   doorOn(S, 'W', r.w, ud, { w: 1.7, h: 2.3, glazed: true, fan: 0.45, canopy: 1.4, bars: lm('frameDark'), glass: lm('glassTeal') }); apron(ctx, 'W', r.w, ud, 3, 2.4);
-  PW(S.v, lm('stone'), ud - 1.4, ud + 1.4, 0, 0.14, 0, 1.2, 'FLRU'); hit(S, r.w - 1.2, 0, ud - 1.4, 1.2, 0.14, 2.8);
+  PW(S.v, lm('concrete'), ud - 1.4, ud + 1.4, 0, 0.14, 0, 1.2, 'FLRU'); hit(S, r.w - 1.2, 0, ud - 1.4, 1.2, 0.14, 2.8);
   // ---- east face: cream, plain above (seen); small windows on the two lower storeys (assumed), clear of the block that stands against it
   const se = other(ctx, 'slab-north-se-block'), ue = se && se.e > r.e && se.s > r.n ? Math.min(se.s + 0.6, r.s - 4) : r.n + 0.8;
   const E = facade(S, 'E', r.e, r.n, r.s, 0, H, { mat: CR }); punch(E, ue, r.s - 0.8, Math.min(2, floors), FH, { cols: 3, w: 1.4, h: 1.3, sill: 1.1 }); E.done(); plinth(S, PE, r.n, r.s);
