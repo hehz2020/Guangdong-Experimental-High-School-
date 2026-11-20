@@ -113,7 +113,17 @@
 // boards, bins, planters and lamp posts are boxes. Roof plant, canopies, steps (at most 12 cm) and the rooms behind
 // glass have no colliders. Everything built outside the outlines in FOOTPRINTS is reported with ctx.occupy.
 //
-// Cost: COST-NUMBERS
+// Cost, counted over the meshes of this module (index counts; scratch script shots/ctx2/count.mjs, 31 parts):
+//   always drawn   45 draw calls and about 41,000 triangles in the main pass: for each of the four groups one mesh per
+//                  textured material (17 in the south group, 13 north, 9 core, 5 west) including up to three
+//                  vertex-coloured ones, and one paving quad. The meshes are drawn again into the shadow cascades
+//                  (with lowPower only the core and south groups cast shadows).
+//   mid tier       47 calls and about 21,700 triangles if every building were near at once (each building has its own)
+//   near tier      97 calls and about 8,300 triangles likewise, and four instanced meshes of shrubs (1,800 triangles)
+//   Before the showpiece pass the whole module was 9 calls and about 18,200 triangles.
+//   Textures made here: the facade sheet (2048 x 1024, with a half-size emissive and a quarter-size roughness/metalness
+//   copy), the print sheet (1024 x 1024), a 64 x 4 rib normal map, a 256 x 64 streak map; one brick and one pink tile
+//   surface of hifi.js that no other module uses. Everything else is shared with the rest of the campus.
 import { THREE, mat, flat, prism, circlePoints } from '../../kit.js';
 import { CAMPUS } from '../../campus-data.js';
 import { Batch } from '../../batch.js';
@@ -520,17 +530,17 @@ function materials(low) {
     white: mat('wallWhite'), cream: mat('wallCream'), redBrown: pbr('brick', [0x8a4436]), pinkBrown: pbr('tiles', [0xb98a74, 6, 0.6, 0.5]), grey: paint(0xb8b5ac, 0.9),
     render: paint(0xefede5, 0.9), frame: paint(0xf1f0ea, 0.8), cope: paint(0xe2dfd5, 0.85), reveal: paint(REVEAL_HEX, 0.9), sill: paint(0xe9e7df, 0.7), floor: paint(0x9a968c, 0.9), ceil: paint(0xdedbd0, 0.9),
     concrete: mat('concrete'), granite: pbr('granitePolished', [0x6f6a66, 9]), paving: mat('paving'), steel: paint(0xb9bec2, 0.4, 0.7), dark: paint(0x2b2d30, 0.6), unit: paint(0xd8d8d2, 0.7),
-    pave: pbr('paving', [0xb9b3a7, 0x9c968c, 4, 8, [2.4, 2.4], 11, true]), wood: mat('wood'), glassClear: mat('glassClear'), lamp: FURNITURE.lamp(), alu: paint(0xc8ccd0, 0.38, 0.7), solar: paint(0x2a3b55, 0.4),
+    wood: mat('wood'), glassClear: mat('glassClear'), lamp: FURNITURE.lamp(), alu: paint(0xc8ccd0, 0.38, 0.7), solar: paint(0x2a3b55, 0.4), grate: paint(0x4a4d50, 0.5, 0.6),
     // rooms seen through clear glass: their surfaces carry their own light after dusk
     roomWall: lit(new THREE.MeshStandardMaterial({ color: 0xf1ecdd, roughness: 0.9, emissive: 0xf1ecdd, emissiveIntensity: 0.03 }), 'context-room-wall', 0.03, 0.42),
     roomCeil: lit(new THREE.MeshStandardMaterial({ color: 0xf7f5ef, roughness: 0.92, emissive: 0xf7f5ef, emissiveIntensity: 0.05 }), 'context-room-ceiling', 0.05, 0.55),
     roomFloor: lit(pbr('boards', [0xc9a878, 1.2], { emissive: 0xffffff, emissiveIntensity: 0 }), null, 0, 0.3),
     printsLit: lit(new THREE.MeshStandardMaterial({ map: PR.texture, emissiveMap: PR.texture, emissive: 0xffffff, emissiveIntensity: 0, roughness: 0.6 }), 'context-prints-lit', 0, 0.55),
-    tin: ribbed(0xdfe2e2, 'context-ribbed-sheet'), tinRoof: ribbed(0xeceee9, 'context-ribbed-roof'), roofBlue: ribbed(0x7f8696, 'context-ribbed-blue'), roofRed: ribbed(0xb5654a, 'context-ribbed-red', 0.8, 0), roofPale: ribbed(0xd9cfb9, 'context-ribbed-pale', 0.9, 0),
+    tin: ribbed(0xdfe2e2, 'context-ribbed-sheet'), tinRoof: ribbed(0xeceee9, 'context-ribbed-roof'), 
     pipe: paint(0xe4e2da, 0.6), stain: streaks(), deck: paint(0x5c5a55, 0.95), slat: paint(0xf2f2ee, 0.7),
   });
   M.roomFloor.emissiveMap = M.roomFloor.map;
-  M.ground = layered(M.pave, -3); M.kerb = layered(M.concrete, -3);            // paving this module lays over the grounds' own layers
+  M.ground = layered(pbr('paving', [0xb9b3a7, 0x9c968c, 4, 8, [2.4, 2.4], 11, true]), -3);   // paving this module lays over the grounds' own layers (the slab-wide surface, with a depth offset)
 }
 
 const WASH = [0xd85a50, 0xf0f0ec, 0x466eaa, 0xe6c85a, 0x5a9a6a, 0x8a6aa8, 0x30343a, 0xe89ab0];
@@ -785,16 +795,16 @@ function block(T, b, p, pts, others, low, ctx) {
     if (!shed) T.a.box(M.cope, E.L / 2, (yRoof + h) / 2, -0.13, E.L, h - yRoof, 0.26, keep('UN'));
     const plain = C.sides[f] !== 'loggia' && C.sides[f] !== 'gallery';
     if (E.L > 5 && !low) {                                                  // rainwater pipes with hoppers, streaks below the coping
-      for (const s of E.L > 30 ? [0.3, E.L / 2, E.L - 0.3] : [0.3, E.L - 0.3]) if (plain || s !== E.L / 2) T.m.box(M.pipe, s, top / 2, 0.06, 0.11, top, 0.11, keep('SEW')).box(M.pipe, s, top - 0.1, 0.09, 0.26, 0.28, 0.2, keep('SEWUD'));
+      for (const s of E.L > 30 ? [0.3, E.L / 2, E.L - 0.3] : [0.3, E.L - 0.3]) if ((plain && C.sides[f] !== 'apart') || s !== E.L / 2) T.m.box(M.pipe, s, top / 2, 0.06, 0.11, top, 0.11, keep('SEW')).box(M.pipe, s, top - 0.1, 0.09, 0.26, 0.28, 0.2, keep('SEWUD'));
       const band = Math.min(1.4, sh - oo.sill - Math.min(oo.wh, sh - oo.sill - 0.4)) - 0.05;      // the wall between the top windows and the coping
       if (!shed && plain) T.m.wall(M.stain, 0, E.L, top - band, h - 0.05, 0.012, [0, 0, E.L / 2.4, 1]);
     }
     if (C.apron !== false && E.L > 3) {                                     // paved margin at the foot of the wall, with a kerb
-      const w = shed ? 0.9 : 1.6; T.a.level(shed ? M.kerb : M.ground, 0, E.L, 0, w, 0.06).level(M.kerb, 0, E.L, w, w + 0.15, 0.075);
+      const w = shed ? 0.9 : 1.6; T.a.level(M.ground, 0, E.L, 0, w, 0.06).level(M.cope, 0, E.L, w, w + 0.15, 0.09);
       if (ctx.occupy) ctx.occupy([E.at(-0.3, 0), E.at(E.L + 0.3, 0), E.at(E.L + 0.3, w + 0.5), E.at(-0.3, w + 0.5)]);
     }
   } });
-  T.a.poly(shed ? ({ whiteMetal: M.tinRoof, blue: M.roofBlue, redTile: M.roofRed, pale: M.roofPale }[L.roof] || roofPaint(p)) : roofPaint(p), pts, yRoof);
+  T.a.poly(shed && L.roof === 'whiteMetal' ? M.tinRoof : roofPaint(p), pts, yRoof);
   roofKit(T, C.kit, frames, yRoof, low);
   if (!shed && !low) { T.m.frame(); for (const [x, z] of inset(pts, 0.14)) T.m.cyl(M.steel, x, h, z, 0.02, 1.3, 5, false); }      // lightning rods
   return { C, sh, yRoof };
@@ -830,7 +840,7 @@ function drum(T, p) {
 /** A bicycle shed (IMAGINED): steel posts, a roof of ribbed sheet, a rack of bicycles on a concrete pad. The row runs from (x, z) along the direction of ang (as Batch.frame). */
 function bikeShed(T, col, ctx, x, z, ang, len, seed) {
   const A = T.a, c = Math.cos(ang), s = Math.sin(ang), at = (u, w) => [x + c * u + s * w, z - s * u + c * w], nb = Math.max(2, Math.round(len / 3));
-  A.frame(x, z, ang); A.box(M.tinRoof, len / 2, 2.4, 0.35, len + 0.6, 0.06, 2.7, keep('SNEWUD')).box(M.steel, len / 2, 2.31, -0.75, len, 0.1, 0.06, keep('SND')).level(M.kerb, -0.3, len + 0.3, -1.0, 1.8, 0.06);
+  A.frame(x, z, ang); A.box(M.tinRoof, len / 2, 2.4, 0.35, len + 0.6, 0.06, 2.7, keep('SNEWUD')).box(M.steel, len / 2, 2.31, -0.75, len, 0.1, 0.06, keep('SND')).level(M.ground, -0.3, len + 0.3, -1.0, 1.8, 0.06);
   for (let i = 0; i <= nb; i++) A.box(M.steel, i * len / nb, 1.18, -0.75, 0.08, 2.36, 0.08, keep('SNEW')).box(M.steel, i * len / nb, 2.31, 0.35, 0.06, 0.1, 2.6, keep('EWD'));
   A.frame(); T.n.frame(); col.frame(); bikeRack(T.n, col, ...at(len / 2, 0.1), ang, Math.floor((len - 0.4) / 0.62), seed);
   if (ctx.occupy) ctx.occupy([at(-0.6, -1.3), at(len + 0.6, -1.3), at(len + 0.6, 2.1), at(-0.6, 2.1)]);
@@ -844,7 +854,8 @@ function bikeShed(T, col, ctx, x, z, ang, len, seed) {
 function shopfront(T, L, H, sh, wall, kind) {
   const A = T.a, N = T.n, D = 2.6, base = 0.3, nb = Math.max(2, Math.round(L / 1.5)), bw = L / nb, door = kind === 'shop' ? nb - 1 : Math.floor(nb / 2);
   A.wall(wall, 0, L, H, sh);
-  A.level(M.roomFloor, 0, L, -D, 0, 0.05).level(M.roomCeil, 0, L, -D, 0, H, -1).wall(M.roomWall, 0, L, 0, H, -D).jamb(M.roomWall, 0, -D, 0, 0, H, 1).jamb(M.roomWall, L, -D, 0, 0, H, -1);
+  A.level(M.roomWall, 0, L, -D, 0, 0.05).level(M.roomWall, 0, L, -D, 0, H, -1).wall(M.roomWall, 0, L, 0, H, -D).jamb(M.roomWall, 0, -D, 0, 0, H, 1).jamb(M.roomWall, L, -D, 0, 0, H, -1);
+  N.level(M.roomFloor, 0, L, -D, 0, 0.062).level(M.roomCeil, 0, L, -D, 0, H - 0.012, -1);          // boards and a white ceiling from nearby
   A.wall(M.glassClear, 0, L, 0.06, H, -0.06);
   for (let i = 0; i <= nb; i++) A.box(M.alu, Math.min(L - 0.03, Math.max(0.03, i * bw)), H / 2, -0.06, 0.06, H, 0.1, keep('SEW'));
   A.box(M.alu, L / 2, H - 0.03, -0.06, L, 0.06, 0.1, keep('SD')).box(M.alu, L / 2, 2.3, -0.06, L, 0.05, 0.1, keep('SUD'));
@@ -886,9 +897,9 @@ function pavilion(T, p, col, ctx) {
   /** Frame of width w centred at angle a and radius r, facing outward (dir 1) or toward the centre (-1). */
   const tang = (a, r, w, dir = 1) => { const c = Math.cos(a), s = Math.sin(a); return mkFrame(cx + r * c - dir * s * w / 2, cz + r * s + dir * c * w / 2, dir * s, -dir * c, w); };
   // platform under the disc and the path toward the track
-  A.ring(M.pave, cx, cz, rd - 0.15, rp - 0.4, PL, 0, TAU, 36).ring(M.granite, cx, cz, rp - 0.4, rp, PL, 0, TAU, 36).arc(M.granite, cx, cz, rp, 0, PL, 0, TAU, 36);
+  A.ring(M.ground, cx, cz, rd - 0.15, rp - 0.62, PL, 0, TAU, 36).ring(M.grate, cx, cz, rp - 0.62, rp - 0.46, PL, 0, TAU, 36).ring(M.granite, cx, cz, rp - 0.46, rp, PL, 0, TAU, 36).arc(M.granite, cx, cz, rp, 0, PL, 0, TAU, 36);
   const ad = 16 * da, ux = Math.cos(ad), uz = Math.sin(ad), path = [[rp - 0.1, -1.6], [24, -1.6], [24, 1.6], [rp - 0.1, 1.6]].map(([r, t]) => [cx + ux * r - uz * t, cz + uz * r + ux * t]);
-  A.poly(M.pave, path, 0.035);
+  A.poly(M.ground, path, 0.035);
   // the drum: white floor bands, glazing, mullions; clear glass on the ground storey
   for (let i = 0; i < seg; i++) {
     const F = facet(i), L = F.L; T.on(F);
@@ -948,12 +959,12 @@ function pavilion(T, p, col, ctx) {
   // under the disc: benches between the columns, a pair of lamps along the path
   N.frame(); col.frame();
   for (const a of [0.5236, 1.0472, 2.618, 5.76]) { const [x, z] = pt(a, 6.75); bench(N, col, x, z, Math.PI / 2 - a); }
-  for (const t of [-2.3, 2.3]) gardenLamp(N, col, cx + ux * 15 - uz * t, cz + uz * 15 + ux * t);
+  for (const t of [-2.4, 2.4]) gardenLamp(N, col, cx + ux * 12.5 - uz * t, cz + uz * 12.5 + ux * t);
   // colliders: the upper storeys, the roof disc (the ground-storey walls, the leaves and the furniture are boxes in col)
   ctx.collide(prism(circlePoints(cx, cz, rd, 24), sh - 0.05, top, null));
   ctx.collide(prism(circlePoints(cx, cz, Rd, 20), top, h, null));
   if (ctx.occupy) { ctx.occupy(circlePoints(cx, cz, rp + 0.4, 16)); ctx.occupy([[rp, -2.8], [24.5, -2.8], [24.5, 2.8], [rp, 2.8]].map(([r, t]) => [cx + ux * r - uz * t, cz + uz * r + ux * t])); }
-  if (ctx.place) ctx.place('圆亭', cx + ux * 17, cz + uz * 17, Math.atan2(-ux, uz) * 180 / Math.PI, 0);
+  if (ctx.place) ctx.place('圆亭', cx + ux * 21, cz + uz * 21, Math.atan2(-ux, uz) * 180 / Math.PI, 0, false, 0.12);
 }
 
 /**
@@ -979,7 +990,7 @@ function pergolaBlock(T, pts, p, axisX, low, col) {
   N.wall(M.prints, 2.8, 4.4, 2.88, 3.48, 0.03, PR.uv['p:小卖部']);
   T.on(FEi); G.wall(M.render, 0, l0, 0, sh).wall(M.render, l1, D, 0, sh); T.on(FEi.sub(l0, l1)); shopfront(T, l1 - l0, 2.75, sh, M.render, 'lobby');
   // undercroft: paving with granite margins, soffit, beams on tiled columns with granite bases, lights
-  G.poly(M.granite, [[xa, r.n - 0.5], [xb, r.n - 0.5], [xb, r.n + 0.7], [xa, r.n + 0.7]], 0.05).poly(M.pave, [[xa, r.n + 0.7], [xb, r.n + 0.7], [xb, r.s - 0.7], [xa, r.s - 0.7]], 0.05).poly(M.granite, [[xa, r.s - 0.7], [xb, r.s - 0.7], [xb, r.s + 0.5], [xa, r.s + 0.5]], 0.05);
+  G.poly(M.granite, [[xa, r.n - 0.5], [xb, r.n - 0.5], [xb, r.n + 0.7], [xa, r.n + 0.7]], 0.05).poly(M.grate, [[xa, r.n + 0.7], [xb, r.n + 0.7], [xb, r.n + 0.86], [xa, r.n + 0.86]], 0.05).poly(M.ground, [[xa, r.n + 0.86], [xb, r.n + 0.86], [xb, r.s - 0.86], [xa, r.s - 0.86]], 0.05).poly(M.grate, [[xa, r.s - 0.86], [xb, r.s - 0.86], [xb, r.s - 0.7], [xa, r.s - 0.7]], 0.05).poly(M.granite, [[xa, r.s - 0.7], [xb, r.s - 0.7], [xb, r.s + 0.5], [xa, r.s + 0.5]], 0.05);
   G.poly(M.ceil, [[xa, r.n], [xb, r.n], [xb, r.s], [xa, r.s]], sh, -1);
   for (const z of [r.n + 0.3, r.s - 0.3]) G.box(M.render, (xa + xb) / 2, sh - 0.25, z, xb - xa, 0.5, 0.4, keep('SND'));
   const cols = new Batch(), half = Math.ceil((xb - xa) / bay / 2) + 1; T.m.frame();
@@ -1041,9 +1052,10 @@ export function build(ctx) {
     });
     if (b.id === 'south-court-complex') {                                   // bicycle shed along the north face, the gateway's forecourt with two lamps
       bikeShed(T, col, ctx, 98, 88.9, 0, 12, 3);
-      T.a.poly(M.ground, [[77.3, 84.5], [81.2, 84.5], [81.2, 90.8], [77.3, 90.8]], 0.06); T.n.frame(); col.frame(); gardenLamp(T.n, col, 76.2, 90.2); gardenLamp(T.n, col, 82.3, 90.2);
+      T.a.poly(M.ground, [[77.3, 84.5], [81.2, 84.5], [81.2, 90.8], [77.3, 90.8]], 0.06); T.n.frame(); col.frame(); gardenLamp(T.n, col, 76.2, 90.2); gardenLamp(T.n, col, 82.3, 90.2); bins(T.n, col, 83.6, 91.6, 0, true);
       if (ctx.occupy) ctx.occupy([[75.5, 84], [83, 84], [83, 92.3], [75.5, 92.3]]);
     } else if (b.id === 'south-e-complex') bikeShed(T, col, ctx, 86, 147.9, 0, 12, 9);
+    else if (b.id === 'south-low-link') { T.n.frame(); col.frame(); bins(T.n, col, 51.3, 109.9, 0); if (ctx.occupy) ctx.occupy([[50.4, 109.2], [52.2, 109.2], [52.2, 110.6], [50.4, 110.6]]); }
     // what is only worth drawing from nearer by
     const cx = (x0 + x1) / 2, cz = (z0 + z1) / 2, rad = Math.hypot(x1 - x0, z1 - z0) / 2;
     if (T.pots.length) {                                                    // stone planters with clipped shrubs beside the glazed entrances

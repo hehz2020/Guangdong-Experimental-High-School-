@@ -321,6 +321,19 @@ export function build(ctx) {
     for (let z = PZ + RING + 5; z < DEPTH - 2; z += 9.5) big.push([s * 9.4, z, 9.5]);                                 // avenue rows
   }
   for (let x = -HALF + 4; x < HALF; x += 8.5) big.push([x, CANAL(x) + 3.1, 9]);                                       // promenade row
+  // Leave out trees that would stand on ground a builder has claimed (ctx.occupied: outlines in world coordinates), with
+  // 1.5 m to spare: the clearing in front of the clock tower is one.
+  const claimed = (ctx.occupied || []), nearPoly = (poly, x, z, m) => {
+    let on = false;
+    for (let i = 0, j = poly.length - 1; i < poly.length; j = i++) {
+      const [ax, az] = poly[j], [bx, bz] = poly[i];
+      if ((az > z) !== (bz > z) && x < (bx - ax) * (z - az) / (bz - az) + ax) on = !on;
+      const dx = bx - ax, dz = bz - az, q = Math.max(0, Math.min(1, ((x - ax) * dx + (z - az) * dz) / (dx * dx + dz * dz || 1)));
+      if (Math.hypot(x - ax - q * dx, z - az - q * dz) < m) return true;
+    }
+    return on;
+  };
+  for (let i = big.length - 1; i >= 0; i--) { const [wx, wz] = toWorld(big[i][0], big[i][1]); if (claimed.some(poly => nearPoly(poly, wx, wz, 1.5))) big.splice(i, 1); }
   const trees = broadleafTrees(big, { seed: 7, low }); add(trees.group);
   const palmList = []; for (let i = 0; i < 10; i++) { const a = (i + 0.5) / 10 * Math.PI * 2; if (Math.abs(Math.cos(a)) > 0.97 || Math.sin(a) < -0.8) continue; palmList.push([Math.cos(a) * (RING + 2.6), PZ + Math.sin(a) * (RING + 2.6), 10.5 + R()]); }
   const palms = royalPalms(palmList, { seed: 3 }); add(palms.group);
