@@ -41,8 +41,9 @@
 //
 // What is drawn when: the shell (walls, floors, glass, balcony fronts, the shells of the open rooms) always; outdoor
 // units, washing, gallery lamps, the clear lobby glass, entrance signs and the dirt within about 150 m; frames, rails,
-// pipes, door numbers and the other small fittings within about 95 m; stairs, furniture and room contents section by
-// section within about 40 m, their smallest things within about 20 m.
+// pipes, door numbers and the other small fittings in lengths of 24 m, each within about 50 m; stairs, furniture and
+// room contents section by section (rooms within about 30 m, glass-fronted lobbies and common rooms 45 m), their
+// smallest things nearer still.
 //
 // Collision: the boundary of the space a walker can be in, as one-sided quads that face it: floors, stair flights (one
 // inclined quad each), the faces of walls, balustrades (2 m tall for the walker), columns at ground level, the fronts of
@@ -1121,14 +1122,22 @@ export function build(item, ctx) {
   const fg = mergeFlat(ex.build({ name: item.id + '-fittings', castShadow: false }), false);
   for (const Q of [dirt, letters2]) { const mesh = Q && Q.build(item.id + '-overlay'); if (mesh) fg.add(mesh); }
   ctx.detail(ctx.add(fg), wx, wz, L / 2 + (low ? 70 : 110));
+  // the fine fittings are cut into lengths of about 24 m along the block, each shown only from near it
   const eg = mergeFlat(ex2.build({ name: item.id + '-fine-fittings', castShadow: false }), false); { const mesh = exCards && exCards.build(item.id + '-signs'); if (mesh) eg.add(mesh); }
-  ctx.detail(ctx.add(eg), wx, wz, L / 2 + (low ? 34 : 46));
+  const nCut = Math.max(1, Math.round(L / 24)), cuts = Array.from({ length: nCut }, () => new THREE.Group()), ca = Math.cos(f.angle), sa = Math.sin(f.angle);
+  for (const mesh of eg.children) {
+    const g = mesh.geometry, pos = g.attributes.position.array, idx = g.index.array, lists = cuts.map(() => []);
+    for (let i = 0; i < idx.length; i += 3) { const a = idx[i] * 3, x = (pos[a] - f.ox) * ca - (pos[a + 2] - f.oz) * sa; lists[Math.max(0, Math.min(nCut - 1, Math.floor(x / L * nCut)))].push(idx[i], idx[i + 1], idx[i + 2]); }
+    lists.forEach((list, k) => { if (!list.length) return; const q = new THREE.BufferGeometry(); for (const name in g.attributes) q.setAttribute(name, g.attributes[name]); q.setIndex(list); const part = new THREE.Mesh(q, mesh.material); part.receiveShadow = true; cuts[k].add(part); });
+  }
+  cuts.forEach((part, k) => { part.name = item.id + '-fine-fittings-' + k; if (part.children.length) ctx.detail(ctx.add(part), ...P.toWorld((k + 0.5) * L / nCut, D / 2), L / nCut / 2 + (low ? 28 : 38)); });
   for (const [s, T] of tiers) {
     const [sx, sz] = P.toWorld((s.x0 + s.x1) / 2, D / 2), half = (s.x1 - s.x0) / 2;
     const fu = mergeFlat(T.fu.build({ name: item.id + '-interior', castShadow: false }), false), fx = mergeFlat(T.fx.build({ name: item.id + '-fine', castShadow: false }), false);
     { const mesh = T.cards && T.cards.build(item.id + '-cards'); if (mesh) fu.add(mesh); }
-    if (fu.children.length) ctx.detail(ctx.add(fu), sx, sz, half + (low ? 24 : 32));
-    if (fx.children.length) ctx.detail(ctx.add(fx), sx, sz, half + (low ? 11 : 15));
+    const glazed = s.kind === 'lobby' || s.kind === 'common', reach = glazed ? 32 : s.kind === 'stair' ? 26 : 18;      // rooms are looked into from the galleries and the courtyard only
+    if (fu.children.length) ctx.detail(ctx.add(fu), sx, sz, half + (low ? reach * 0.75 : reach));
+    if (fx.children.length) ctx.detail(ctx.add(fx), sx, sz, half + (low ? 8 : glazed ? 15 : 10));
   }
   const cgeo = new THREE.BufferGeometry(); cgeo.setAttribute('position', new THREE.Float32BufferAttribute(CP, 3));
   const cm = new THREE.Mesh(cgeo, mat('generic')); cm.visible = false; cm.name = item.id + '-colliders'; ctx.add(cm); ctx.collide(cm);

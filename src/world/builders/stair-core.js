@@ -31,9 +31,9 @@
 //     as a lift shaft with a (closed) lift door on every gallery; a glazed entrance on the east face; at 7.8 m a doorway
 //     onto a footbridge to the elevated walkway (walkway.js), which is how the walkway is reached on foot;
 //   - annex: five levels at the west slab's storey height (3.6 m); the gallery of every storey lies beside the south
-//     edge of the slab's corridor, with an open bay toward it (3 m wide, at the corridor's west end). On the ground floor
-//     that bay is passable. On the upper floors the slab's own balustrade (slab-wide.js) still stands in it: the storeys
-//     line up but the way through is closed until that balustrade gets a gap there. A glazed door on the east face.
+//     edge of the slab's corridor, with an open bay toward it (3 m wide, at the corridor's west end): slab-wide.js leaves
+//     its balustrade out there, so one walks from the stair straight into the corridor on every storey. A glazed door
+//     on the east face.
 // Colliders: outer walls with their doorways, floors, the dividing wall, stairs (ramps, landings, a wall in the well), the
 // guard at the top, stores, benches, the roof slab and what stands on it. Leaving drone mode above either block ends on
 // its roof slab.

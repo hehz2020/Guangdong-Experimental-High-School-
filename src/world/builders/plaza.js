@@ -17,7 +17,7 @@
 //   - the court's centrepiece: a round bed of flowers in a granite kerb with an armillary sphere of stainless rings on a
 //     dark granite drum (a sculpture made up for this model; it carries no inscription), set in two rings of darker paving;
 //   - two shade trees in granite-framed pits on the north side, two benches turned toward the sphere, garden lamps, a pair of
-//     litter bins, two planter boxes with shrubs and flowers beside the glass stair block's north door;
+//     litter bins, two planter boxes with shrubs and flowers before the glass stair block's north front;
 //   - slot drains along the north and west edges of the court; the flamed-granite look of the paving itself.
 // The measured rectangle also covers ground that the glass stair block and the tower stand on (the data notes say so): marks,
 // stelae, palms and furniture are left out wherever another solid item or the link walkway stands.
@@ -197,13 +197,13 @@ export function build(item, ctx) {
     bench(d, c, cx - 4.6, cz + 0.4, Math.PI / 2); bench(d, c, cx - 0.2, b.n + 1.2, 0);
     gardenLamp(d, c, b.w + 1.1, b.n + 0.9); gardenLamp(d, c, Math.min(edge(cz - 0.8), b.e) - 1.5, cz - 0.8); gardenLamp(d, c, b.w + 1.0, zOpen - 0.9);
     bins(d, c, cx - 4.7, cz - 2.4, Math.PI / 2);
-    // planter boxes either side of the glass block's north door
+    // planter boxes before the glass block's north front
     for (const px of [cx - 3.1, cx + 1.3]) if (!blocked(px, zOpen - 0.75, 0.3)) {
       planter(d, c, px, zOpen - 0.75, 0, 2.2, 0.8, 0.5);
       for (let i = 0; i < 4; i++) shrubList.push([px - 0.75 + i * 0.5, zOpen - 0.75, 0.24, 0.5]);
       for (let i = 0; i < (low ? 6 : 14); i++) bloom.push([px - 0.95 + 1.9 * ((i * 0.618) % 1), zOpen - 0.75 + (i % 2 ? 0.26 : -0.26), 0.44]);
     }
-    drain(d, b.w + 0.3, b.n + 0.25, Math.min(edge(b.n), b.e) - 0.4, b.n + 0.25); drain(d, b.w + 1.75, b.n + 0.6, b.w + 1.75, zOpen - 0.3);
+    drain(d, b.w + 0.3, b.n + 0.25, Math.min(edge(b.n), b.e) - 0.4, b.n + 0.25); drain(d, b.w + 0.45, b.n + 0.6, b.w + 0.45, zOpen - 0.3);
   }
   for (const [tx, tz] of trunks) c.slab('generic', tx - 0.25, 0, tz - 0.25, 0.5, 3, 0.5);
 
