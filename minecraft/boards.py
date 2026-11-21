@@ -2,7 +2,8 @@
 """The words of the 3D teaching blocks' cards as text displays (boards.mjs reads them out of the 3D site): the day's
 lesson on every chalkboard, the class's chalk drawing and the slogan on the back wall, room and floor plates, exit
 signs, the flag over the board, timetables, duty rosters, class rules, certificates, posters, mottos, notices; the
-clock over the board becomes a real clock in an item frame (it shows the time of day in the game).
+clock over the board becomes a real clock in an item frame (it shows the time of day in the game), and in front of
+every lesson board stands a lectern (讲台) with the lesson as a written book on it.
 
 usage: python minecraft/boards.py <boards.json> <blocks.npz> <commands.txt>   (appends summon commands)
 
@@ -89,6 +90,32 @@ def main():
         return 0 <= bx < NX and 0 <= by < NY and 0 <= bz < NZ and bool(S[by, bz, bx])
     cmds, n = [], {}
     def count(k): n[k] = n.get(k, 0) + 1
+    def floor_at(x, z, y_from):
+        """Row of the first air block above the floor at (x, z), searching down from about the card's height."""
+        bx, bz = int(math.floor(x - X0)), int(math.floor(z - Z0))
+        if not (0 <= bx < NX and 0 <= bz < NZ): return None
+        y = int(math.floor(y_from - Y0))
+        for _ in range(4):
+            if 0 < y < NY and not S[y, bz, bx] and S[y - 1, bz, bx]: return y
+            y -= 1
+        return None
+    def lectern(cx, cy, cz, nx, nz, best, lines, B, c):
+        """The teacher's lectern (讲台) in front of the board's middle, two blocks out from the wall, turned to the board
+        (the teacher stands behind it facing the class), with the day's lesson as a written book on it."""
+        for out in (1.5, 2.5, 0.5):
+            x, z = cx + nx * (best + out), cz + nz * (best + out)
+            y = floor_at(x, z, cy - 0.6)
+            if y is None: continue
+            bx, bz = int(math.floor(x - X0)), int(math.floor(z - Z0))
+            if S[y + 1, bz, bx]: continue
+            facing = ('east' if nx < 0 else 'west') if abs(nx) > abs(nz) else ('south' if nz < 0 else 'north')
+            title = lines[0][0].strip()[:32]
+            pages = ['"' + esc('\n'.join(t.strip() for t, _ in lines)) + '"']
+            book = (f'{{id:"minecraft:written_book",count:1,components:{{"minecraft:written_book_content":{{title:{{raw:"{esc(title)}"}},'
+                    f'author:"广东实验中学",pages:[{",".join(pages)}]}}}}}}')
+            cmds.append(f'setblock {bx + int(X0)} {y + int(Y0) + 64} {bz + int(Z0)} minecraft:lectern[facing={facing},has_book=true,powered=false]{{Book:{book}}}')
+            count('lectern'); return
+        count('no lectern')
     for c in B['cards']:
         cx, cy, cz = c['c']; nx, _, nz = c['n']; L = math.hypot(nx, nz) or 1; nx, nz = nx / L, nz / L
         w, h = c['w'], c['h']
@@ -139,6 +166,7 @@ def main():
         yaw = math.degrees(math.atan2(-nx, nz))
         parts = ','.join(f'{{text:"{esc(t_ + (chr(10) if k < len(lines) - 1 else ""))}",color:"{col}"}}' for k, (t_, col) in enumerate(lines))
         comp = '{text:"",extra:[' + parts + ']}'
+        if kind == 'board': lectern(cx, cy, cz, nx, nz, best, lines, B, c)
         cmds.append(f'summon minecraft:text_display {x_:.3f} {y_:.3f} {z_:.3f} {{text:{comp},background:{signed(bg)},billboard:"fixed",shadow:0b,'
                     f'line_width:2000,alignment:"{align}",Rotation:[{yaw:.1f}f,0f],'
                     f'transformation:{{left_rotation:[0f,0f,0f,1f],right_rotation:[0f,0f,0f,1f],translation:[0f,0f,0f],scale:[{s:.3f}f,{s:.3f}f,{s:.3f}f]}}}}')
