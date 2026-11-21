@@ -182,6 +182,10 @@ export const SURFACES = {
     return { ...surface(S, { tile: [2.4, 1.2], strength: 2, height, col: i => mix(mul(base, tone[j.id[i]] * (0.86 + 0.2 * grain[i])), mul(base, 0.3), j.m[i]), rough: () => 0.55 }), roughness: 1, metalness: 0 };
   }),
 };
+// Load-time accounting (the page reports it): how many surfaces were computed and the milliseconds spent on them, noise
+// and all. Calls from one surface into another are counted once. Nothing about the surfaces themselves changes.
+export const SURFACE_TIME = { n: 0, ms: 0 };
+{ let depth = 0; for (const k of Object.keys(SURFACES)) { const f = SURFACES[k]; SURFACES[k] = (...a) => { const t0 = depth++ ? 0 : performance.now(); try { return f(...a); } finally { if (--depth === 0) { SURFACE_TIME.ms += performance.now() - t0; SURFACE_TIME.n++; } } }; } }
 
 // small glazed facade tiles (the usual finish of school buildings in Guangdong): n by n tiles per repeat
 SURFACES.tiles = (hex = 0xf1efe8, n = 6, tile = 0.6, rough = 0.5) => once(`tl${hex}${n}${tile}${rough}`, () => {

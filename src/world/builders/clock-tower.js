@@ -27,8 +27,9 @@
 //     an item of campus-data.js). Its roof, at about 20 m, lies beside the tower's west and south-west sides.
 //
 // ASSUMED: how far west the head stands on the platform (the two views disagree; it is drawn in the middle of the shaft,
-//   0.8 m thick); the west face of the fin section (drawn like the east face); the stair's flights (2.4 m each, one lane
-//   1.6 m wide on brackets from the shaft); everything below about 17 m (hidden in every frame).
+//   0.8 m thick); the west face of the fin section (drawn like the east face); the stair's flights (2.4 m each; the footage
+//   reads as one zig-zag lane, drawn as two lanes of 1.05 m side by side because one lane leaves no headroom on the way up);
+//   everything below about 17 m (hidden in every frame).
 //
 // IMAGINED (the owner asked for a finished tower and said that imagination should fill in what no reference shows):
 //   - the CLOCK: a dial where the footage shows the pale disc on the west face and a second one on the east face under the
@@ -37,18 +38,28 @@
 //     steps and a lamp, aluminium louvres on the south wall of the fin section and high on the west face, a rainwater
 //     pipe, a lightning conductor down the south-west corner, corbels under the platform, a rail all round it, a red
 //     obstruction light on the mast, two floodlights at the foot;
-//   - the stair below the lowest landing seen: one more flight down to a landing at the tower's south-west corner and a
-//     last leg that comes down northward onto the roof of that block (core-pergola-block, see above), so that the stair
-//     no longer starts in mid-air. With ?only= the block is not built and the last leg ends in the air. Nobody can reach
-//     the stair (the block's roof has no access): it is visual only;
+//   - THE WAY UP (second refinement round): the stair can be climbed from the ground to the platform. The neighbouring roof
+//     (core-pergola-block, built by extras/context.js) has no way up to it, so the stair cannot start there; it starts
+//     inside the tower instead. The east door stands open; behind it a dog-leg stair of terrazzo flights runs up the west
+//     half of the shaft round a narrow well (six storeys of 3.7 m, landings at the south wall with their heights on small
+//     plates, bulkhead lamps, a guard on the open side; the strip east of the stair is open from floor to ceiling and lit by
+//     the seen window high on the east face; a meter cabinet and an extinguisher at the foot) to a door in the south face at
+//     22.5 m. Outside, the stair is a dog-leg in two lanes against the south face: one flight more than was seen (22.5 to
+//     24.9 m), then the three seen flights to the platform; landings at the ends on brackets, a lamp over each, rails and
+//     guards; two white columns from the ground carry the outer corners, tied back to the shaft at every second storey joint
+//     (frame 10 shows a white post under the lowest seen landing; what it stands on is hidden). The platform's rail has a gap
+//     where the top flight arrives at its south-west corner. The old visual leg down to the neighbouring roof is gone;
 //   - the emblem itself is the simplified drawing of signs.js.
-// Colliders: the shaft, the platform slab with its rail, the head: a player leaving drone mode above the tower lands on the
-// cap or on the platform.
+// Colliders: the shaft's walls round their two doorways, its floor and solid top, the inner stair (ramps, landings, guards),
+// the outer flights (one slope each), landings, guards 1.75 m tall (a jump clears 1.1 m), the two columns, the platform
+// slab and its rail, the head: a player leaving drone mode above the tower lands on the cap or on the platform.
+// Lamps: none of the stair's lamps is entered in LIT (street.js): they hang 20 to 32 m above open ground, where a pool of
+// light on the ground would be wrong.
 import { THREE, bbox } from '../../kit.js';
 import { emblemTexture } from '../../signs.js';
 import { LIT } from '../../street.js';
 import { fuse } from './plaza.js';
-import { F, lm, shell, finish, hit, facade, face, louvre, stain, rwp, ramp, apron } from './plain-block.js';
+import { F, lm, shell, finish, hit, facade, face, louvre, stain, rwp, ramp, apron, stair, pierce, card, textCard } from './plain-block.js';
 
 let MAT = null;
 function materials() {
@@ -84,7 +95,12 @@ export function build(item, ctx) {
   const E = facade(S, 'E', r.e, r.n, r.s, 0, yF, { mat: W }), Wf = facade(S, 'W', r.w, r.n, r.s, 0, yF, { mat: W });
   const N = facade(S, 'N', r.n, r.w, r.e, 0, yP - tP, { mat: W }), Sf = facade(S, 'S', r.s, r.w, r.e, 0, yP - tP, { mat: W });
   E.win(r.n + sz * 0.13, r.n + sz * 0.51, H - 23.3 * k, H - 21.7 * k, { n: 2, glass: lm('glassWin') });                 // the small three-pane window (SEEN)
-  E.door(r.cz, { w: 1.2, h: 2.15, y0: 0.3, canopy: 0.9, leaf: lm('green'), stepOut: 0.9 });
+  // the stair's levels: the external stair (SEEN from the landing at yL upward) starts one flight lower, at a door in the south
+  // face (yD); below that the way up runs inside the shaft from the east door (IMAGINED, see the header)
+  const yL = H - 16.1 * k, rise = (yP - yL) / 3, yD = yL - rise, yIn = 0.3, yTopIn = yD + 2.45, wt = 0.25;
+  const dS = { uc: r.w + wt + 0.55, w: 0.9 };                                                                              // the door in the south face
+  E.door(r.cz, { w: 1.2, h: 2.15, y0: 0.3, canopy: 0.9, leaf: lm('green'), stepOut: 0.9, swing: 'in', t: wt, rev: 0.12 });
+  Sf.door(dS.uc, { w: dS.w, h: 2.05, y0: yD, swing: 'in', t: wt, rev: 0.12, leaf: lm('green'), step: false, canopy: 0.6, plate: false });
   PE(S.v, lm('concrete'), r.cz - 1.1, r.cz + 1.1, 0, 0.16, 0, 1.3, 'FLRU'); apron(ctx, 'E', r.e, r.cz, 2.8, 1.6);           // lower step
   // A clearing for the view of the tower from the south (the menu place 钟楼下 stands at its south end, 4 m west and 18 m south of
   // the shaft's centre): the grounds (extras/landscape.js) keep their trees and lamps off this strip. Nothing is built on it.
@@ -163,49 +179,107 @@ export function build(item, ctx) {
   for (const y of [0.45, 0.9, 1.3]) { F(S.d, AL, mxp - 0.3, H + y - 0.02, mz - 0.27, 0.6, 0.04, 0.04, 'NSUD'); F(S.d, AL, mxp - 0.3, H + y - 0.02, mz + 0.23, 0.6, 0.04, 0.04, 'NSUD'); }
   for (const y of [1.9, 2.5, 3.1]) F(S.d, AL, mxp - 0.45, H + y * k, mz - 0.02, 0.9, 0.04, 0.04, 'NSUDEW');
 
-  // ---- open stair on the south side: landings at both ends of one lane, zig-zag flights up to the platform (SEEN from the
-  //      landing at about 24.9 m upward; one flight and a last leg down to the neighbouring roof are added below it)
-  const z0 = r.s + 1.1, z1 = r.s + 2.7, zc = (z0 + z1) / 2, xE = r.e - 0.3, xW = r.w + 0.3, yL = H - 16.1 * k, rise = (yP - yL) / 3, steps = 13, TR = lm('tread');
-  const landing = (east, y, wide = 1.2) => {
-    const x = east ? xE : xW - wide;
-    F(S.v, CO, x, y - 0.15, z0, wide, 0.15, z1 - z0, 'NSEWUD');
-    F(S.v, WH, east ? r.e - 0.35 : r.w + 0.15, y - 0.45, r.s, 0.2, 0.3, z1 - r.s, 'SEWD');                 // bracket from the shaft
-    const xo = east ? x + wide - 0.04 : x;                                                                 // rail at the outer end
-    F(S.d, RA, xo, y + 0.95, z0, 0.04, 0.05, z1 - z0, 'EWUD');
-    for (const z of [z0, zc, z1 - 0.04]) F(S.d, RA, xo, y, z, 0.04, 0.95, 0.04, 'NSEW');
-  };
-  const flight = (xa, ya, xb, yb) => {
-    const west = xb < xa, go = (xb - xa) / steps;
-    ramp(S.v, CO, [xa, ya - 0.02, zc], [xb, yb - 0.02, zc], z1 - z0, 0.14, 'UDSN');
-    if (!S.low) for (let i = 0; i < steps; i++) F(S.d, TR, Math.min(xa + i * go, xa + (i + 1) * go), ya + i * (yb - ya) / steps, z0, Math.abs(go), (yb - ya) / steps, z1 - z0, west ? 'UE' : 'UW');
-    for (const z of [z0 + 0.03, z1 - 0.03]) {
-      S.d.strut(RA, [xa, ya + 0.95, z], [xb, yb + 0.95, z], 0.05); S.d.frame();
-      for (const t of [0, 0.5, 1]) F(S.d, RA, xa + (xb - xa) * t - 0.02, ya + (yb - ya) * t, z - 0.02, 0.04, 0.95, 0.04, 'NSEW');
-    }
-  };
-  landing(true, yL);
-  for (let f = 0; f < 3; f++) { const west = f % 2 === 0, ya = yL + f * rise; flight(west ? xE : xW, ya, west ? xW : xE, ya + rise); if (f < 2) landing(!west, ya + rise); }
-  // below the lowest landing seen: a flight down to a west landing, then a last leg northward down to the roof of core-pergola-block (extras/context.js)
-  const yW = yL - rise, yRoof = 20.1 * k, xl0 = xW - 2.2, xl1 = xW - 1.2;
-  flight(xW, yW, xE, yL); landing(false, yW, 2.2);
-  if (yW > yRoof + 0.5) {
-    const n = Math.max(4, Math.round((yW - yRoof) / 0.185)), len = n * 0.3;
-    ramp(S.v, CO, [(xl0 + xl1) / 2, yW - 0.02, z0], [(xl0 + xl1) / 2, yRoof - 0.02, z0 - len], xl1 - xl0, 0.14, 'UDEW');
-    if (!S.low) for (let i = 0; i < n; i++) F(S.d, TR, xl0, yW - (i + 2) * (yW - yRoof) / n, z0 - (i + 1) * 0.3, xl1 - xl0, (yW - yRoof) / n, 0.3, 'UN');
-    for (const x of [xl0 + 0.03, xl1 - 0.03]) { S.d.strut(RA, [x, yW + 0.95, z0], [x, yRoof + 0.95, z0 - len], 0.05); S.d.frame(); for (const t of [0, 0.5, 1]) F(S.d, RA, x - 0.02, yW + (yRoof - yW) * t, z0 - len * t - 0.02, 0.04, 0.95, 0.04, 'NSEW'); }
+  // ---- the way up (the treads from yL to the platform are SEEN; the rest is IMAGINED, see the header)
+  // Inside the shaft: a dog-leg stair of terrazzo flights round a narrow well along the west wall, from the floor behind the
+  // east door (0.3 m) up to the floor landing behind the door in the south face (yD); the strip east of the stair is open from
+  // the floor to the ceiling, a slot of light lit by the seen window high on the east face. All of it is interior detail.
+  const ix0 = r.w + wt, ix1 = r.e - wt, iz0 = r.n + wt, iz1 = r.s - wt, IN = { v: S.i, d: S.i, i: S.i, c: S.c, low: S.low };
+  const nL = Math.max(2, Math.round((yD - yIn) / 3.6)), levels = Array.from({ length: nL + 1 }, (_, i) => yIn + (yD - yIn) * i / nL);
+  const sw = 1.05, sgap = 0.1, landF = 1.1, landB = 1.1, room = iz1 - iz0 - landF - landB, nst = Math.max(6, Math.floor(room / 0.28)), sgo = room / nst;
+  const ox = ix0 + 0.03 + sw + sgap / 2, oz = iz1 - landF, lx1 = ox + sgap / 2 + sw + 0.12;                         // stair frame: flights run north from oz; lane A (east) goes up from a floor
+  stair(IN, { x: ox, z: oz, ang: Math.PI / 2, levels, w: sw, gap: sgap, steps: nst, go: sgo, landB, outer: true, outerEnd: false, tread: lm('terrazzo'), landing: lm('granite'), soffit: lm('plaster'), outerMat: lm('plaster') });
+  const PL = lm('plaster'), GR = lm('granite'), LAMP = lm('lamp');
+  F(S.i, lm('tread'), ix0, yIn - 0.02, iz0, ix1 - ix0, 0.02, iz1 - iz0, 'U'); F(S.d, lm('tread'), ix1, yIn - 0.02, r.cz - 0.6, wt, 0.02, 1.2, 'U');
+  hit(S, ix0 + 0.01, 0, iz0 + 0.01, r.e + 0.01 - ix0 - 0.01, yIn, iz1 - iz0 - 0.02);                                  // the floor, through the doorway to the step outside
+  for (let i = 1; i <= nL; i++) {                                                                                    // floor landings at the south wall, a guard on their open side
+    const y = levels[i];
+    F(S.i, GR, ix0, y - 0.02, oz, lx1 - ix0, 0.02, iz1 - oz, 'U'); F(S.i, PL, ix0, y - 0.2, oz, lx1 - ix0, 0.18, iz1 - oz, 'DN');
+    hit(S, ix0 + 0.01, y - 0.2, oz, lx1 - ix0 - 0.01, 0.2, iz1 - oz - 0.01);
+    F(S.i, PL, lx1 - 0.12, y, oz, 0.12, 1.05, iz1 - oz, 'EWNU'); F(S.i, lm('cope'), lx1 - 0.14, y + 1.05, oz, 0.16, 0.05, iz1 - oz, 'EWNUD'); hit(S, lx1 - 0.12, y + 0.01, oz + 0.01, 0.12, 1.74, iz1 - oz - 0.02);
+    F(S.i, LAMP, ix0 + 0.01, y + 2.05, (oz + iz1) / 2 - 0.15, 0.06, 0.1, 0.3, 'ENSD');                                 // a bulkhead lamp on the west wall
+    card(S.i, face('E', ix0), textCard(y.toFixed(1) + ' m', 0.34, 0.16, { bg: '#2f3338' }), oz + 0.66, oz + 1.0, y + 1.45, y + 1.61, 0.012);
   }
-  // the top flight arrives on a landing at platform level, joined to the platform; a rail round the platform
-  F(S.v, CP, xW - 1.2, yP - tP, pz1, 1.2, tP, z1 - pz1, 'SEWUD');
-  const railRun = (x, z, a, c) => {
-    F(S.d, RA, x, yP + 1.0, z, a, 0.05, c, 'NSEWUD'); F(S.d, RA, x, yP + 0.5, z, a, 0.04, c, 'NSEWUD');
-    const n = Math.max(1, Math.round(Math.max(a, c) / 1.4)); for (let i = 0; i <= n; i++) F(S.d, RA, x + (a > c ? (a - 0.04) * i / n : 0), yP, z + (c > a ? (c - 0.04) * i / n : 0), 0.04, 1.0, 0.04, 'NSEW');
-    hit(S, x, yP + 0.02, z, a, 1.15, c);
-  };
-  railRun(xW - 1.2, z1 - 0.04, 1.2, 0.04); railRun(xW - 1.2, pz1 + 0.02, 0.04, z1 - pz1 - 0.08); railRun(xW + 0.02, pz1 - 0.04, px1 - xW - 0.06, 0.04);
-  railRun(px0, pz0 + 0.05, 0.04, pz1 - pz0 - 0.1); railRun(px1 - 0.04, pz0 + 0.05, 0.04, pz1 - pz0 - 0.1); railRun(px0 + 0.05, pz0, px1 - px0 - 0.1, 0.04);
-  railRun(px0 + 0.05, pz1 - 0.04, xW - 1.2 - px0 - 0.1, 0.04);
+  const yT = levels[nL];                                                                                               // top: a guard over the opening of lane A
+  F(S.i, PL, ox + sgap / 2, yT, oz - 0.12, sw, 1.05, 0.12, 'NSU'); hit(S, ox + sgap / 2 + 0.01, yT + 0.01, oz - 0.12, sw - 0.02, 1.74, 0.11);
+  // the shaft's inner faces (plaster), its ceiling, the inside of the east window, things in the entrance
+  const hE = E.holes.filter(h => h[2] < 1), hS = Sf.holes.filter(h => h[2] > yD - 0.5 && h[2] < yD + 0.5);
+  pierce(S.i, PL, face('E', ix0), iz0, iz1, yIn, yTopIn, [], -0.01, 0, 'F'); pierce(S.i, PL, face('S', iz0), ix0, ix1, yIn, yTopIn, [], -0.01, 0, 'F');
+  pierce(S.i, PL, face('W', ix1), iz0, iz1, yIn, yTopIn, [...hE, [r.n + sz * 0.13, r.n + sz * 0.51, H - 23.3 * k, H - 21.7 * k]], -0.01, 0, 'F');
+  pierce(S.i, PL, face('N', iz1), ix0, ix1, yIn, yTopIn, hS, -0.01, 0, 'F');
+  PE(S.i, lm('glassLobby'), r.n + sz * 0.13, r.n + sz * 0.51, H - 23.3 * k, H - 21.7 * k, -0.17, -0.16, 'B');
+  for (const [a, c] of [[r.n + sz * 0.13 - 0.01, r.n + sz * 0.13], [r.n + sz * 0.51, r.n + sz * 0.51 + 0.01]]) PE(S.i, lm('cope'), a, c, H - 23.3 * k, H - 21.7 * k, -wt, -0.16, 'LR');
+  F(S.i, lm('ceil'), ix0, yTopIn, iz0, ix1 - ix0, 0.02, iz1 - iz0, 'D'); F(S.i, LAMP, (lx1 + ix1) / 2 - 0.2, yTopIn - 0.02, r.cz - 0.2, 0.4, 0.02, 0.4, 'D');
+  F(S.i, lm('alu'), ix1 - 0.3, yIn + 1.0, iz0 + 0.2, 0.3, 0.9, 0.6, 'WNSU'); F(S.i, lm('red'), ix1 - 0.18, yIn, iz1 - 0.5, 0.18, 0.55, 0.18, 'WNSU');   // a meter cabinet, an extinguisher
+  F(S.i, LAMP, ix1 - 0.07, yIn + 2.6, r.cz - 0.15, 0.06, 0.1, 0.3, 'WNSD');
+  hit(S, ix1 - 0.3, yIn + 1.0, iz0 + 0.21, 0.29, 0.9, 0.58);
+  // shaft walls for the player: four walls with the two doorways, the floor behind them; solid from the ceiling up
+  const dE = [r.cz - 0.62, r.cz + 0.62], dW = [dS.uc - dS.w / 2 - 0.08, dS.uc + dS.w / 2 + 0.08];
+  hit(S, r.w, 0, r.n, wt - 0.01, yTopIn + 0.01, sz);                                                                    // west
+  hit(S, r.w + 0.2, 0, r.n, sx - 0.4, yTopIn + 0.01, wt - 0.01);                                                     // north
+  hit(S, r.e - wt + 0.01, 0, r.n, wt - 0.01, yTopIn + 0.01, dE[0] - r.n + 0.01); hit(S, r.e - wt + 0.01, 0, dE[1] - 0.01, wt - 0.01, yTopIn + 0.01, r.s - dE[1] + 0.01);
+  hit(S, r.e - wt + 0.01, yIn + 2.3, dE[0], wt - 0.01, yTopIn - yIn - 2.3 + 0.01, dE[1] - dE[0]);                    // east, round its door
+  hit(S, r.w + 0.2, 0, r.s - wt + 0.01, dW[0] - r.w - 0.2 + 0.01, yTopIn + 0.01, wt - 0.01); hit(S, dW[1] - 0.01, 0, r.s - wt + 0.01, r.e - 0.2 - dW[1] + 0.01, yTopIn + 0.01, wt - 0.01);
+  hit(S, dW[0], 0, r.s - wt + 0.01, dW[1] - dW[0], yD, wt - 0.01); hit(S, dW[0], yD + 2.2, r.s - wt + 0.01, dW[1] - dW[0], yTopIn - yD - 2.2 + 0.01, wt - 0.01);   // south, round its door
+  hit(S, r.w, yTopIn, r.n, sx, yP - tP - yTopIn + 0.01, sz);                                                            // from the ceiling to the platform: solid
 
-  hit(S, r.w, 0, r.n, sx, yP - tP, sz); hit(S, px0, yP - tP, pz0, px1 - px0, tP, pz1 - pz0); hit(S, hx0, yP + 0.01, hz0, hx1 - hx0, H - yP - 0.01, hz1 - hz0);
-  hit(S, r.e, 0, r.cz - 0.95, 0.9, 0.3, 1.9);                                                            // the door step
+  // Outside, on the south side: four flights in two lanes (a dog-leg against the wall: the treads of the upper three are SEEN),
+  // landings at the ends on brackets from the shaft and two white columns, rails, a lamp at each landing.
+  const TR = lm('tread'), ngo = 13;
+  const zA0 = r.s + 0.95, zA1 = zA0 + 1.05, zB0 = zA1 + 0.1, zB1 = zB0 + 1.05;                                          // lane A next to the wall, lane B outside it
+  const xa = r.w + 1.2, xb = r.e - 0.35, xw = px0, xe = px1, run = xb - xa, go = run / ngo, rs = rise / ngo;
+  const flight = (z0, z1, y0, east) => {
+    const xs = east ? xa : xb, xf = east ? xb : xa, up = east ? 1 : -1, zc = (z0 + z1) / 2;
+    ramp(S.v, CO, [xs, y0 - 0.03, zc], [xf, y0 + rise - 0.03, zc], z1 - z0, 0.14, 'UDSN');                          // waist slab
+    for (const z of [z0, z1 - 0.06]) ramp(S.v, WH, [xs, y0 + 0.14, z + 0.03], [xf, y0 + rise + 0.14, z + 0.03], 0.06, 0.38);   // white stringers
+    for (let i = 0; i < ngo; i++) F(S.low ? S.v : S.d, TR, east ? xa + i * go : xb - (i + 1) * go, y0 + i * rs, z0 + 0.06, go, rs, z1 - z0 - 0.12, east ? 'UW' : 'UE');
+    for (const z of [z0 + 0.03, z1 - 0.03]) {
+      S.d.strut(RA, [xs, y0 + 0.95 + rs, z], [xf, y0 + rise + 0.95 + rs, z], 0.045); S.d.frame();
+      for (const t of [0.08, 0.5, 0.92]) F(S.d, RA, xs + (xf - xs) * t - 0.02, y0 + rise * t + 0.1, z - 0.02, 0.04, 0.85 + rs, 0.04, 'NSEW');
+    }
+    ramp(S.c, 'generic', [xs - up * go / 2, y0, zc], [xf - up * go / 2, y0 + rise, zc], z1 - z0 - 0.02, 0.2);        // the slope the walker climbs
+  };
+  const landing = (x0, x1, z0, z1, y, lamp = true) => {
+    F(S.v, CO, x0, y - 0.2, z0, x1 - x0, 0.2, z1 - z0, 'NSEWUD'); F(S.d, TR, x0 + 0.03, y, z0 + 0.03, x1 - x0 - 0.06, 0.012, z1 - z0 - 0.06, 'U');
+    hit(S, x0 + 0.01, y - 0.2, z0 + 0.01, x1 - x0 - 0.02, 0.2, z1 - z0 - 0.02);
+    const xm = Math.max(x0, Math.min(x1, r.cx)) === x0 ? x0 + 0.3 : x1 - 0.5;                                          // a bracket from the shaft under it
+    F(S.v, WH, Math.max(x0, Math.min(x1 - 0.22, xm)), y - 0.62, r.s, 0.22, 0.42, z1 - r.s - 0.05, 'SEWD');
+    if (lamp) F(S.d, LAMP, x0 < r.cx ? r.w + 0.45 : r.e - 0.75, y + 2.25, r.s, 0.3, 0.1, 0.07, 'SEWD');                // a bulkhead lamp on the wall above it
+  };
+  const rail = (x0, z0, x1, z1, y) => {                                                                               // a horizontal guard rail on posts along an axis-parallel line
+    const alongX = Math.abs(x1 - x0) > Math.abs(z1 - z0), L = alongX ? x1 - x0 : z1 - z0, n = Math.max(1, Math.round(L / 1.2));
+    for (const yy of [y + 1.0, y + 0.5]) F(S.d, RA, alongX ? x0 : x0 - 0.02, yy, alongX ? z0 - 0.02 : z0, alongX ? L : 0.04, yy > y + 0.7 ? 0.05 : 0.035, alongX ? 0.04 : L, alongX ? 'NSUD' : 'EWUD');
+    for (let i = 0; i <= n; i++) F(S.d, RA, (alongX ? x0 + (L - 0.04) * i / n : x0 - 0.02), y, (alongX ? z0 - 0.02 : z0 + (L - 0.04) * i / n), 0.04, 1.0, 0.04, 'NSEW');
+  };
+  const y1 = yD + rise, y2 = yD + 2 * rise, y3 = yD + 3 * rise;
+  flight(zA0, zA1, yD, true); flight(zB0, zB1, y1, false); flight(zA0, zA1, y2, true); flight(zB0, zB1, y3, false);
+  landing(xw, xa, r.s, zA1, yD); landing(xb, xe, zA0, zB1, y1); landing(xw, xa, zA0, zB1, y2); landing(xb, xe, zA0, zB1, y3); landing(xw, xa, pz1, zB1, yP, false);
+  F(S.v, CO, xw, yD - 0.2, r.s - 0.01, xa - xw, 0.2, 0.01, 'N');
+  // visible rails on the open edges of the landings
+  rail(xw, r.s, xw, zA1, yD); rail(xw, zA1, xa, zA1, yD);
+  for (const y of [y1, y3]) { rail(xe, zA0, xe, zB1, y); rail(xb, zB1, xe, zB1, y); rail(xb, zA0, xe, zA0, y); }
+  rail(xw, zA0, xw, zB1, y2); rail(xw, zB1, xa, zB1, y2); rail(xw, zA0, xa, zA0, y2);
+  rail(xw, zB1, xa, zB1, yP); rail(xw, pz1, xw, zB1, yP); rail(xa, zA0, xa, zA1, yP);
+  // guards for the player (1.75 m: a jump clears 1.1 m): along the wall side of lane A, outside lane B, in the well between
+  // the lanes, at both ends; at the top they are the platform's south rail. A centimetre apart wherever they meet.
+  hit(S, xa + 0.12, yD + 0.05, zA0 - 0.07, xe - xa - 0.12, yP + 1.75 - yD - 0.05, 0.06);
+  hit(S, xw, yD + 2.3, zA0 - 0.07, xa + 0.11 - xw, yP - 0.3 - yD - 2.3, 0.06);
+  hit(S, xw, yD + rise - 0.2, zB1 + 0.01, xe - xw, yP + 1.75 - yD - rise + 0.2, 0.06); hit(S, xw, yD - 0.2, zA1 + 0.01, xa - xw, 1.95, 0.06);
+  hit(S, xa + 0.02, yD + 0.05, zA1 + 0.01, run - 0.04, yP + 1.75 - yD - 0.05, zB0 - zA1 - 0.02);
+  hit(S, xw - 0.07, yD - 0.2, r.s + 0.01, 0.06, yP + 1.95 - yD, zB1 - r.s); hit(S, xe + 0.01, y1 - 0.2, zA0, 0.06, yP + 1.95 - y1, zB1 - zA0);
+  hit(S, xa + 0.01, yP + 0.01, zA0, 0.06, 1.74, zA1 - zA0);
+  // two white columns from the ground carry the outer corners (frame 10 shows a white post under the lowest seen landing)
+  // tied back to the shaft at every second storey joint, so that they read as part of the tower's frame
+  for (const x of [xw + 0.02, xe - 0.32]) {
+    F(S.v, WH, x, 0, zB1 - 0.3, 0.3, yP - 0.2, 0.3, 'NSEW'); F(S.v, BS, x - 0.02, 0, zB1 - 0.32, 0.34, 0.5, 0.34, 'NSEWU'); hit(S, x, 0, zB1 - 0.3, 0.3, yP - 0.2, 0.3);
+    const xt = x < r.cx ? r.w + 0.35 : r.e - 0.35;
+    for (let y = 2 * 3.9 * k; y < yD - 1; y += 2 * 3.9 * k) { S.v.strut(WH, [x + 0.15, y - 0.15, zB1 - 0.15], [xt, y - 0.15, r.s + 0.05], 0.22); S.v.frame(); }
+  }
+  if (ctx.occupy) ctx.occupy([[xw - 0.3, zB1 - 0.6], [xw + 0.6, zB1 - 0.6], [xw + 0.6, zB1 + 0.3], [xw - 0.3, zB1 + 0.3]]), ctx.occupy([[xe - 0.6, zB1 - 0.6], [xe + 0.3, zB1 - 0.6], [xe + 0.3, zB1 + 0.3], [xe - 0.6, zB1 + 0.3]]);
+  // the platform's rail: round the north, west and east edges and along the south edge east of the stair's top landing
+  rail(px0, pz0, px1, pz0, yP); rail(px0, pz0, px0, pz1, yP); rail(px1, pz0, px1, pz1, yP); rail(xa, pz1, px1, pz1, yP);
+  hit(S, px0 - 0.07, yP + 0.01, pz0 - 0.07, px1 - px0 + 0.14, 1.74, 0.06); hit(S, px0 - 0.07, yP + 0.01, pz0, 0.06, 1.74, pz1 - pz0 + 0.01); hit(S, px1 + 0.01, yP + 0.01, pz0, 0.06, 1.74, zA0 - pz0 - 0.08);
+
+  hit(S, px0, yP - tP, pz0, px1 - px0, tP, pz1 - pz0); hit(S, hx0, yP + 0.01, hz0, hx1 - hx0, H - yP - 0.01, hz1 - hz0);
+  hit(S, r.e, 0, r.cz - 1.1, 1.3, 0.16, 2.2); hit(S, r.e - 0.01, 0.15, r.cz - 0.95, 0.91, 0.15, 1.9);            // the two steps before the door
   finish(S, item, ctx, r.cx, r.cz, S.low ? 70 : 110);
 }

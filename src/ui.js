@@ -11,11 +11,12 @@ const CSS = `
 #hud-time{top:calc(10px + env(safe-area-inset-top,0px));left:50%;transform:translateX(-50%);background:rgba(12,16,22,.55);border-radius:8px;padding:5px 10px;font-size:13px;display:flex;gap:8px;align-items:center}
 #hud-time input{width:150px}
 #hud-help-btn{top:calc(10px + env(safe-area-inset-top,0px));left:calc(10px + env(safe-area-inset-left,0px));width:34px;height:34px;border-radius:17px;border:0;background:rgba(12,16,22,.6);color:#eef2f6;font-size:18px}
-#hud-help{top:calc(52px + env(safe-area-inset-top,0px));left:calc(10px + env(safe-area-inset-left,0px));max-width:260px;background:rgba(12,16,22,.8);border-radius:8px;padding:10px 12px;font-size:13px;line-height:1.7}
+#hud-help{top:calc(52px + env(safe-area-inset-top,0px));left:calc(10px + env(safe-area-inset-left,0px));max-width:260px;background:rgba(12,16,22,.8);border-radius:8px;padding:10px 12px;font-size:13px;line-height:1.7;z-index:8;box-sizing:border-box;overflow-y:auto;max-height:calc(100% - 64px - env(safe-area-inset-top,0px) - env(safe-area-inset-bottom,0px))}
 #stick{left:calc(24px + env(safe-area-inset-left,0px));bottom:calc(64px + env(safe-area-inset-bottom,0px));width:130px;height:130px;border-radius:65px;background:rgba(255,255,255,.12);border:2px solid rgba(255,255,255,.35);touch-action:none}
 #stick i{position:absolute;left:40px;top:40px;width:50px;height:50px;border-radius:25px;background:rgba(255,255,255,.55)}
 .tbtn{right:calc(24px + env(safe-area-inset-right,0px));width:64px;height:64px;border-radius:32px;border:2px solid rgba(255,255,255,.4);background:rgba(255,255,255,.14);color:#fff;font-size:15px;touch-action:none}
 #btn-jump{bottom:calc(64px + env(safe-area-inset-bottom,0px))}#btn-run{bottom:calc(140px + env(safe-area-inset-bottom,0px))}#btn-run.on{background:rgba(255,200,90,.5)}
+#btn-down{bottom:calc(64px + env(safe-area-inset-bottom,0px));right:calc(100px + env(safe-area-inset-right,0px))}
 #hud-bar{left:50%;transform:translateX(-50%);bottom:calc(20px + env(safe-area-inset-bottom,0px));display:flex;gap:8px}
 #hud-bar button{border:0;border-radius:16px;padding:7px 14px;font-size:14px;background:rgba(12,16,22,.62);color:#eef2f6}
 #hud-bar button.on{background:rgba(255,200,90,.6);color:#201a08}
@@ -26,12 +27,17 @@ const CSS = `
   #hud-places{grid-template-columns:repeat(4,1fr);width:min(620px,calc(100% - 32px))}
   #hud-map canvas{width:104px;height:auto}
   #btn-run{bottom:calc(64px + env(safe-area-inset-bottom,0px));right:calc(100px + env(safe-area-inset-right,0px))}
+  #btn-down{bottom:calc(140px + env(safe-area-inset-bottom,0px));right:calc(24px + env(safe-area-inset-right,0px))}
+  /* landscape phone: the open help stands right of the stick (24 + 130 px) and left of the minimap, above the bottom bar */
+  .touch #hud-help{left:calc(170px + env(safe-area-inset-left,0px));max-width:min(330px,calc(100% - 170px - 140px - env(safe-area-inset-left,0px) - env(safe-area-inset-right,0px)));max-height:calc(100% - 52px - 64px - env(safe-area-inset-top,0px) - env(safe-area-inset-bottom,0px));font-size:12px;line-height:1.6}
 }
 @media (max-width:640px){
   #hud-map canvas{width:104px;height:auto}
   #hud-time{left:calc(52px + env(safe-area-inset-left,0px));transform:none;padding:4px 8px;font-size:12px}
   #hud-time input{width:84px}
   #notice{top:calc(52px + env(safe-area-inset-top,0px))!important;bottom:auto!important;left:calc(10px + env(safe-area-inset-left,0px))!important;max-width:calc(100% - 140px)!important;font-size:11px!important}
+  /* portrait phone: the open help keeps clear of the minimap (104 px canvas, 4 px padding, 10 px margin, a 16 px gap) */
+  #hud-help{max-width:calc(100% - 20px - 132px - env(safe-area-inset-left,0px) - env(safe-area-inset-right,0px));font-size:12px;line-height:1.6;padding:8px 10px}
 }
 `;
 
@@ -39,7 +45,7 @@ export function initUI({ player, lighting, campus, camera, renderer, view, place
   const style = document.createElement('style'); style.textContent = CSS; document.head.appendChild(style);
   const el = (tag, id, cls = 'hud', html = '') => { const e = document.createElement(tag); if (id) e.id = id; e.className = cls; e.innerHTML = html; document.body.appendChild(e); return e; };
   const touch = matchMedia('(pointer: coarse)').matches || 'ontouchstart' in window;
-  const state = { moveX: 0, moveY: 0, run: false, jump: false };
+  const state = { moveX: 0, moveY: 0, run: false, jump: false, down: false };
 
   // --- time of day ---
   if (lighting) {
@@ -54,9 +60,10 @@ export function initUI({ player, lighting, campus, camera, renderer, view, place
   // --- help ---
   const helpBtn = el('button', 'hud-help-btn', 'hud', '?'), help = el('div', 'hud-help', 'hud');
   help.hidden = true;
-  help.innerHTML = touch ? '左下摇杆：移动<br>在画面上滑动：转动视角<br>“跑”：切换奔跑　“跳”：跳跃<br>“地点”：直接前往某处<br>“航拍”：飞行模式，朝视线方向飞，“跳”为上升<br>卡在屋顶或围栏里：点“航拍”飞出来<br>上方滑块：调整时间<br>右上：小地图（北在上）'
+  help.innerHTML = touch ? '左下摇杆：移动<br>在画面上滑动：转动视角<br>“跑”：切换奔跑　“跳”：跳跃<br>“地点”：直接前往某处<br>“航拍”：飞行模式，朝视线方向飞，“升”“降”上下<br>卡在屋顶或围栏里：点“航拍”飞出来<br>上方滑块：调整时间<br>右上：小地图（北在上）'
     : 'W A S D / 方向键：移动<br>鼠标：转动视角（先点击画面）<br>Shift：跑　空格：跳　Esc：释放鼠标<br>F：航拍模式（空格上升，C 下降）<br>卡在屋顶或围栏里：按 F 飞出来<br>下方“地点”：直接前往某处（先按 Esc）<br>上方滑块：调整时间<br>右上：小地图（北在上）';
-  helpBtn.addEventListener('click', e => { e.stopPropagation(); help.hidden = !help.hidden; });
+  helpBtn.addEventListener('click', e => { e.stopPropagation(); help.hidden = !help.hidden; const n = document.getElementById('notice'); if (n && !help.hidden) n.hidden = true; });
+  if (touch) document.body.classList.add('touch');
 
   // --- places menu and drone mode ---
   if (player) {
@@ -131,6 +138,13 @@ export function initUI({ player, lighting, campus, camera, renderer, view, place
   if (touch && player) {
     const stick = el('div', 'stick', 'hud', '<i></i>'), knob = stick.firstChild;
     const jump = el('button', 'btn-jump', 'hud tbtn', '跳'), run = el('button', 'btn-run', 'hud tbtn', '跑');
+    // drone mode: "跳" becomes "升" (up) and a "降" (down) button appears beside it
+    const down = el('button', 'btn-down', 'hud tbtn', '降'); down.hidden = true;
+    const flyLabels = on => { jump.textContent = on ? '升' : '跳'; down.hidden = !on; if (!on) state.down = false; };
+    player.onFly(flyLabels); flyLabels(player.isFly());
+    down.addEventListener('touchstart', e => { state.down = true; e.preventDefault(); e.stopPropagation(); }, { passive: false });
+    down.addEventListener('touchend', e => { state.down = false; e.preventDefault(); }, { passive: false });
+    down.addEventListener('touchcancel', () => { state.down = false; });
     // the notice would sit under the stick: move it below the top bar and let it fade out after a while
     const notice = document.getElementById('notice'); if (notice) { notice.style.bottom = 'auto'; notice.style.top = '52px'; notice.style.left = '10px'; setTimeout(() => { notice.hidden = true; }, 15000); }
     const start = document.getElementById('start');

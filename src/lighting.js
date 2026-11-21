@@ -42,6 +42,7 @@
 //   - Exposure per time of day and the indoor boost are chosen by eye.
 import * as THREE from 'three';
 import { CAMPUS } from './campus-data.js';
+import { LIT } from './street.js';
 
 const RAD = Math.PI / 180;
 const LAT = 23.08 * RAD;                               // Guangzhou
@@ -235,7 +236,7 @@ function makeRoofs(extra = []) {
   for (const d of extra) {
     let w = Infinity, e = -Infinity, n = Infinity, s = -Infinity;
     for (const [x, z] of d.pts) { w = Math.min(w, x); e = Math.max(e, x); n = Math.min(n, z); s = Math.max(s, z); }
-    roofs.push({ pts: d.pts, w, e, n, s, height: d.top - 0.3, bottom: d.bottom, hall: null, tall: false });
+    roofs.push({ pts: d.pts, w, e, n, s, height: d.top - 0.3, bottom: d.bottom, hall: null, tall: false, style: 'declared' });
   }
   for (const it of CAMPUS.items) {
     if (!it.solid || !(it.height > 3)) continue;
@@ -245,7 +246,7 @@ function makeRoofs(extra = []) {
     for (const [x, z] of pts) { w = Math.min(w, x); e = Math.max(e, x); n = Math.min(n, z); s = Math.max(s, z); }
     // one big room (gymnasium): a fixed lamp in the middle instead of one that follows the viewer
     const hall = it.style === 'gym' ? { x: (w + e) / 2, y: it.height * 0.6, z: (n + s) / 2, reach: Math.hypot(e - w, s - n) * 0.8, power: 5.5 } : null;
-    roofs.push({ pts, w, e, n, s, height: it.height, hall, tall: it.style === 'new-building' });
+    roofs.push({ pts, w, e, n, s, height: it.height, hall, tall: it.style === 'new-building', style: it.style });
   }
   return roofs;
 }
@@ -288,6 +289,36 @@ export function createLighting(scene, renderer, opts = {}) {
   renderer.shadowMap.enabled = shadowsOn;
   renderer.shadowMap.type = THREE.PCFShadowMap;      // hardware-filtered depth comparison, 5 taps (the soft variant no longer exists in this release)
 
+  // ---- pass accounting: what each frame drew, by kind of pass. renderer.render and the shadow map's render are wrapped
+  // (calls run through unchanged); a render inside another one (the pool's mirror, asked for by an object while the scene is
+  // drawn) is counted on its own and taken off the outer one. main: the scene seen by the camera; ao: the scene again for
+  // the ambient occlusion's normals and depth; mirror: the pool's reflection; shadow: shadow maps redrawn; post: full-screen
+  // passes; env: the sky capture; other: anything drawn outside render() (the gymnasium's reflection capture).
+  const PASS_KINDS = ['main', 'shadow', 'mirror', 'ao', 'post', 'env', 'other'];
+  const blankPasses = () => { const o = { shadowMaps: 0 }; for (const k of PASS_KINDS) o[k] = { calls: 0, triangles: 0 }; return o; };
+  let passNow = blankPasses(), passLast = blankPasses(), mainCamera = null, inRender = false, inEnv = false;
+  const nest = [], lightPerf = { frames: 0, scan: 0, scans: 0, env: 0, boxes: 0 };
+  const addPass = (kind, calls, tris) => { const q = passNow[kind]; q.calls += Math.max(0, calls); q.triangles += Math.max(0, tris); };
+  {
+    const baseRender = renderer.render, sm = renderer.shadowMap, baseShadow = sm.render;
+    renderer.render = function (sc, cam) {
+      const r = renderer.info.render, c0 = r.calls, t0 = r.triangles;
+      nest.push([0, 0]);
+      try { return baseRender.call(this, sc, cam); } finally {
+        const inner = nest.pop(), dc = Math.max(0, r.calls - c0), dtri = Math.max(0, r.triangles - t0);
+        const kind = inEnv ? 'env' : !inRender ? 'other' : nest.length ? 'mirror' : sc.overrideMaterial ? 'ao' : cam === mainCamera && sc.isScene ? 'main' : 'post';
+        addPass(kind, dc - inner[0], dtri - inner[1]);
+        if (nest.length) { const up = nest[nest.length - 1]; up[0] += dc; up[1] += dtri; }
+      }
+    };
+    sm.render = function (lights, sc, cam) {
+      const r = renderer.info.render, c0 = r.calls, t0 = r.triangles;
+      baseShadow.call(this, lights, sc, cam);
+      const dc = r.calls - c0, dtri = r.triangles - t0;
+      if (dc > 0) { addPass('shadow', dc, dtri); if (nest.length) { const up = nest[nest.length - 1]; up[0] += dc; up[1] += dtri; } }
+    };
+  }
+
   // ---- sky
   const U = {
     zenith: { value: new THREE.Color() }, horizonSun: { value: new THREE.Color() }, horizonAway: { value: new THREE.Color() }, glow: { value: new THREE.Color() },
@@ -308,24 +339,88 @@ export function createLighting(scene, renderer, opts = {}) {
   const hemi = new THREE.HemisphereLight(0x000000, 0x000000, 1); hemi.name = 'daylight'; scene.add(hemi);
   const ambient = new THREE.AmbientLight(0xffffff, 0.03); scene.add(ambient);
   const fill = new THREE.PointLight(0xffe8c8, 0, 34, 0.8); fill.name = 'indoor-lamp'; scene.add(fill);
+  // Rooms are lit from their ceilings: a spot light pointing straight down from just under the ceiling over the viewer
+  // (a little ahead of them), wide and soft-edged, so floors, desks and the lower walls take the light and the ceiling
+  // itself stays darker; the point light above (fill) is turned down to the light the room bounces back up. It stands in
+  // for a whole grid of ceiling lamps, so its falloff (decay 1.3) is flatter than one lamp's. Colour by building: cool
+  // white tubes in the teaching blocks and dormitories, warmer light in the library, neutral elsewhere. No shadows.
+  // Not on phones or in safe mode (one more light for every material). CHOSEN by eye: all of these numbers.
+  const roomLamp = plain || low || opts.legacy ? null : new THREE.SpotLight(0xffffff, 0, 18, 1.2, 0.85, 1.3);
+  if (roomLamp) { roomLamp.name = 'room-lamp'; roomLamp.castShadow = false; scene.add(roomLamp); scene.add(roomLamp.target); }
+  const ROOM_COLOR = { 'teaching-slab': 0xeef2ff, 'teaching-slab-wide': 0xeef2ff, 'slab-block': 0xf1f3ff, 'new-building': 0xfff0dc, arc: 0xfff3e6, dome: 0xfff0e0, gym: 0xfff6ea };
+  const roomColor = new THREE.Color(), roomAt = new THREE.Vector3(), look = new THREE.Vector3();
+
+  // ---- street, garden and canopy lamps after dusk: a fixed set of point lights (no shadows) handed to the lamps nearest
+  // the viewer. LIT (street.js) lists every lamp the modules drew as [x, z, radius of its pool of light(, height)]. The
+  // count never changes, so no material is compiled again when they move; a light is only handed to another lamp after
+  // it has faded out, and every light fades with its rank: the lamp just beyond the set (the next to come in) defines the
+  // distance at which a light is at zero, so swapping one lamp for the next happens in the dark. ?lamps=0..16 (default 8).
+  const lampCount = plain || low || opts.legacy ? 0 : query.has('lamps') && Number.isFinite(Number(query.get('lamps'))) ? THREE.MathUtils.clamp(Math.round(Number(query.get('lamps'))), 0, 16) : 8;
+  const LAMP_COLOR = 0xffd09a, LAMP_K = 0.9;
+  const posts = (opts.lamps || LIT).map(([x, z, r, y]) => ({ x, z, r, y: Number.isFinite(y) ? y : THREE.MathUtils.clamp(0.62 * r, 2.4, 9) }));
+  const lampSlots = [];
+  for (let i = 0; i < lampCount; i++) {
+    const l = new THREE.PointLight(LAMP_COLOR, 0, 10, 2); l.name = 'street-lamp-' + i; l.castShadow = false; scene.add(l);
+    lampSlots.push({ light: l, post: null, w: 0, goal: 0 });
+  }
+  const near = [];                                       // scratch: [distance, post] of the nearest lamps, sorted
+  function pickLamps(p) {
+    near.length = 0; const n = lampSlots.length;
+    for (const q of posts) {
+      const d = Math.hypot(q.x - p.x, q.y - p.y, q.z - p.z) - 0.25 * q.r;
+      if (d > 120 || (near.length > n && d >= near[near.length - 1][0])) continue;
+      let k = near.length; near.push(null); while (k > 0 && near[k - 1][0] > d) { near[k] = near[k - 1]; k--; } near[k] = [d, q];
+      if (near.length > n + 1) near.length = n + 1;
+    }
+    const edge = near.length > n ? near[n][0] : 120, band = THREE.MathUtils.clamp(edge * 0.35, 4, 14);
+    const want = new Map(); for (let i = 0; i < Math.min(n, near.length); i++) want.set(near[i][1], smooth(edge - near[i][0], 0, band));
+    for (const s of lampSlots) { if (s.post && want.has(s.post)) { s.goal = want.get(s.post); want.delete(s.post); } else s.goal = 0; }
+    for (const [q, w] of want) {
+      const s = lampSlots.find(t => !t.post || (t.goal === 0 && t.w < 0.02)); if (!s) break;
+      s.post = q; s.w = 0; s.goal = w;
+      s.light.position.set(q.x, q.y, q.z); s.light.distance = q.r * 2.2; s.power = LAMP_K * q.r * q.r;
+    }
+  }
+  function updateLamps(p, dt, on) {
+    if (!lampSlots.length) return;
+    if (on < 0.002) { for (const s of lampSlots) { s.light.intensity = 0; s.w = 0; s.goal = 0; s.post = null; } return; }
+    if (frame % 4 === 0 || !lampSlots[0].post) pickLamps(p);
+    const k = 1 - Math.exp(-dt * 4);
+    for (const s of lampSlots) { s.w += (s.goal - s.w) * k; if (s.goal === 0 && s.w < 0.005) { s.w = 0; s.post = null; } s.light.intensity = s.post ? s.w * on * s.power : 0; }
+  }
 
   const cascadesOk = shadowsOn && patchDirectionalChunk();
   const N = !shadowsOn || !cascadesOk ? 1 : THREE.MathUtils.clamp(Math.round(Number(query.get('cascades')) || 3), 1, 3);
-  const res = opts.shadowRes || (low ? 1024 : 2048);
+  let res = opts.shadowRes || (low ? 1024 : 2048), active = N, forceAll = false;     // res and active (cascades in use) can be lowered at run time
+  const layersFor = opts.casterLayers || null;          // { mid, far }: layers of the casters the middle and outer boxes take (culling.js)
   const BASE0 = 26, BASE_LAST = N > 1 ? 320 : 150;            // half sizes of the smallest and largest box on the ground, metres
   const suns = [], boxes = [];
   for (let i = 0; i < N; i++) {
     const l = new THREE.DirectionalLight(0xffffff, 0); l.name = 'sun-' + i; l.castShadow = shadowsOn;
     l.shadow.mapSize.set(res, res); l.shadow.autoUpdate = false; l.shadow.needsUpdate = true;
     scene.add(l); scene.add(l.target); suns.push(l);
-    boxes.push({ u: 1e9, v: 1e9, r: 0, dirty: true, since: 0 });
+    boxes.push({ u: 1e9, v: 1e9, r: 0, dirty: true, since: 0, parked: false });
   }
   const sun = suns[0];
+  // Which casters each box takes: all of them in the nearest; in a middle box only those on layersFor.mid, in the outermost
+  // only those on layersFor.far (small things are left out where one texel is 9 or 31 cm). A shadow camera whose mask has
+  // a layer besides 0 is used for that test instead of the viewer's camera (three.js WebGLShadowMap).
+  function used() { return active < N && N === 3 ? [0, 2] : suns.map((l, i) => i); }
+  function setCasterLayers() {
+    const u = used();
+    suns.forEach((l, i) => {
+      const cam = l.shadow.camera, j = u.indexOf(i);
+      if (!layersFor || j <= 0) { cam.layers.enableAll(); return; }
+      cam.layers.set(j === u.length - 1 && u.length > 1 && (N > 1) ? layersFor.far : layersFor.mid);
+    });
+    if (layersFor && N === 1) suns[0].shadow.camera.layers.set(layersFor.mid);
+  }
+  setCasterLayers();
 
   // ---- state
   const toSun = new THREE.Vector3(0, 1, 0), lightDir = new THREE.Vector3(0, 1, 0), LX = new THREE.Vector3(), LY = new THREE.Vector3();
   const K = [], S = [], tmpC = new THREE.Color(), tmpV = new THREE.Vector3(), fwd = new THREE.Vector3(), focus = new THREE.Vector3();
-  let hours = 15, elDeg = 0, day = 1, night = 0, exposureTime = 0.7, sunPower = 0, depthMin = -800, depthMax = 800, bounds = null;
+  let hours = 15, elDeg = 0, day = 1, night = 0, exposureTime = 0.7, sunPower = 0, depthMin = -800, depthMax = 800, bounds = null, envBase = ENV_GAIN, adapt = 0;
   let frame = 0, lastNow = 0, scale = 1, basisVersion = 0, viewer = null, indoor = 0, indoorTarget = 0, roofNow = null, lampPower = 0;
   const roofs = makeRoofs(opts.indoors || []);
   scene.fog = new THREE.Fog(0xffffff, 300, 3200);
@@ -425,14 +520,16 @@ export function createLighting(scene, renderer, opts = {}) {
     windowColor.value.set(0xffc37a);
     applyMaterials();
     envDirty = true; timeSetAt = performance.now();
-    if (envTarget) scene.environmentIntensity = ENV_GAIN * skyLevel() / envLevel;
+    if (envTarget) envBase = ENV_GAIN * skyLevel() / envLevel;
     return { hours, elevationDeg: +elDeg.toFixed(1), azimuthFromSouthDeg: +(az / RAD).toFixed(1) };
   }
   // brightness of the sky now, to rescale the ambient capture between two captures
   function skyLevel() { const z = U.zenith.value, a = U.horizonAway.value, g = U.groundCol.value; return 0.001 + z.r + z.g + z.b + a.r + a.g + a.b + 2 * (g.r + g.g + g.b); }
   function buildEnvironment(now) {
-    const target = pmrem.fromScene(envScene, 0, 0.1, 100, { size: low ? 64 : 256 });
-    scene.environment = target.texture; scene.environmentIntensity = ENV_GAIN;
+    const t0 = performance.now(); inEnv = true;
+    let target; try { target = pmrem.fromScene(envScene, 0, 0.1, 100, { size: low ? 64 : 256 }); } finally { inEnv = false; }
+    lightPerf.env += performance.now() - t0;
+    scene.environment = target.texture; envBase = ENV_GAIN;
     if (envTarget) envTarget.dispose();
     envTarget = target; envLevel = skyLevel(); envDirty = false; envBuiltAt = now; envBuilds++;
   }
@@ -462,19 +559,25 @@ export function createLighting(scene, renderer, opts = {}) {
     focus.copy(camera.position).addScaledVector(fwd, reach);
     const want = 1 + air * (THREE.MathUtils.clamp(reach / 60, 1, 7.5) - 1);
     if (Math.abs(Math.log2(want / scale)) > 0.3) { scale = Math.pow(2, Math.round(Math.log2(want) * 2) / 2); if (scale > 7.5) scale = 7.5; }
-    const r0 = BASE0 * scale, rLast = BASE_LAST + (scale - 1) * 31, u = focus.dot(LX), v = focus.dot(LY);
-    let pick = -1, first = false;
+    const r0 = BASE0 * scale, rLast = BASE_LAST + (scale - 1) * 31, u = focus.dot(LX), v = focus.dot(LY), inUse = used(), k = inUse.length;
+    let pick = -1, first = forceAll; forceAll = false;
     for (let i = 0; i < N; i++) {
-      const b = boxes[i], r = N === 1 ? rLast : r0 * Math.pow(rLast / r0, i / (N - 1));
+      const b = boxes[i], j = inUse.indexOf(i);
+      if (j < 0) {                                       // a parked box: moved far off once, so that no fragment uses its map
+        if (!b.parked) { b.parked = true; b.dirty = true; b.want = 0.5; b.parkAt = true; if (pick < 0) pick = i; }
+        continue;
+      }
+      const r = k === 1 ? rLast : r0 * Math.pow(rLast / r0, j / (k - 1));
+      if (b.parked) { b.parked = false; b.dirty = true; }
       if (b.r !== r || Math.abs(u - b.u) > 0.2 * r || Math.abs(v - b.v) > 0.2 * r) b.dirty = true;
-      if (b.dirty) { b.want = r; if (!suns[i].shadow.map) first = true; if (pick < 0 || b.since < boxes[pick].since) pick = i; }
+      if (b.dirty) { b.want = r; b.parkAt = false; if (!suns[i].shadow.map) first = true; if (pick < 0 || b.since < boxes[pick].since) pick = i; }
     }
     if (pick < 0) return;
     // one map per frame, the one that has waited longest; all of them the first time
     for (let i = 0; i < N; i++) {
       const b = boxes[i]; if (!b.dirty || !(first || i === pick)) continue;
       const l = suns[i], r = b.want, texel = 2 * r / res, cam = l.shadow.camera;
-      b.r = r; b.u = Math.round(u / texel) * texel; b.v = Math.round(v / texel) * texel; b.dirty = false; b.since = frame;
+      b.r = r; b.u = b.parkAt ? 1e5 : Math.round(u / texel) * texel; b.v = b.parkAt ? 1e5 : Math.round(v / texel) * texel; b.dirty = false; b.since = frame;
       cam.left = -r; cam.right = r; cam.top = r; cam.bottom = -r; cam.near = 0.5; cam.far = depthMax - depthMin + 2; cam.updateProjectionMatrix();
       l.position.copy(LX).multiplyScalar(b.u).addScaledVector(LY, b.v).addScaledVector(lightDir, depthMax + 1);
       l.target.position.copy(l.position).sub(lightDir);
@@ -487,25 +590,35 @@ export function createLighting(scene, renderer, opts = {}) {
       l.shadow.normalBias = 0.012 + 3.0 * texel;
       l.shadow.radius = i === 0 ? 1.7 : 1.2;
       l.shadow.needsUpdate = true;
+      passNow.shadowMaps++;
     }
   }
 
   // ---- post-processing (loaded on demand)
   const wantPost = !plain && (opts.post === true || (opts.post === undefined && !low));
-  let post = null, postState = wantPost ? 'loading' : 'off', postEnabled = true;      // postEnabled: switched at run time by setPost()
-  if (wantPost) {
-    import('./post.js').then(m => { post = m.createPost(renderer, { antialias: opts.antialias !== false, lowPower: low }); postState = post ? 'on' : 'unavailable'; })
-      .catch(err => { postState = 'failed: ' + (err && err.message); });
-  }
+  let post = null, postState = wantPost ? 'loading' : 'off', postEnabled = true, aoWanted = 'full', bloomWanted = true;      // switched at run time
+  // The page waits for this (whenReady) before its first frame: every material is compiled for the frame it is drawn into,
+  // and a first frame drawn straight to the canvas while post.js was still loading had every shader compiled a second time
+  // for the composer's buffer once it arrived (measured here: the whole compile again, tens of seconds in software).
+  const postReady = !wantPost ? Promise.resolve() : import('./post.js')
+    .then(m => { post = m.createPost(renderer, { antialias: opts.antialias !== false, lowPower: low, legacy: !!opts.legacy }); postState = post ? 'on' : 'unavailable'; if (post && aoWanted !== 'full') post.setAO(aoWanted); if (post && !bloomWanted) post.setBloom(false); })
+    .catch(err => { postState = 'failed: ' + (err && err.message); });
 
   function render(sc, camera) {
     const now = performance.now(), dt = Math.min((now - lastNow) / 1000 || 0.016, 0.1); lastNow = now; frame++;
     // a frame is several render calls here (sky capture, shadow maps, post passes): count them all in renderer.info
     renderer.info.autoReset = false; renderer.info.reset();
-    if (frame === 1 || frame % 240 === 0) scan();
+    passLast = passNow; passNow = blankPasses(); mainCamera = camera; inRender = true; lightPerf.frames++;
+    try { renderFrame(sc, camera, now, dt); } finally { inRender = false; }
+  }
+  function renderFrame(sc, camera, now, dt) {
+    let t0 = performance.now();
+    if (frame === 1 || frame % 240 === 0) { scan(); lightPerf.scan += performance.now() - t0; lightPerf.scans++; }
     sky.position.copy(camera.position);
+    t0 = performance.now();
     if (shadowsOn) updateBoxes(camera);
     else { sun.position.copy(lightDir).multiplyScalar(500); sun.target.position.set(0, 0, 0); }
+    lightPerf.boxes += performance.now() - t0;
 
     // under a roof?
     const p = viewer || camera.position;
@@ -515,18 +628,52 @@ export function createLighting(scene, renderer, opts = {}) {
       indoorTarget = roofNow ? 1 : 0;
     }
     indoor += (indoorTarget - indoor) * (1 - Math.exp(-dt * 3.5));
+    adapt += (indoor - adapt) * (1 - Math.exp(-dt * 1.1));    // the eye follows the light more slowly than one steps through a door
     if (viewer && indoor > 0.004) {
-      const hall = roofNow && roofNow.hall;
-      if (hall) tmpV.set(hall.x, hall.y, hall.z); else tmpV.set(p.x, p.y + (roofNow && roofNow.tall ? 2.0 : 1.25), p.z);
-      if (fill.position.distanceToSquared(tmpV) > 200 || lampPower < 0.01) fill.position.copy(tmpV); else fill.position.lerp(tmpV, 1 - Math.exp(-dt * 5));
-      const power = hall ? hall.power : roofNow && roofNow.tall ? 0.9 : 1;        // the library's own surfaces already glow
-      lampPower += (power - lampPower) * (1 - Math.exp(-dt * 4));
-      fill.distance = hall ? hall.reach : roofNow && roofNow.tall ? 44 : 34;
-      fill.intensity = indoor * lampPower * (1.1 + 4.4 * (1 - day));
-    } else { fill.intensity = 0; lampPower = 0; }
+      const hall = roofNow && roofNow.hall, tall = roofNow && roofNow.tall;
+      if (!roomLamp || hall) {
+        // the earlier lamp: one soft point light over the viewer (phones, safe mode), or fixed in the middle of a hall
+        if (hall) tmpV.set(hall.x, hall.y, hall.z); else tmpV.set(p.x, p.y + (tall ? 2.0 : 1.25), p.z);
+        if (fill.position.distanceToSquared(tmpV) > 200 || lampPower < 0.01) fill.position.copy(tmpV); else fill.position.lerp(tmpV, 1 - Math.exp(-dt * 5));
+        const power = hall ? hall.power : tall ? 0.9 : 1;        // the library's own surfaces already glow
+        lampPower += (power - lampPower) * (1 - Math.exp(-dt * 4));
+        fill.distance = hall ? hall.reach : tall ? 44 : 34; fill.decay = 0.8;
+        fill.intensity = indoor * lampPower * (1.1 + 4.4 * (1 - day));
+      }
+      if (roomLamp) {
+        // just under the ceiling (storeys here are 3.6 to 3.9 m; the library hall is two storeys), 1.2 m ahead of the eye
+        camera.getWorldDirection(look); look.y = 0; if (look.lengthSq() < 1e-6) look.set(0, 0, -1); look.normalize();
+        const lift = hall ? 6 : tall ? 3.4 : 1.45, h = lift + 1.6;          // h: lamp above the floor
+        roomAt.set(p.x + look.x * 1.2, p.y + lift, p.z + look.z * 1.2);
+        if (roomLamp.position.distanceToSquared(roomAt) > 64 || roomLamp.intensity < 1e-3) roomLamp.position.copy(roomAt); else roomLamp.position.lerp(roomAt, 1 - Math.exp(-dt * 6));
+        roomLamp.target.position.set(roomLamp.position.x, roomLamp.position.y - 5, roomLamp.position.z); roomLamp.target.updateMatrixWorld();
+        roomColor.set(ROOM_COLOR[roofNow && roofNow.style] || 0xfff4e8); roomLamp.color.lerp(roomColor, 1 - Math.exp(-dt * 4));
+        // illuminance on the floor about 1.7 at night and 0.75 by day (the sun's is 3.6 at noon), whatever the lamp's height
+        roomLamp.intensity = indoor * (0.75 + 0.95 * (1 - day)) * Math.pow(h, 1.3) * (hall ? 0.6 : 1);
+        roomLamp.distance = h * 5;
+        if (!hall) {
+          // light bounced back up from the floor and walls: a weak, warm-neutral point light at chest height
+          tmpV.set(p.x, p.y - 0.25, p.z);
+          if (fill.position.distanceToSquared(tmpV) > 100 || lampPower < 0.01) fill.position.copy(tmpV); else fill.position.lerp(tmpV, 1 - Math.exp(-dt * 5));
+          lampPower += (1 - lampPower) * (1 - Math.exp(-dt * 4));
+          fill.distance = 14; fill.decay = 1.2; fill.intensity = indoor * lampPower * (0.3 + 0.75 * (1 - day));
+        }
+      }
+    } else { fill.intensity = 0; lampPower = 0; if (roomLamp) roomLamp.intensity = 0; }
+    // lamps outdoors: off by day, and faded out under a roof (they cast no shadows and would light the rooms beside them)
+    updateLamps(p, dt, night * (1 - 0.9 * indoor));
     // lit windows are seen from outside; from inside a lit room the panes are mostly dark
     windowGlow.value = night * 1.5 * (1 - 0.75 * indoor);
-    renderer.toneMappingExposure = exposureTime * (1 + 0.12 * indoor * day);
+    // Exposure follows the eye: indoors by day the room gets less of the sky (the ambient light is turned down at once, at
+    // the door) and the eye opens up over a second or two; indoors at night the lit room is brighter than the street and
+    // the eye closes a little. Phones and safe mode keep the earlier small boost.
+    if (roomLamp) {
+      renderer.toneMappingExposure = exposureTime * (1 + adapt * (0.42 * day - 0.2 * (1 - day)));
+      scene.environmentIntensity = envBase * (1 - 0.38 * indoor * day);
+    } else {
+      renderer.toneMappingExposure = exposureTime * (1 + 0.12 * indoor * day);
+      scene.environmentIntensity = envBase;
+    }
 
     if (useEnv && (envDirty && now - envBuiltAt > (low ? 800 : 350) || !envTarget)) buildEnvironment(now);
 
@@ -544,14 +691,34 @@ export function createLighting(scene, renderer, opts = {}) {
 
   setTime(hours);
   const api = {
-    sun, suns, hemi, sky, ambient, fill, setTime, follow, moveFill, render, resize, getTime: () => hours,
+    sun, suns, hemi, sky, ambient, fill, roomLamp, setTime, follow, moveFill, render, resize, getTime: () => hours,
     /** 0 by day, 1 once it is dark enough for lamps (the same measure the lit windows follow). */
     night: () => night,
     /** Switch post-processing off or back on while running (the page does this when frames are slow). True if it was in use. */
     setPost: on => { const was = postEnabled && wantPost; postEnabled = !!on; return was; },
-    info: () => ({ hours, elevationDeg: +elDeg.toFixed(1), cascades: N, cascadesPatched: cascadesOk, shadowRes: res, boxes: boxes.map(b => +b.r.toFixed(1)), scale, post: postEnabled ? postState : 'switched off', envBuilds, indoor: +indoor.toFixed(2),
+    /** Ambient occlusion 'full', 'half' (half resolution) or 'off' (bloom stays); applied once post-processing has loaded. */
+    setAO: mode => { aoWanted = mode; return post ? post.setAO(mode) : false; },
+    /** Bloom on or off. The scene is still drawn through the composer, so no material has to be compiled again. */
+    setBloom: on => { bloomWanted = !!on; return post ? post.setBloom(!!on) : false; },
+    /** Resolves once post-processing has loaded (or is not wanted, or failed). */
+    whenReady: () => postReady,
+    postWanted: () => wantPost,
+    /** Calls and triangles of the last frame by kind of pass (see pass accounting above), and how many shadow maps were redrawn. */
+    passes: () => JSON.parse(JSON.stringify(passLast)),
+    /** Shadow map size in texels (the quality governor lowers it); every map is drawn again at the next frame. */
+    setShadowRes: r => { r = Math.max(256, Math.round(r)); if (r === res || !shadowsOn) return false; res = r; for (const l of suns) { l.shadow.mapSize.set(r, r); if (l.shadow.map) { l.shadow.map.dispose(); l.shadow.map = null; } } for (const b of boxes) b.dirty = true; forceAll = true; return true; },
+    /** Number of shadow boxes in use, 2 or 3 (with three, 2 parks the middle box: the outer one takes over from 26 m). */
+    setCascades: n => { const a = THREE.MathUtils.clamp(Math.round(n), 2, N); if (N < 3 || a === active) return false; active = a; for (const b of boxes) b.dirty = true; forceAll = true; setCasterLayers(); return true; },
+    getShadow: () => ({ res, cascades: shadowsOn ? (N === 3 ? active : N) : 0 }),
+    /** The lamps that have a real light now: [{ x, y, z, intensity }]. */
+    lampLights: () => lampSlots.filter(q => q.post && q.light.intensity > 0).map(q => ({ x: +q.post.x.toFixed(1), y: +q.post.y.toFixed(1), z: +q.post.z.toFixed(1), intensity: +q.light.intensity.toFixed(2) })),
+    lampCount: () => lampSlots.length,
+    /** Milliseconds spent in this module's own bookkeeping since the last call: material scans, shadow boxes, sky captures. */
+    perf: (reset = true) => { const n = Math.max(1, lightPerf.frames), out = { frames: lightPerf.frames, scans: lightPerf.scans, scanMsEach: +(lightPerf.scan / Math.max(1, lightPerf.scans)).toFixed(1), boxesMs: +(lightPerf.boxes / n).toFixed(3), envMsTotal: +lightPerf.env.toFixed(1) };
+      if (reset) for (const k in lightPerf) lightPerf[k] = 0; return out; },
+    info: () => ({ hours, elevationDeg: +elDeg.toFixed(1), cascades: N, cascadesInUse: N === 3 ? active : N, cascadesPatched: cascadesOk, shadowRes: res, boxes: boxes.map(b => +b.r.toFixed(1)), scale, post: postEnabled ? postState : 'switched off', postInfo: post && post.info ? post.info() : null, envBuilds, indoor: +indoor.toFixed(2), adapt: +adapt.toFixed(2), exposure: +renderer.toneMappingExposure.toFixed(3), room: roofNow ? roofNow.style : null,
       materials: { windows: [...seen].filter(m => m.userData.campusWindow).map(m => m.name || '(unnamed)'), lamps: lamps.map(l => l.m.name), unlit: unlit.length, all: seen.size } }),
   };
-  if (typeof location !== 'undefined' && /[?&]lightdebug=1/.test(location.search)) globalThis.__lighting = Object.assign({ scene, renderer }, api);
+  if (typeof location !== 'undefined' && /[?&]lightdebug=1/.test(location.search)) globalThis.__lighting = Object.assign({ scene, renderer, camera: () => mainCamera }, api);
   return api;
 }

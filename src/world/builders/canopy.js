@@ -26,7 +26,8 @@
 //     branch from its head to the neighbouring nodes; an aluminium fascia round the roof, rainwater pipes down four columns;
 //   - the look of the sheets from below: they let daylight through, so by day the underside is brighter than the steel in
 //     front of it, and after dusk it is lit warm from below by sixteen floodlights hung from the frame (they brighten at
-//     dusk and throw pools of light on the floor);
+//     dusk and throw pools of light on the floor; each is entered in LIT of street.js); after dusk the columns, their
+//     branches and the edge trusses glow warm a little, as if they caught the floodlights' light (they were dark before);
 //   - the floor's pattern: bands of darker granite on every second module line, so that the paving repeats the frame above;
 //     slot drains under the north and south eaves; flowers and clipped shrubs round the palms;
 //   - furniture: benches beside the columns, litter bins, a notice board on the north side (its posters are the made-up
@@ -92,6 +93,9 @@ function materials(mx, mz) {
     top: S('canopy-roof-top', { map: tex(top, 1 / mx, 1 / mz), roughness: 0.55 }),
     under: S('canopy-roof-under', { map: ut, roughness: 0.9, emissive: 0xffffff, emissiveMap: ut, emissiveIntensity: 0.6 }),
     steel: S('canopy-steel', { color: 0xf1f1ec, roughness: 0.45, emissive: 0xffd9a0, emissiveIntensity: 0 }),
+    // the columns, their branches and the edge trusses: after dusk they catch the floodlights' light (a warm glow, strongest
+    // on the columns), instead of standing dark against the lit floor
+    lit: S('canopy-columns', { color: 0xf4f4f0, roughness: 0.5, emissive: 0xffdcae, emissiveIntensity: 0 }),
     band: S('canopy-wavy-band', { map: tex(band, 1 / 2.4, 1 / 6), roughness: 0.7, polygonOffset: true, polygonOffsetFactor: -2, polygonOffsetUnits: -4 }),
   };
   M.under.userData.noGrain = true;
@@ -135,16 +139,16 @@ export function build(item, ctx) {
   c.frame(b.w, b.n).slab('generic', -o, H - 0.2, -o, b.sx + 2 * o, 0.2, b.sz + 2 * o);
 
   // ---- edge trusses (always drawn): edge top chords, the outer ring of bottom chords, the diagonals between them
-  const tc = 0.15, td = 0.11;
-  v.slab(W, -tc / 2, yT - tc / 2, -tc / 2, b.sx + tc, tc, tc).slab(W, -tc / 2, yT - tc / 2, b.sz - tc / 2, b.sx + tc, tc, tc);
-  v.slab(W, -tc / 2, yT - tc / 2, 0, tc, tc, b.sz, 'SN').slab(W, b.sx - tc / 2, yT - tc / 2, 0, tc, tc, b.sz, 'SN');
+  const tc = 0.15, td = 0.11, LW = m.lit;
+  v.slab(LW, -tc / 2, yT - tc / 2, -tc / 2, b.sx + tc, tc, tc).slab(LW, -tc / 2, yT - tc / 2, b.sz - tc / 2, b.sx + tc, tc, tc);
+  v.slab(LW, -tc / 2, yT - tc / 2, 0, tc, tc, b.sz, 'SN').slab(LW, b.sx - tc / 2, yT - tc / 2, 0, tc, tc, b.sz, 'SN');
   const bx0 = 0.5 * mx, bx1 = (nx - 0.5) * mx, bz0 = 0.5 * mz, bz1 = (nz - 0.5) * mz;
-  v.slab(W, bx0, yB - tc / 2, bz0 - tc / 2, bx1 - bx0, tc, tc, 'EW').slab(W, bx0, yB - tc / 2, bz1 - tc / 2, bx1 - bx0, tc, tc, 'EW');
-  v.slab(W, bx0 - tc / 2, yB - tc / 2, bz0, tc, tc, bz1 - bz0, 'SN').slab(W, bx1 - tc / 2, yB - tc / 2, bz0, tc, tc, bz1 - bz0, 'SN');
+  v.slab(LW, bx0, yB - tc / 2, bz0 - tc / 2, bx1 - bx0, tc, tc, 'EW').slab(LW, bx0, yB - tc / 2, bz1 - tc / 2, bx1 - bx0, tc, tc, 'EW');
+  v.slab(LW, bx0 - tc / 2, yB - tc / 2, bz0, tc, tc, bz1 - bz0, 'SN').slab(LW, bx1 - tc / 2, yB - tc / 2, bz0, tc, tc, bz1 - bz0, 'SN');
   const tubes = [];                                                      // members left for the near view: [from, to, radius]
   for (let i = 0; i < nx; i++) for (let k = 0; k < nz; k++) for (const [di, dk] of [[0, 0], [1, 0], [0, 1], [1, 1]]) {
     const ti = i + di, tk = k + dk, edge = ti === 0 || ti === nx || tk === 0 || tk === nz;
-    if (edge) bar(v, W, bot(i, k), top(ti, tk), td); else tubes.push([bot(i, k), top(ti, tk), 0.045]);
+    if (edge) bar(v, LW, bot(i, k), top(ti, tk), td); else tubes.push([bot(i, k), top(ti, tk), 0.045]);
   }
   v.frame();
 
@@ -159,13 +163,13 @@ export function build(item, ctx) {
     stood.push([i, k, x, z]);
     v.frame(x, z).box(GD, 0, 0.16, 0, 1.1, 0.32, 1.1, 'D').box(GL, 0, 0.37, 0, 0.92, 0.1, 0.92, 'D');                  // plinth
     v.cyl(SS, 0, 0.42, 0, 0.36, 0.28, 18, false).cyl(SS, 0, 0.7, 0, 0.33, 0.03, 18);                                    // collar
-    v.cyl(W, 0, 0.7, 0, 0.3, yHead - 0.7, 16, false);
+    v.cyl(LW, 0, 0.7, 0, 0.3, yHead - 0.7, 16, false);
     for (let y = 3.6; y < yHead - 1; y += 3.0) v.cyl(SH, 0, y, 0, 0.308, 0.025, 16, false);                               // joints of the casing
-    v.cyl(W, 0, yHead, 0, 0.36, 0.22, 16).cyl(W, 0, yHead + 0.22, 0, 0.17, yB - yHead - 0.22, 10, false);                 // head, stub up to the node
+    v.cyl(LW, 0, yHead, 0, 0.36, 0.22, 16).cyl(LW, 0, yHead + 0.22, 0, 0.17, yB - yHead - 0.22, 10, false);               // head, stub up to the node
     v.frame();
     for (const [di, dk] of [[1, 0], [-1, 0], [0, 1], [0, -1]]) {                                                         // branches to the neighbouring nodes
       const ii = i + di, kk = k + dk; if (ii < 0 || ii >= nx || kk < 0 || kk >= nz) continue;
-      bar(v, W, [x, yHead + 0.1, z], bot(ii, kk), 0.13);
+      bar(v, LW, [x, yHead + 0.1, z], bot(ii, kk), 0.13);
     }
     v.frame();
     c.frame(x, z).box('generic', 0, 0.2, 0, 1.1, 0.4, 1.1).box('generic', 0, 0.41 + (yB - 0.5) / 2, 0, 0.62, yB - 0.5, 0.62);
@@ -254,6 +258,6 @@ export function build(item, ctx) {
   if (ctx.animate) ctx.animate((dt, t, env) => {
     const n = env && env.lighting && env.lighting.night ? env.lighting.night() : 0;
     m.under.emissiveIntensity = 0.62 * (1 - n) + 0.2 * n; m.under.emissive.setRGB(1, 1 - 0.14 * n, 1 - 0.36 * n);
-    m.steel.emissiveIntensity = 0.16 * n;
+    m.steel.emissiveIntensity = 0.16 * n; m.lit.emissiveIntensity = 0.24 * n;
   });
 }

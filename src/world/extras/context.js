@@ -544,6 +544,9 @@ function materials(low) {
     printsLit: lit(new THREE.MeshStandardMaterial({ map: PR.texture, emissiveMap: PR.texture, emissive: 0xffffff, emissiveIntensity: 0, roughness: 0.6 }), 'context-prints-lit', 0, 0.55),
     tin: ribbed(0xdfe2e2, 'context-ribbed-sheet'), tinRoof: ribbed(0xeceee9, 'context-ribbed-roof'), 
     pipe: paint(0xe4e2da, 0.6), stain: streaks(), deck: paint(0x5c5a55, 0.95), slat: paint(0xf2f2ee, 0.7),
+    // round 2: the undercroft's soffit and beams take the light of its lamps after dusk (they were dark)
+    soffit: lit(new THREE.MeshStandardMaterial({ color: 0xe4e1d6, roughness: 0.92, emissive: 0xe4e1d6, emissiveIntensity: 0 }), 'context-soffit', 0, 0.3),
+    beamLit: lit(new THREE.MeshStandardMaterial({ color: 0xefede5, roughness: 0.9, emissive: 0xefede5, emissiveIntensity: 0 }), 'context-soffit-beams', 0, 0.16),
   });
   M.roomFloor.emissiveMap = M.roomFloor.map;
   M.ground = layered(pbr('paving', [0xb9b3a7, 0x9c968c, 4, 8, [2.4, 2.4], 11, true]), -3);   // paving this module lays over the grounds' own layers (the slab-wide surface, with a depth offset)
@@ -797,8 +800,10 @@ function block(T, b, p, pts, others, low, ctx) {
       for (const [a, c] of k === 0 ? minus(0, E.L, mine.map(q => q.g)) : [[0, E.L]]) { const Fs = E.sub(a, c); T.on(Fs); SCHEMES[E.L < 1.2 ? 'blank' : scheme](T, Fs.L, k * sh, sh, o, k); }
     }
     for (const { g, e } of mine) { const Fg = E.sub(g[0], g[1]); T.on(Fg); ENTRY[e.type](T, g[1] - g[0], sh, oo, e, Fg); }
-    T.on(E); T.a.wall(C.cap, 0, E.L, top, h);                               // parapet or eaves zone
-    if (!shed) T.a.box(M.cope, E.L / 2, (yRoof + h) / 2, -0.13, E.L, h - yRoof, 0.26, keep('UN'));
+    T.on(E);
+    if (b.id === 'north-wavy-parapet-block' && E.L > 10) wavyParapet(T, C.cap, E.L, top, yRoof, h);      // round 2: the parapet the data names, wavy
+    else { T.a.wall(C.cap, 0, E.L, top, h);                               // parapet or eaves zone
+      if (!shed) T.a.box(M.cope, E.L / 2, (yRoof + h) / 2, -0.13, E.L, h - yRoof, 0.26, keep('UN')); }
     const plain = C.sides[f] !== 'loggia' && C.sides[f] !== 'gallery';
     if (E.L > 5 && !low) {                                                  // rainwater pipes with hoppers, streaks below the coping
       for (const s of E.L > 30 ? [0.3, E.L / 2, E.L - 0.3] : [0.3, E.L - 0.3]) if (((plain && C.sides[f] !== 'apart') || s !== E.L / 2) && !mine.some(q => s > q.g[0] - 0.3 && s < q.g[1] + 0.3)) T.m.box(M.pipe, s, top / 2, 0.06, 0.11, top, 0.11, keep('SEW')).box(M.pipe, s, top - 0.1, 0.09, 0.26, 0.28, 0.2, keep('SEWUD'));
@@ -814,6 +819,24 @@ function block(T, b, p, pts, others, low, ctx) {
   roofKit(T, C.kit, frames, yRoof, low);
   if (!shed && !low) { T.m.frame(); for (const [x, z] of inset(pts, 0.14)) T.m.cyl(M.steel, x, h, z, 0.02, 1.3, 5, false); }      // lightning rods
   return { C, sh, yRoof };
+}
+/**
+ * Round 2 (the shape is ASSUMED from the data's name and the "S-curved parapet" noted on the satellite image; its
+ * period, depth and heights are IMAGINED): a parapet that weaves in plan between the facade line and 0.9 m inside it
+ * and rises and falls with it, a white coping on top. In the current wall frame (s along the wall, w outward).
+ */
+function wavyParapet(T, cap, L, top, yRoof, h) {
+  const G = T.a, n = Math.max(8, Math.round(L / 0.5)), P = L / Math.max(1, Math.round(L / 7.5)), t = 0.22;
+  T.a.wall(cap, 0, L, top, yRoof + 0.02).box(M.cope, L / 2, yRoof + 0.06, -0.07, L, 0.1, 0.16, keep('ND'));   // the band between the top windows and the roof slab, a kerb on the slab's edge
+  const off = sv => -0.9 * (0.5 - 0.5 * Math.cos(2 * Math.PI * sv / P)), ht = sv => h + 0.3 * Math.sin(2 * Math.PI * sv / P + 1.2);
+  for (let i = 0; i < n; i++) {
+    const s0 = i / n * L, s1 = (i + 1) / n * L, w0 = off(s0), w1 = off(s1), y0 = ht(s0), y1 = ht(s1), dx = s1 - s0, dw = w1 - w0, l = Math.hypot(dx, dw), nx = -dw / l, nw = dx / l;
+    G.q4(cap, [s0, yRoof, w0], [s1, yRoof, w1], [s1, y1, w1], [s0, y0, w0], [nx, 0, nw], [[s0, yRoof], [s1, yRoof], [s1, y1], [s0, y0]]);
+    G.q4(M.render, [s1, yRoof, w1 - t], [s0, yRoof, w0 - t], [s0, y0, w0 - t], [s1, y1, w1 - t], [-nx, 0, -nw], [[s1, yRoof], [s0, yRoof], [s0, y0], [s1, y1]]);
+    G.q4(M.cope, [s0, y0 + 0.06, w0 + 0.04], [s1, y1 + 0.06, w1 + 0.04], [s1, y1 + 0.06, w1 - t - 0.04], [s0, y0 + 0.06, w0 - t - 0.04], [0, 1, 0], [[s0, 0], [s1, 0], [s1, 1], [s0, 1]]);
+    G.q4(M.cope, [s0, y0, w0 + 0.04], [s1, y1, w1 + 0.04], [s1, y1 + 0.06, w1 + 0.04], [s0, y0 + 0.06, w0 + 0.04], [nx, 0, nw], [[s0, y0], [s1, y1], [s1, y1 + 1], [s0, y0 + 1]]);
+  }
+  for (const [sv, sg] of [[0, -1], [L, 1]]) G.q4(M.render, [sv, yRoof, off(sv)], [sv, yRoof, off(sv) - t], [sv, ht(sv), off(sv) - t], [sv, ht(sv), off(sv)], [sg, 0, 0], [[0, 0], [t, 0], [t, 1], [0, 1]]);   // the ends at the corners
 }
 /** Things on a flat roof, placed along the longest edge. Visual only (a walker set down on a roof walks through them). */
 function roofKit(T, kit, frames, yRoof, low) {
@@ -910,12 +933,12 @@ function pavilion(T, p, col, ctx) {
   for (let i = 0; i < seg; i++) {
     const F = facet(i), L = F.L; T.on(F);
     for (let k = 1; k <= 4; k++) A.wall(M.frame, 0, L, k === 4 ? top - 0.3 : k * sh - 0.3, k === 4 ? top : k * sh + 0.25, 0.03);
-    for (let k = 1; k < 4; k++) A.wall(M.win, 0, L, k * sh + 0.25, (k + 1) * sh - 0.3, 0, cellUV('cw', R() < 0.6 ? 0 : 1));
+    for (let k = 1; k < 4; k++) { if (k === 2) A.wall(M.win, 0, L, k * sh + 0.25, (k + 1) * sh - 0.3, 0, cellUV('cw', R() < 0.6 ? 0 : 1)); else A.wall(M.glassClear, 0, L, k * sh + 0.25, (k + 1) * sh - 0.3); }   // round 2: storeys 2 and 4 can be visited, behind clear glass
     A.box(M.frame, 0, (sh + top) / 2, 0.02, 0.09, top - sh, 0.1, keep('SEW'));
     if (!isDoor(i)) {
       A.wall(M.glassClear, 0, L, PL + 0.3, yc).box(M.granite, L / 2, PL + 0.15, -0.06, L, 0.3, 0.12, keep('SNU')).box(M.frame, L / 2, 2.55, 0, L, 0.06, 0.1, keep('SNUD'));
-      col.on(F).box('generic', L / 2, sh / 2 + 0.05, -0.02, L + 0.1, sh + 0.1, 0.24);
-    } else A.wall(M.glassClear, 0, L, 2.5, yc).box(M.frame, L / 2, 2.46, 0, L, 0.08, 0.14, keep('SNUD'));
+      col.on(F).box('generic', L / 2, (top - 0.3) / 2 + 0.03, -0.02, L + 0.1, top - 0.36, 0.24);                       // one box per facet for all storeys
+    } else { A.wall(M.glassClear, 0, L, 2.5, yc).box(M.frame, L / 2, 2.46, 0, L, 0.08, 0.14, keep('SNUD')); col.on(F).box('generic', L / 2, (2.42 + top - 0.3) / 2, -0.02, L + 0.1, top - 0.3 - 2.42, 0.24); }
     if (i !== 15) A.box(M.frame, 0, (PL + yc) / 2, 0, 0.1, yc - PL, 0.14, keep('SNEW')); else A.box(M.frame, 0, (2.5 + yc) / 2, 0, 0.1, yc - 2.5, 0.14, keep('SNEW'));
   }
   // the two door leaves stand open, turned outward
@@ -935,16 +958,13 @@ function pavilion(T, p, col, ctx) {
     A.frame(); A.cyl(M.frame, x, 0, z, 0.26, top, 12, false).cyl(M.granite, x, 0, z, 0.42, 0.4, 12).cyl(M.frame, x, top - 0.14, z, 0.36, 0.14, 12);
     A.strut(M.frame, [x, yb + 0.22, z], [x2, yb + 0.22, z2], 0.4); A.strut(M.frame, [x, yb + 0.22, z], [xd, yb + 0.22, zd], 0.3);
     col.frame(); col.box('generic', x, top / 2, z, 0.5, top, 0.5);
-    T.m.frame(); T.m.cyl(M.lamp, xl, top - 0.05, zl, 0.2, 0.05, 10); if (k % 2 === 0) LIT.push([xl, zl, 5]);
+    T.m.frame(); T.m.cyl(M.lamp, xl, top - 0.05, zl, 0.2, 0.05, 10); LIT.push([xl, zl, 3.6, top - 0.05]);
   }
   A.frame();
   // inside: boards on the floor, a lit ceiling, the round core, exhibition boards, low book shelves along the glass, tables, a desk
-  A.ring(M.roomFloor, cx, cz, 0, rd - 0.1, PL + 0.012, 0, TAU, 24).ring(M.roomCeil, cx, cz, 0, rd - 0.02, yc, 0, TAU, 24, -1).arc(M.roomWall, cx, cz, 1.25, PL, yc, 0, TAU, 16);
-  N.ring(M.lamp, cx, cz, 1.32, 1.5, yc - 0.01, 0, TAU, 24, -1); N.frame();
-  for (let k = 0; k < 8; k++) { const [x, z] = pt((k + 0.5) / 8 * TAU, 3.5); N.cyl(M.lamp, x, yc - 0.03, z, 0.16, 0.03, 10); }
-  for (const k of [0, 2, 3, 4, 5]) { T.on(tang(k / 6 * TAU + 0.5, 1.27, 1.0)); N.wall(M.printsLit, 0.05, 0.95, 0.85, 2.2, 0, PR.uv['poster' + (k % 4)]); }
-  T.on(tang(ad - 2.6, 1.27, 1.0)); N.wall(M.printsLit, 0.05, 0.95, 0.06, 2.16, 0, PR.uv.doorTimber).wall(M.prints, 0.25, 0.75, 2.2, 2.36, 0, PR.uv['p:储藏室']);
-  ctx.collide(prism(circlePoints(cx, cz, 1.25, 10), 0, yc, null));
+  A.ring(M.roomFloor, cx, cz, 0, rd - 0.1, PL + 0.012, 0, TAU, 24);
+  N.frame(); for (let k = 0; k < 8; k++) { const [x, z] = pt((k + 0.5) / 8 * TAU, 3.5); N.cyl(M.lamp, x, yc - 0.03, z, 0.16, 0.03, 10); }
+  spiral(T, col, ctx, p, ad);
   for (const [k, a] of [[0, 1.65], [1, 2.3], [2, 2.95]]) {                                // exhibition boards on legs, posters on both faces
     const F = tang(a, 3.5, 1.9); T.on(F);
     N.box(M.frame, 0.95, 1.3, 0, 1.9, 1.5, 0.06, keep('SNEWUD')).box(M.dark, 0.15, 0.3, 0, 0.05, 0.6, 0.4, keep('SNEW')).box(M.dark, 1.75, 0.3, 0, 0.05, 0.6, 0.4, keep('SNEW'));
@@ -966,11 +986,76 @@ function pavilion(T, p, col, ctx) {
   N.frame(); col.frame();
   for (const a of [0.5236, 1.0472, 2.618, 5.76]) { const [x, z] = pt(a, 6.75); bench(N, col, x, z, Math.PI / 2 - a); }
   for (const t of [-2.4, 2.4]) gardenLamp(N, col, cx + ux * 12.5 - uz * t, cz + uz * 12.5 + ux * t);
-  // colliders: the upper storeys, the roof disc (the ground-storey walls, the leaves and the furniture are boxes in col)
-  ctx.collide(prism(circlePoints(cx, cz, rd, 24), sh - 0.05, top, null));
+  // colliders: the roof disc (the drum's facets, the leaves, the floors, the stair and the furniture are in col and spiral())
   ctx.collide(prism(circlePoints(cx, cz, Rd, 20), top, h, null));
+  if (ctx.indoor) ctx.indoor(circlePoints(cx, cz, rd, 24), top, -1);                     // the drum is a covered place (round 2)
   if (ctx.occupy) { ctx.occupy(circlePoints(cx, cz, rp + 0.4, 16)); ctx.occupy([[rp, -2.8], [24.5, -2.8], [24.5, 2.8], [rp, 2.8]].map(([r, t]) => [cx + ux * r - uz * t, cz + uz * r + ux * t])); }
   if (ctx.place) ctx.place('圆亭', cx + ux * 21, cz + uz * 21, Math.atan2(-ux, uz) * 180 / Math.PI, 0, false, 0.12);
+}
+
+/**
+ * Round 2 (IMAGINED): the round pavilion's stair and upper floors. A spiral of open timber treads round a steel column
+ * stands in the middle of the drum (where the first round had a round store room): from the ground-floor room to a
+ * reading room on the second storey, through a closed third storey (its rooms stay shut; the stair runs in a round
+ * enclosure with a shut door) to a lounge with clear glass all round on the fourth, from which one looks over the
+ * track and the courts. Each storey is a quarter-turn landing plus 270 degrees of treads (20 risers of 0.18 m).
+ * Colliders: a ramp per tread (in three bands), landings, floors and their undersides as one-sided quads, guards along
+ * the flights, balustrades round the stair holes, the enclosure.
+ */
+function spiral(T, col, ctx, p, ad) {
+  const { cx, cz } = p, rd = p.drumRadiusM, top = p.height - 0.45, sh = top / p.look.storeys, PL = 0.06, A = T.a, Mi = T.m, N = T.n;
+  const Lv = [PL, sh, 2 * sh, 3 * sh], aL = ad + Math.PI / 2, Q = Math.PI / 4, RC = 0.15, RS = 1.45, RH = 1.6;
+  const P = (r, a) => [cx + r * Math.cos(a), cz + r * Math.sin(a)], P3 = (r, a, y) => [cx + r * Math.cos(a), y, cz + r * Math.sin(a)];
+  const up = (G, pts) => { const [a, b, c, d] = pts, e = [b[0] - a[0], b[2] - a[2]], f = [d[0] - a[0], d[2] - a[2]]; G.frame(); if (e[1] * f[0] - e[0] * f[1] >= 0) G.quad('generic', a, b, c, d); else G.quad('generic', a, d, c, b); };
+  const wood = paint(0xa06a3c, 0.55), steel = M.steel;
+  Mi.frame(); Mi.cyl(steel, cx, PL, cz, 0.12, Lv[3] + 1.1 - PL, 16); col.frame(); col.box('generic', cx, (PL + Lv[3] + 1.2) / 2 + 0.02, cz, 0.28, Lv[3] + 1.2 - PL, 0.28);
+  // floors (boards), the ceilings under them, the landings; storey 3 has only its landing (its rooms are shut)
+  for (let k = 1; k < 4; k++) {
+    const y = Lv[k];
+    for (let i = 0; i < 6; i++) { const a0 = aL - Q + i * Q / 3, a1 = a0 + Q / 3; A.ring(M.roomFloor, cx, cz, RC, RH, y + 0.012, a0, a1, 1).ring(M.roomCeil, cx, cz, RC, RH, y - 0.3, a0, a1, 1, -1); col.ring('generic', cx, cz, RC, RH + 0.02, y, a0, a1, 1); col.ring('generic', cx, cz, RC, RH + 0.02, y - 0.3, a0, a1, 1, -1); }
+    A.ring(M.roomCeil, cx, cz, RH, rd - 0.02, y - 0.3, aL + Q, aL + TAU - Q, 18, -1);
+    if (k !== 2) { A.ring(M.roomFloor, cx, cz, RH, rd - 0.1, y + 0.012, 0, TAU, 24); col.ring('generic', cx, cz, RH, rd - 0.05, y, 0, TAU, 24); col.ring('generic', cx, cz, RH + 0.05, rd - 0.05, y - 0.3, aL + Q, aL + TAU - Q, 18, -1); A.ring(M.roomCeil, cx, cz, RH, rd - 0.02, y - 0.3, aL - Q, aL + Q, 6, -1); }
+    else { A.ring(M.roomCeil, cx, cz, RH, rd - 0.02, y - 0.3, aL - Q, aL + Q, 6, -1); }
+  }
+  A.ring(M.roomCeil, cx, cz, 0, rd - 0.02, top - 0.3, 0, TAU, 24, -1);
+  // the flights
+  for (let k = 0; k < 3; k++) {
+    const y0 = Lv[k], y1 = Lv[k + 1], n = Math.round((y1 - y0) / 0.18), rise = (y1 - y0) / n, dA = (TAU - 2 * Q) / n; let prev = null;
+    for (let i = 0; i < n; i++) {
+      const fa = aL + Q + i * dA, fb = fa + dA, fm = (fa + fb) / 2, yt = y0 + (i + 1) * rise;
+      Mi.frame(cx, cz, -fm, yt); Mi.box(wood, (RC + RS) / 2 + 0.03, -0.03, 0, RS - RC - 0.04, 0.06, dA * RS + 0.05).box(steel, (RC + RS) / 2, -0.1, 0, RS - RC - 0.2, 0.08, 0.07);
+      if (i % 2 === 0) Mi.box(steel, RS - 0.06, 0.47, 0, 0.022, 0.94, 0.022);
+      for (const [r0, r1] of [[0.45, 0.85], [0.85, 1.2], [1.2, RS + 0.04]]) up(col, [P3(r0, fa, yt - rise), P3(r1, fa, yt - rise), P3(r1, fb, yt), P3(r0, fb, yt)]);
+      const q = P(RS - 0.06, fm), q3 = [q[0], yt + 0.95, q[1]]; if (prev) { Mi.strut(steel, prev, q3, 0.04); Mi.frame(); } prev = q3;
+      if (i % 3 === 0) { const fe = Math.min(aL + TAU - Q, fa + 3 * dA); col.frame(cx, cz, -(fa + fe) / 2, y0 + i * rise); col.box('generic', RS + 0.08, 1.1, 0, 0.06, 1.6, (fe - fa) * (RS + 0.08)); col.frame(); }
+    }
+    Mi.frame();
+  }
+  // round the stair holes of storeys 2 and 4: a glass balustrade with a steel rail; storey 3: the round enclosure with a shut door
+  for (const k of [1, 3]) {
+    const y = Lv[k], a0 = aL + Q, a1 = aL + TAU - Q;
+    A.arc(M.glassClear, cx, cz, RH + 0.03, y + 0.05, y + 1.0, a0, a1, 16, 1).arc(M.glassClear, cx, cz, RH + 0.03, y + 0.05, y + 1.0, a0, a1, 16, -1);
+    Mi.frame(); for (let i = 0; i <= 16; i++) { const a = a0 + (a1 - a0) * i / 16, q = P(RH + 0.03, a); Mi.cyl(steel, q[0], y, q[1], 0.025, 1.08, 6, false); if (i) { const q0 = P(RH + 0.03, a - (a1 - a0) / 16); Mi.strut(steel, [q0[0], y + 1.06, q0[1]], [q[0], y + 1.06, q[1]], 0.05); Mi.frame(); } }
+    for (let i = 0; i < 12; i++) { const b0 = a0 + (a1 - a0) * i / 12, b1 = b0 + (a1 - a0) / 12, hw = (b1 - b0) / 2; col.frame(cx, cz, -(b0 + b1) / 2, y); col.box('generic', RH * Math.cos(hw) + 0.06, 0.8, 0, 0.1, 1.4, 2 * RH * Math.sin(hw) + 0.06); }
+    col.frame();
+  }
+  { const y0 = Lv[2], y1 = Lv[3] - 0.3; A.arc(M.roomWall, cx, cz, RH + 0.05, y0, y1, 0, TAU, 20, -1);
+    for (let i = 0; i < 16; i++) { const b0 = i / 16 * TAU, hw = TAU / 32; col.frame(cx, cz, -(b0 + hw), y0); col.box('generic', RH + 0.12, (y1 - y0) / 2 + 0.05, 0, 0.14, y1 - y0 - 0.1, 2 * (RH + 0.12) * Math.sin(hw) + 0.03); }
+    col.frame(); const F = (() => { const c = Math.cos(aL), sn = Math.sin(aL), w = 1.0, r = RH + 0.03; return mkFrame(cx + r * c + sn * w / 2, cz + r * sn - c * w / 2, -sn, c, w); })();
+    T.on(F); N.wall(M.printsLit, 0.0, 1.0, y0 + 0.02, y0 + 2.12, 0, PR.uv.doorTimber).wall(M.prints, 0.25, 0.75, y0 + 2.16, y0 + 2.32, 0, PR.uv['p:储藏室']); }
+  // storey 2: a reading room. Low shelves along the glass, armchairs with side tables facing out, a long table, ceiling lamps
+  { const y = Lv[1]; N.frame();
+    for (let k = 0; k < 8; k++) { const q = P(3.6, (k + 0.5) / 8 * TAU); N.cyl(M.lamp, q[0], Lv[2] - 0.33, q[1], 0.16, 0.03, 10); }
+    for (let i = 0; i < 24; i++) { const a = (i + 0.5) / 24 * TAU; if (Math.cos(a - aL) > 0.2) continue; N.frame(cx, cz, -a, y); N.box(M.wood, rd - 0.45, 0.55, 0, 0.34, 1.1, 1.25).frame(); col.frame(cx, cz, -a, y); col.box('generic', rd - 0.45, 0.6, 0, 0.36, 1.1, 1.3); col.frame(); }
+    for (const a of [aL - 0.55, aL + 0.55, aL - 1.05, aL + 1.05]) { N.frame(cx, cz, -a, y); N.box(paint(0x6f7f74, 0.85), 4.2, 0.22, 0, 0.8, 0.3, 0.8).box(paint(0x6f7f74, 0.85), 3.85, 0.6, 0, 0.14, 0.5, 0.8).box(M.wood, 4.25, 0.45, 0.62, 0.42, 0.04, 0.42).frame(); col.frame(cx, cz, -a, y); col.box('generic', 4.1, 0.4, 0.2, 0.95, 0.7, 1.3); col.frame(); }
+    const t = aL + Math.PI; N.frame(cx, cz, -t, y); N.box(M.wood, 3.4, 0.73, 0, 0.9, 0.05, 2.4).box(M.dark, 3.4, 0.36, -1.0, 0.7, 0.7, 0.05).box(M.dark, 3.4, 0.36, 1.0, 0.7, 0.7, 0.05);
+    for (const zz of [-0.7, 0, 0.7]) for (const xx of [2.75, 4.05]) N.cyl(paint(0xd8a23a, 0.6), xx, 0, zz, 0.18, 0.45, 10);
+    N.frame(); col.frame(cx, cz, -t, y); col.box('generic', 3.4, 0.4, 0, 1.0, 0.75, 2.5); col.frame(); }
+  // storey 4: a lounge with a view over the track and the courts. Benches facing out, two binocular stands, ceiling lamps
+  { const y = Lv[3]; N.frame();
+    for (let k = 0; k < 8; k++) { const q = P(3.6, (k + 0.5) / 8 * TAU); N.cyl(M.lamp, q[0], top - 0.33, q[1], 0.16, 0.03, 10); }
+    for (let i = 0; i < 6; i++) { const a = aL + Math.PI / 3 + i * (TAU - 2 * Math.PI / 3) / 5; N.frame(cx, cz, -a, y); N.box(M.wood, 4.35, 0.44, 0, 0.45, 0.06, 1.8).box(M.dark, 4.35, 0.21, -0.75, 0.4, 0.42, 0.06).box(M.dark, 4.35, 0.21, 0.75, 0.4, 0.42, 0.06).frame(); col.frame(cx, cz, -a, y); col.box('generic', 4.35, 0.3, 0, 0.5, 0.5, 1.8); col.frame(); }
+    for (const a of [ad, ad - 1.2]) { N.frame(cx, cz, -a, y); N.cyl(M.dark, rd - 0.7, 0, 0, 0.16, 0.06, 12).cyl(steel, rd - 0.7, 0.06, 0, 0.04, 1.05, 8).box(M.dark, rd - 0.62, 1.2, 0, 0.3, 0.16, 0.26).frame(); col.frame(cx, cz, -a, y); col.box('generic', rd - 0.7, 0.65, 0, 0.36, 1.2, 0.36); col.frame(); } }
 }
 
 /**
@@ -979,7 +1064,7 @@ function pavilion(T, p, col, ctx) {
  * lights, benches, notice boards, bicycles, a shop front in the west core and a lift lobby in the east core.
  * Returns the collider meshes of the block itself.
  */
-function pergolaBlock(T, pts, p, axisX, low, col) {
+function pergolaBlock(T, pts, p, axisX, low, col, ctx) {
   const r = rectOf(pts), h = p.height, top = h - 1.2, yRoof = h - 0.6, strip0 = r.s - p.pergolaStripDepthM, n = p.look.storeys, sh = top / n, bay = 4.2, core = 5.2, G = T.a, N = T.n;
   const W = r.e - r.w, D = r.s - r.n, FS = mkFrame(r.w, r.s, 1, 0, W), FN = mkFrame(r.e, r.n, -1, 0, W), FE = mkFrame(r.e, r.s, 0, -1, D), FW = mkFrame(r.w, r.n, 0, 1, D);
   const o = { wall: M.render, band: null, bay: 2.1, ww: 1.6, wh: 1.9, sill: 0.95, d: low ? 0 : 0.12, kind: 'slide', sills: true, frame: M.frame };
@@ -997,12 +1082,13 @@ function pergolaBlock(T, pts, p, axisX, low, col) {
   T.on(FEi); G.wall(M.render, 0, l0, 0, sh).wall(M.render, l1, D, 0, sh); T.on(FEi.sub(l0, l1)); shopfront(T, l1 - l0, 2.75, sh, M.render, 'lobby');
   // undercroft: paving with granite margins, soffit, beams on tiled columns with granite bases, lights
   G.poly(M.granite, [[xa, r.n - 0.5], [xb, r.n - 0.5], [xb, r.n + 0.7], [xa, r.n + 0.7]], 0.05).poly(M.grate, [[xa, r.n + 0.7], [xb, r.n + 0.7], [xb, r.n + 0.86], [xa, r.n + 0.86]], 0.05).poly(M.ground, [[xa, r.n + 0.86], [xb, r.n + 0.86], [xb, r.s - 0.86], [xa, r.s - 0.86]], 0.05).poly(M.grate, [[xa, r.s - 0.86], [xb, r.s - 0.86], [xb, r.s - 0.7], [xa, r.s - 0.7]], 0.05).poly(M.granite, [[xa, r.s - 0.7], [xb, r.s - 0.7], [xb, r.s + 0.5], [xa, r.s + 0.5]], 0.05);
-  G.poly(M.ceil, [[xa, r.n], [xb, r.n], [xb, r.s], [xa, r.s]], sh, -1);
-  for (const z of [r.n + 0.3, r.s - 0.3]) G.box(M.render, (xa + xb) / 2, sh - 0.25, z, xb - xa, 0.5, 0.4, keep('SND'));
+  G.poly(M.soffit, [[xa, r.n], [xb, r.n], [xb, r.s], [xa, r.s]], sh, -1);
+  for (const z of [r.n + 0.3, r.s - 0.3]) G.box(M.beamLit, (xa + xb) / 2, sh - 0.25, z, xb - xa, 0.5, 0.4, keep('SND'));
+  if (ctx && ctx.indoor) ctx.indoor([[xa, r.n], [xb, r.n], [xb, r.s], [xa, r.s]], sh, -1);              // the lighting treats the undercroft as covered (round 2)
   const cols = new Batch(), half = Math.ceil((xb - xa) / bay / 2) + 1; T.m.frame();
   for (let k = -half; k < half; k++) {                // column lines half a bay either side of the plaza axis, so the axis stays free
     const x = axisX + (k + 0.5) * bay; if (x < xa + 1 || x > xb - 1) continue;
-    G.box(M.render, x, sh - 0.2, zm, 0.3, 0.4, D - 1.0, keep('EWD'));
+    G.box(M.beamLit, x, sh - 0.2, zm, 0.3, 0.4, D - 1.0, keep('EWD'));
     for (const z of [r.n + 0.3, r.s - 0.3]) { G.box(M.white, x, sh / 2 + 0.2, z, 0.5, sh - 0.4, 0.5, keep('EWSN')).box(M.granite, x, 0.225, z, 0.62, 0.45, 0.62, keep('EWSNU')); cols.box('generic', x, sh / 2, z, 0.5, sh, 0.5); }
     if (x + bay / 2 < xb - 1) { for (const z of [zm - 3.2, zm + 3.2]) T.m.box(M.lamp, x + bay / 2, sh - 0.015, z, 1.2, 0.03, 0.28, keep('D')); LIT.push([x + bay / 2, zm, 5.5]); }
   }
@@ -1046,7 +1132,7 @@ export function build(ctx) {
       if (kind === 'drum') { drum(T, p); return ctx.collide(prism(pts, 0, p.height - 0.6, null)); }
       if (kind === 'pergola-block') {
         const r = rectOf(pts), canopy = itemBox(ctx.campus, 'plaza-canopy');
-        pergolaBlock(T, pts, p, canopy ? (canopy.w + canopy.e) / 2 : (r.w + r.e) / 2, low, col).forEach(m => ctx.collide(m));
+        pergolaBlock(T, pts, p, canopy ? (canopy.w + canopy.e) / 2 : (r.w + r.e) / 2, low, col, ctx).forEach(m => ctx.collide(m));
         return;
       }
       const { C, sh, yRoof } = block(T, b, p, pts, polys.filter((q, j) => q && j !== i), low, ctx);
@@ -1060,6 +1146,7 @@ export function build(ctx) {
       bikeShed(T, col, ctx, 98, 88.9, 0, 12, 3);
       T.a.poly(M.ground, [[77.3, 84.5], [81.2, 84.5], [81.2, 90.8], [77.3, 90.8]], 0.06); T.n.frame(); col.frame(); gardenLamp(T.n, col, 76.2, 90.2); gardenLamp(T.n, col, 82.3, 90.2); bins(T.n, col, 83.6, 91.6, 0, true);
       if (ctx.occupy) ctx.occupy([[75.5, 84], [83, 84], [83, 92.3], [75.5, 92.3]]);
+      if (ctx.occupy) ctx.occupy([[54.6, 90.3], [72, 90.3], [72, 92.3], [56.6, 92.3], [56.6, 107], [54.6, 107]]);   // round 2: a 2 m margin round the north-west corner keeps the crowns there off the walls
     } else if (b.id === 'south-e-complex') bikeShed(T, col, ctx, 86, 147.9, 0, 12, 9);
     else if (b.id === 'south-low-link') { T.n.frame(); col.frame(); bins(T.n, col, 51.3, 109.9, 0); if (ctx.occupy) ctx.occupy([[50.4, 109.2], [52.2, 109.2], [52.2, 110.6], [50.4, 110.6]]); }
     // what is only worth drawing from nearer by

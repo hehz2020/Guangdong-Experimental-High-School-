@@ -53,6 +53,9 @@
 //     cabinets, a cabinet for dangerous chemicals or cases of microscopes, refrigerator, work table, trolley, sink);
 //   - the staircase's finish: terrazzo treads with dark nosings, stringers, balusters, handrails, signs.
 // Lettering uses whatever CJK fonts the browser has; the lesson notes are textbook commonplaces, not copied from anything.
+// Second refinement round: the painters, the card helper and the two sheets are exported (sharedSheets) so that the east
+// slabs (teaching-slab.js) draw their boards and posters with the same hand without a second copy; the white and dark-red
+// facade tile is the kit's farTile (plain-block.js), whose coarse mipmaps fade to the mean colour (no checkerboard from afar).
 //
 // How it is built: plain-coloured parts are merged into one vertex-coloured mesh per finish; everything printed or written
 // is a card cut from two texture sheets drawn in code; desks, chairs, fans, plants and small objects are instanced.
@@ -68,6 +71,7 @@ import { Batch } from '../../batch.js';
 import { pbr, SURFACES } from '../../hifi.js';
 import { LIT } from '../../street.js';
 import { shrubs } from '../../flora.js';
+import { farTile } from './plain-block.js';
 
 const FLOORS = 5, WALL = 0.24, SLAB = 0.35, PARAPET = 1.1, GAP = 1.25, CORRIDOR = 2.85, STEPS = 12, GO = 0.3, FLIGHT = 1.3, BAY = 4.8;
 const SILL = 0.9, HEAD = 2.85;                         // north windows
@@ -311,16 +315,16 @@ function paintPoster(g, W, H, k) {
   }
   box(g, 0, 0, W, H, null, 'rgba(0,0,0,0.25)', 2);
 }
-function paintPlate(g, W, H, num, name) {
+function paintPlate(g, W, H, num, name, building = BUILDING) {
   const gr = g.createLinearGradient(0, 0, 0, H); gr.addColorStop(0, '#2468b4'); gr.addColorStop(1, '#174a86'); g.fillStyle = gr; g.fillRect(0, 0, W, H);
   box(g, 3, 3, W - 6, H - 6, null, 'rgba(255,255,255,0.9)', 1.5);
-  T(g, num, 12, 23, 25, '#fff', CJK, 'left', 'bold'); T(g, BUILDING, W - 12, 23, 13, 'rgba(255,255,255,0.85)', CJK, 'right'); g.fillStyle = 'rgba(255,255,255,0.7)'; g.fillRect(10, 38, W - 20, 1.2);
+  T(g, num, 12, 23, 25, '#fff', CJK, 'left', 'bold'); T(g, building, W - 12, 23, 13, 'rgba(255,255,255,0.85)', CJK, 'right'); g.fillStyle = 'rgba(255,255,255,0.7)'; g.fillRect(10, 38, W - 20, 1.2);
   T(g, name, W / 2, 56, name.length > 5 ? 20 : 23, '#fff', CJK, 'center', 'bold');
 }
-function paintFloor(g, S, n) {
+function paintFloor(g, S, n, building = BUILDING) {
   box(g, 0, 0, S, S, '#f4f2ea', '#9a968c', 3); ring(g, S / 2, S * 0.43, S * 0.33, S * 0.33, null, 0, '#9c2a22');
   T(g, String(n), S * 0.44, S * 0.44, S * 0.46, '#fff', CJK, 'center', 'bold'); T(g, 'F', S * 0.66, S * 0.5, S * 0.22, '#fff', CJK, 'center', 'bold');
-  T(g, `${BUILDING} · ${CN[n - 1]}楼`, S / 2, S * 0.88, S * 0.1, '#5a2a26', CJK, 'center', 'bold');
+  T(g, `${building} · ${CN[n - 1]}楼`, S / 2, S * 0.88, S * 0.1, '#5a2a26', CJK, 'center', 'bold');
 }
 function paintClock(g, S) {
   box(g, 0, 0, S, S, '#2c2f33'); g.fillStyle = '#f6f5ef'; g.beginPath(); g.roundRect(8, 8, S - 16, S - 16, 14); g.fill();
@@ -709,7 +713,7 @@ export function build(item, ctx) {
   const home = b => b.frame(p.ox, p.oz); [v, c, ex, fu, fx].forEach(home);
   const F = (b, m, x, y, z, sx, sy, sz, faces) => b.slab(m, x, y, z, sx, sy, sz, skipOf(faces));   // box drawing only the listed faces
   const hit = (x, y, z, sx, sy, sz) => c.slab('generic', x, y, z, sx, sy, sz);
-  const W = 'wallWhite', R = 'wallMaroon', GR = pbr('granitePolished', [0x6f6a66, 9]), PAVE = pbr('paving', [0xb9b3a7, 0x9c968c, 4, 8, [2.4, 2.4], 11, true]), HEDGE = pbr('hedge');
+  const W = farTile('wallWhite'), R = farTile('wallMaroon'), GR = pbr('granitePolished', [0x6f6a66, 9]), PAVE = pbr('paving', [0xb9b3a7, 0x9c968c, 4, 8, [2.4, 2.4], 11, true]), HEDGE = pbr('hedge');
   const PL = lm('plaster'), CE = lm('ceil'), DA = lm('dadoA'), CO = lm('corr'), DK = lm('dark'), DM = lm('darkMetal'), AL = lm('alu'), WH = lm('white'), LAMP = lm('lamp'), RAIL = pbr('steel'), PV = lm('pvc');
   // inclined slab whose TOP surface runs from (zA, yA) to (zB, yB), between xa and xb
   const incl = (b, m, xa, xb, zA, yA, zB, yB, th, faces) => {
@@ -1449,3 +1453,12 @@ export function build(item, ctx) {
     });
   }
 }
+
+// The east teaching slabs (teaching-slab.js) draw their boards, posters and plates with the same hand, and share these two
+// sheets (so that no second copy of them is uploaded): built here once, from this building's plan.
+export function sharedSheets(low, campus) {
+  if (SHEETS) return SHEETS;
+  const it = campus && campus.items.find(i => i.style === 'teaching-slab-wide');
+  return it ? sheets(low, plan(it, campus)) : null;
+}
+export { Atlas, Cards, paintBoard, paintArt, paintPoster, paintPlate, paintSheet, paintSlogan, paintFloor, paintCert, paintClock, paintExit, LESSONS, ART, POSTERS, SLOGANS };

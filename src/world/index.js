@@ -92,7 +92,15 @@ export async function buildWorld(campus, only = null, tryBuilders = {}, tryExtra
   const colliders = new THREE.Group(); colliders.name = 'colliders';
   const report = { built: [], fallback: [], failed: [] };
   const details = [];        // { obj, x, z, range }: small things that are only shown when the viewer is within range metres
-  const updaters = [];       // functions (dt, seconds, { camera, lighting, renderer }) called every frame: water, fountains, leaves
+  // per-frame functions (dt, seconds, { camera, lighting, renderer }): water, fountains, leaves, clocks, night glow. Kept as
+  // { fn, owner, x, z, range, ms, runs }: owner names the item or module (the page measures each one's cost); with a range
+  // the page calls fn only while the viewer is within range metres of (x, z) in plan (see ctx.animate below).
+  const updaters = [];
+  const updater = owner => (fn, x, z, range) => {
+    if (typeof fn !== 'function') return;
+    const near = Number.isFinite(x) && Number.isFinite(z) && range > 0;
+    updaters.push({ fn, owner, x: near ? x : 0, z: near ? z : 0, range: near ? range : 0, ms: 0, runs: 0 });
+  };
   const places = [];         // extra entries for the places menu, offered by extras: { name, x, z, yaw, y, fly, pitch }
   const detail = (obj, x, z, range) => { details.push({ obj, x, z, range }); return obj; };
   const indoors = [];        // { pts, top, bottom }: covered places the builders declare (the lighting module treats them as under a roof)
@@ -121,8 +129,10 @@ export async function buildWorld(campus, only = null, tryBuilders = {}, tryExtra
     const group = new THREE.Group(); group.name = item.id; root.add(group);
     const ctx = {
       campus, item, detail, lowPower: !!env.lowPower, safe: !!env.safe,
-      // per-frame hook, as the extras have: fn(dt, seconds, { camera, lighting, renderer })
-      animate: fn => { updaters.push(fn); },
+      // per-frame hook, as the extras have: fn(dt, seconds, { camera, lighting, renderer }). Optional x, z, range (metres, world
+      // coordinates): only call fn while the viewer is within range of (x, z) in plan; leave them out for things that must
+      // follow the time of day everywhere (night glow seen from afar).
+      animate: updater(item.id),
       // tell the grounds about a solid part that stands outside item.points: outline [[x, z]...] in world coordinates
       occupy: outline => { occupied.push(outline); },
       // declare a covered place the lighting should treat as indoors (lamp near the viewer, windows dimmed): outline in world
@@ -134,7 +144,7 @@ export async function buildWorld(campus, only = null, tryBuilders = {}, tryExtra
       // Call after ctx.add (the mesh needs its parents to know where it is). For an invisible barrier, add a mesh and set visible = false.
       collide: mesh => {
         mesh.updateWorldMatrix(true, false);
-        const c = new THREE.Mesh(mesh.geometry); c.matrixAutoUpdate = false; c.matrix.copy(mesh.matrixWorld); colliders.add(c); return mesh;
+        const c = new THREE.Mesh(mesh.geometry); c.matrixAutoUpdate = false; c.matrix.copy(mesh.matrixWorld); c.name = item.id; colliders.add(c); return mesh;
       },
     };
     const path = builders[item.style];
@@ -156,14 +166,14 @@ export async function buildWorld(campus, only = null, tryBuilders = {}, tryExtra
       occupy: outline => { occupied.push(outline); },       // as for builders; only modules that run before the grounds are heeded
       indoor,
       add: obj => { group.add(obj); return obj; },
-      collide: mesh => { mesh.updateWorldMatrix(true, false); const c = new THREE.Mesh(mesh.geometry); c.matrixAutoUpdate = false; c.matrix.copy(mesh.matrixWorld); colliders.add(c); return mesh; },
-      animate: fn => { updaters.push(fn); },
+      collide: mesh => { mesh.updateWorldMatrix(true, false); const c = new THREE.Mesh(mesh.geometry); c.matrixAutoUpdate = false; c.matrix.copy(mesh.matrixWorld); c.name = path; colliders.add(c); return mesh; },
+      animate: updater(path.replace('./extras/', 'extras/')),
       place: (name, x, z, yaw, y = 0, fly = false, pitch = 0) => { places.push({ name, x, z, yaw, y, fly, pitch }); },
     };
     try { (await import(path)).build(ctx); report.built.push(path); }
     catch (err) { console.error('extra module failed:', path, err); group.clear(); report.failed.push(path); }
   }
   // pools of light under every lamp the modules recorded, after dusk (not in safe mode: it is a custom shader)
-  if (!env.safe) { const pools = lightPools(); if (pools) { root.add(pools.mesh); updaters.push((dt, t, e) => pools.update(e)); } }
+  if (!env.safe) { const pools = lightPools(); if (pools) { root.add(pools.mesh); updater('lamp-pools')((dt, t, e) => pools.update(e)); } }
   return { root, colliders, report, details, updaters, places, indoors };
 }

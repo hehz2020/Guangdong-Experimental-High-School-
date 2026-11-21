@@ -32,7 +32,9 @@
 //     wall at the end of the slab's corridor (teaching-slab.js cuts that doorway and draws its frame and leaves): one
 //     walks from the stair through the lobby and along the balcony into the corridor;
 //   - the loggia as a terrace round the stair's head, with a rail on the parapet; on the south tower the taller box is
-//     drawn as a tank room with a closed door;
+//     drawn as a tank room with a closed door; from the second refinement round the loggia is furnished as a place to stand
+//     (see loggia() below: a small tree in a round planter under the opening, benches facing out, planter troughs, pots,
+//     lamps) and counts as indoors for the lighting; there is no step up onto the slab's roof (3.9 m higher);
 //   - finishes: granite floors, a painted dado, ceiling lamps, storey numbers, hose cabinets, a store under the stair,
 //     a dark tile base course, rainwater pipes, stains under sills and copings, lightning rods.
 // Colliders: walls with their doorways, floors, the stair (ramps, landings, a wall in the well), parapets and guards, the
@@ -40,6 +42,7 @@
 // opening lands on the loggia floor, 5.9 m below), the tall box.
 import { bbox } from '../../kit.js';
 import { LIT } from '../../street.js';
+import { shrubs, broadleafTrees } from '../../flora.js';
 import { F, lm, shell, finish, hit, face, facade, doorSet, stair, wallHit, pierce, textCard, card, rwp, stain, lightning, windowIn, apron } from './plain-block.js';
 
 const FH = 3.9, T = 0.25;
@@ -81,6 +84,49 @@ function dutyRoom(S, x0, x1, z0, z1) {
   F(B, lm('tileGreen'), x0 + 0.04, 0.41, zb + 0.02, 0.86, 0.1, 1.9, 'NSEWU'); F(B, lm('blue'), x0 + 0.1, 0.51, zb + 0.1, 0.74, 0.16, 0.55, 'NSEWU'); F(B, lm('sheet'), x0 + 0.14, 0.51, zb + 1.45, 0.66, 0.1, 0.4, 'NSEWU');
   hit(S, x0 + 0.02, 0.02, zb, 0.9, 0.5, 1.95);
   F(B, WD, x1 - 0.32, 1.3, z1 - 1.3, 0.3, 0.03, 0.9, 'NSEWUD'); B.frame(x1 - 0.17, z1 - 1.0).cyl(ST, 0, 1.33, 0, 0.08, 0.2, 10).cyl(lm('white'), 0.0, 1.33, 0.35, 0.04, 0.08, 8).cyl(lm('white'), 0.0, 1.33, 0.48, 0.04, 0.08, 8); B.frame();
+}
+
+/**
+ * The loggia as a place to stand (IMAGINED): a round planter with a small tree under the opening in the roof slab, its crown
+ * rising toward the sky; timber benches facing out over the parapet (east over the canal road on both towers, south over the
+ * courtyard on the north one); planter troughs along the parapets; two big pots; a lamp over each bench. The parapet is
+ * 1.0 m and the loggia floor is 3.9 m below the slab's roof, under the tower's own roof slab: no step up onto the slab roof
+ * would be believable, so there is none.
+ */
+function loggia(S, ctx, q) {
+  const { ix0, ix1, iz0, iz1, zA, zr, xd1, yL, ocx, ocz, rad, tall } = q, B = S.d, WD = lm('wood'), ST = lm('steel'), SL = lm('stoneLight'), SO = lm('soil'), DK = lm('dark');
+  const bushes = [], potsAt = [];
+  // the round planter under the opening: a ring of pale stone 0.5 m high, soil, a small tree
+  const pr = Math.min(0.8, rad * 0.6), px = Math.max(ocx, xd1 + pr + 0.2), pz = ocz, N = 20;
+  for (let i = 0; i < N; i++) {
+    const a0 = i / N * 6.2832, a1 = (i + 1) / N * 6.2832, P = (r, a, y) => [px + Math.cos(a) * r, y, pz + Math.sin(a) * r];
+    B.quad(SL, P(pr, a1, yL), P(pr, a0, yL), P(pr, a0, yL + 0.5), P(pr, a1, yL + 0.5)); B.quad(SL, P(pr, a1, yL + 0.5), P(pr, a0, yL + 0.5), P(pr - 0.12, a0, yL + 0.5), P(pr - 0.12, a1, yL + 0.5));
+    B.quad(SO, P(pr - 0.12, a1, yL + 0.44), P(pr - 0.12, a0, yL + 0.44), P(0, a0, yL + 0.44), P(0, a1, yL + 0.44));
+  }
+  hit(S, px - pr * 0.8, yL + 0.01, pz - pr * 0.8, pr * 1.6, 0.6, pr * 1.6);
+  const tree = broadleafTrees([[px, pz, 4.6]], { seed: tall ? 17 : 19, low: S.low }).group; tree.position.y = yL + 0.44; S.dx.push(tree);
+  for (let i = 0; i < 6; i++) { const a = i / 6 * 6.2832 + 0.4; bushes.push([px + Math.cos(a) * (pr - 0.3), pz + Math.sin(a) * (pr - 0.3), 0.2]); }
+  // benches: timber slats on two steel frames, the seat facing out over the parapet
+  const bench = (x, z, alongX, out) => {                    // centre of the seat; alongX: the bench runs east-west; out: +1/-1 the way it faces
+    const L = 1.6, d = 0.42, sx = alongX ? L : d, sz = alongX ? d : L, x0 = x - sx / 2, z0 = z - sz / 2;
+    for (const s of [-0.65, 0.65]) F(B, ST, alongX ? x + s - 0.03 : x0 + 0.04, yL, alongX ? z0 + 0.04 : z + s - 0.03, alongX ? 0.06 : d - 0.08, 0.42, alongX ? d - 0.08 : 0.06, 'NSEW');
+    for (let i = 0; i < 4; i++) F(B, WD, alongX ? x0 : x0 + i * 0.105, yL + 0.42, alongX ? z0 + i * 0.105 : z0, alongX ? L : 0.085, 0.035, alongX ? 0.085 : L, 'NSEWUD');
+    const bx = alongX ? x0 : (out > 0 ? x0 - 0.04 : x0 + d - 0.02), bz = alongX ? (out > 0 ? z0 - 0.04 : z0 + d - 0.02) : z0;     // back rest on the inner side
+    for (let i = 0; i < 2; i++) F(B, WD, bx, yL + 0.55 + i * 0.16, bz, alongX ? L : 0.06, 0.1, alongX ? 0.06 : L, 'NSEWUD');
+    hit(S, x0, yL + 0.01, z0, sx, 0.46, sz);
+  };
+  const trough = (x0, x1, z0, z1) => { F(B, SL, x0, yL, z0, x1 - x0, 0.45, z1 - z0, 'NSEWU'); F(B, SO, x0 + 0.05, yL + 0.4, z0 + 0.05, x1 - x0 - 0.1, 0.01, z1 - z0 - 0.1, 'U'); hit(S, x0, yL + 0.01, z0, x1 - x0, 0.5, z1 - z0); const along = x1 - x0 > z1 - z0; for (let t = 0.35; t < (along ? x1 - x0 : z1 - z0) - 0.2; t += 0.42) bushes.push([along ? x0 + t : (x0 + x1) / 2, along ? (z0 + z1) / 2 : z0 + t, 0.23]); };
+  const zs = Math.min(zr, iz1) - 0.05;                                                                  // the south (or tank-room) edge of the loggia
+  bench(ix1 - 0.45, (zA + zs) / 2, false, 1);                                                          // facing east, in the south part
+  if (!tall) bench((xd1 + ix1) / 2 - 0.6, zs - 0.45, true, 1);                                          // facing south over the courtyard
+  if (iz0 + 0.5 < zA - 2.6) bench(ix1 - 0.45, iz0 + 1.3, false, 1);                                    // facing east, in the north-east part
+  trough(xd1 + 0.2, ix1 - 0.2, iz0 + 0.02, iz0 + 0.42);                                              // along the north parapet of the north-east part
+  if (!tall) trough(ix0 + 0.1, ix0 + 2.2, zs - 0.42, zs - 0.02);
+  for (const [x, z] of tall ? [[xd1 + 0.45, iz0 + 0.9]] : [[ix1 - 0.35, zs - 0.35], [xd1 + 0.45, iz0 + 0.9]]) { B.frame(x, z).cyl(lm('tread'), 0, yL, 0, 0.26, 0.6, 12).cyl(SO, 0, yL + 0.6, 0, 0.23, 0.01, 10); B.frame(); hit(S, x - 0.24, yL + 0.01, z - 0.24, 0.48, 0.6, 0.48); potsAt.push([x, z]); }
+  const sh = shrubs(bushes, { seed: tall ? 41 : 43, hex: 0x3d6e31 }); sh.position.y = yL + 0.43; sh.castShadow = false; S.dx.push(sh);
+  if (potsAt.length) { const sp = shrubs(potsAt.map(([x, z]) => [x, z, 0.45]), { seed: 47, hex: 0x41733a }); sp.position.y = yL + 0.6; sp.scale.y = 1.7; sp.castShadow = false; S.dx.push(sp); }
+  // lamps under the roof slab over the benches (the loggia is a covered place: see ctx.indoor below)
+  for (const [x, z] of [[ix1 - 0.8, (zA + zs) / 2], [xd1 + 1.0, iz0 + 1.6]]) { F(B, lm('frame'), x - 0.2, yL + 5.45, z - 0.2, 0.4, 0.04, 0.4, 'NSEW'); F(B, lm('lamp'), x - 0.17, yL + 5.44, z - 0.17, 0.34, 0.012, 0.34, 'D'); }
 }
 
 export function build(item, ctx) {
@@ -150,7 +196,7 @@ export function build(item, ctx) {
     // lobby: floor, ceiling, lamps, dado, storey number, hose cabinet; the room's door
     F(S.d, FL, ix0, y, zA, ix1 - ix0, 0.02, iz1 - zA, 'U'); F(S.d, CE, ix0, y + FH - 0.2, zA, ix1 - ix0, 0.01, iz1 - zA, 'D');
     if (k) { hit(S, ix0, y - 0.2, zA - 0.2, ix1 - ix0, 0.2, iz1 - zA + 0.2); F(S.d, CE, ix0, y - 0.2, zA - 0.01, ix1 - ix0, 0.2, 0.01, 'N'); }
-    for (const lx of [ix0 + 1.5, ix0 + 4.4]) { F(S.d, FR, lx - 0.22, y + FH - 0.235, (zA + iz1) / 2 - 0.22, 0.44, 0.035, 0.44, 'NSEW'); F(S.d, LAMP, lx - 0.19, y + FH - 0.245, (zA + iz1) / 2 - 0.19, 0.38, 0.012, 0.38, 'D'); }
+    for (const lx of [ix0 + 1.5, ix0 + 4.4]) { F(S.d, FR, lx - 0.22, y + FH - 0.235, (zA + iz1) / 2 - 0.22, 0.44, 0.035, 0.44, 'NSEW'); F(S.d, LAMP, lx - 0.19, y + FH - 0.245, (zA + iz1) / 2 - 0.19, 0.38, 0.012, 0.38, 'D'); if (!k) LIT.push([lx, (zA + iz1) / 2, 2.2, FH - 0.25]); }
     R.door(xr0 + 0.9, { w: 0.95, h: 2.05, y0: y, swing: duty ? 'in' : undefined, step: false, lamp: false, vision: !duty, leaf: lm('wood'), plateMat: duty ? textCard('值班室', 0.28, 0.18) : undefined, canopy: 0 });
     if (duty) R.win(xr0 + 1.8, ix1 - 0.3, y + 1.0, y + 2.1, { n: 1, glass: lm('glassLobby'), sill: false, rev: 0.05 });
     R.done();
@@ -205,6 +251,8 @@ export function build(item, ctx) {
   hit(S, R.w, yR0, ocz - hs + 0.001, ocx - hs - R.w, 0.35, 2 * hs - 0.002); hit(S, ocx + hs, yR0, ocz - hs + 0.001, R.e - ocx - hs, 0.35, 2 * hs - 0.002);
   F(S.d, lm('dark'), ocx - rad - 0.5, H, ocz + rad * 0.2, 0.5, 0.012, 0.9, 'U');                                  // a rain stain beside the opening
   lightning(S, R, H - 0.08);
+  loggia(S, ctx, { ix0, ix1, iz0, iz1, zA, zr: tall ? zr : z1 - T, xd1, yL, ocx, ocz, rad, tall });
+  if (ctx.indoor) ctx.indoor([[x0, z0], [x1 + 0.45, z0], [x1 + 0.45, zr], [x0, zr]], yR0, yL - 1);          // the loggia is under the roof slab: indoors for the lighting
 
   // ---- south tower: the taller box (a tank room with a closed door), its stepped two-tier cap, red pipes
   if (tall) {

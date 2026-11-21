@@ -148,6 +148,7 @@ import { Batch } from '../../batch.js';
 import { pbr, SURFACES } from '../../hifi.js';
 import { broadleafTrees, shrubs, flowers } from '../../flora.js';
 import { gardenLamp, bench, bins, bollard, noticeBoard, LIT } from '../../street.js';
+import { roomViews, ROOM_KIND } from './slab-block.js';
 
 // Ground footprint in metres (x east, z south, origin at the centre of the track). See FOOTPRINT above.
 const FOOT = { A: [147.85, -205.69], B: [194.54, -235.91], C: [215.97, -211.46], D: [214.05, -194.15], E: [151.42, -188.93] };
@@ -541,21 +542,35 @@ export function build(item, ctx) {
   // ================================================================= UPPER STOREYS (3 to 6): closed, facades only
   const T = 0.45;                                                     // depth of the window reveals
   const face = (m, x0, x1, y0, y1, z = 0.012) => v.quad(m, [x0, y0, z], [x1, y0, z], [x1, y1, z], [x0, y1, z]);
+  // Round 2: the windows of storeys 3 to 6 show the rooms behind them from outside (roomViews() of slab-block.js: rooms with
+  // parallax, furnished after their use, lit after dusk), instead of the painted bands. Which kind of room stands behind which
+  // window follows the door plates of the corridors (NAMES below); faceId and the window's place pick the room.
+  const RK = ROOM_KIND, views = roomViews(!!ctx.safe); let faceId = 'S';
+  const VK = [{ S1: RK.library, S2: RK.office, S4: RK.computer, A: RK.computer, S5: RK.office, SE: RK.lab, B1: RK.lab, B2: RK.lab, E: RK.lab },
+    { S1: RK.art, S2: RK.art, S4: RK.art, A: RK.art, S5: RK.music, SE: RK.music, B1: RK.music, B2: RK.music, E: RK.music },
+    { S1: RK.library, S2: RK.office, S4: RK.computer, A: RK.classroom, S5: RK.classroom, SE: RK.office, B1: RK.office, B2: RK.office, E: RK.office },
+    { S1: RK.library, S2: RK.office, S4: RK.music, A: RK.library, S5: RK.common, SE: RK.library, B1: RK.studio, B2: RK.studio, E: RK.office }];
+  const keyAt = x0 => (faceId === 'S' ? (x0 < 5 ? 'S1' : x0 < 15 ? 'S2' : x0 < 29 ? 'S4' : x0 < 39 ? 'A' : x0 < 47 ? 'S5' : 'SE') : faceId === 'N' ? (x0 > 25 ? 'B2' : x0 > 15 ? 'B1' : 'E') : 'E');
+  /** A pane that shows a room, between x0 and x1 at depth z of the current frame of v (+z outward), from y0g to y1g; floor at yf. */
+  const viewPane = (x0, x1, y0g, y1g, z, yf, k, depth, pad = 0.3) => {
+    const a = new THREE.Vector3(x0, 0, z).applyMatrix4(v.m), b2 = new THREE.Vector3(x1, 0, z).applyMatrix4(v.m), o = new THREE.Vector3(x0, 0, z + 1).applyMatrix4(v.m);
+    views.add([a.x, a.z], [b2.x, b2.z], y0g, y1g, [o.x - a.x, o.z - a.z], { below: y0g - yf, above: yf + CU - y0g, padL: pad, padR: pad, depth, seed: (faceId.charCodeAt(0) * 7.7 + x0 * 3.1 + k * 17.3) % 911, kind: VK[k][keyAt(x0)] });
+  };
   // one bay of one storey in the current edge frame. s solid, x solid with a thin slot, r ribbon window, b recessed balcony, t open terrace recess, l fins, m tall fins, o open
   const storey = (x0, x1, y0, type, k) => {
     const w = x1 - x0, zg = -T + 0.06; if (type === 'o' || w <= 0.01) return;
     if (type === 's' || type === 'x' || type === 'l' || type === 'm') v.slab(TERR, x0, y0, -T, w, FH, T, 'N');
     if (type === 'x') face('glassDark', x0 + 1.5, x1 - 1.2, y0 + 3.22, y0 + 3.5);
     if (type === 'l') {
-      face('glassDark', x0 + 0.3, x1 - 0.3, y0 + 1.0, y0 + 2.5);
+      viewPane(x0 + 0.3, x1 - 0.3, y0 + 1.0, y0 + 2.5, 0.012, y0, k, 9.5, 0.2);
       for (let x = x0 + 0.225; x < x1 - 0.05; x += 0.45) v.box(lm('fin'), x, y0 + FH / 2, 0.33, 0.08, FH - 0.3, 0.5, 'UDN');
     }
     if (type === 'm') {                                             // fins two storeys tall (the unseen faces)
-      face('glassDark', x0 + 0.3, x1 - 0.3, y0 + 1.0, y0 + 2.5);
+      viewPane(x0 + 0.3, x1 - 0.3, y0 + 1.0, y0 + 2.5, 0.012, y0, k, 9.5, 0.2);
       if (k % 2 === 0) for (let x = x0 + 0.225; x < x1 - 0.05; x += 0.45) v.box(lm('fin'), x, y0 + FH, 0.33, 0.08, 2 * FH - 0.3, 0.5, 'UDN');
     }
     if (type === 'r') {
-      v.slab(TERR, x0, y0, -T, w, 1.0, T, 'N'); face(lm('ribbon'), x0, x1, y0 + 1.0, y0 + 2.45, zg);
+      v.slab(TERR, x0, y0, -T, w, 1.0, T, 'N'); viewPane(x0, x1, y0 + 1.0, y0 + 2.45, zg, y0, k, 11);
       v.slab(TERR, x0, y0 + 2.45, -T, w, 0.45, T, 'N'); face('glassDark', x0, x1, y0 + 2.9, y0 + 3.4, zg);
       for (const f of [1 / 3, 2 / 3]) v.slab(TERR, x0 + w * f - 0.25, y0 + 2.9, -T, 0.5, 0.5, T, 'NUD');
       v.slab(TERR, x0, y0 + 3.4, -T, w, FH - 3.4, T, 'N');
@@ -568,7 +583,7 @@ export function build(item, ctx) {
       v.quad(R, [x0, y0, 0], [x0, y0, -d], [x0, y0 + FH, -d], [x0, y0 + FH, 0]); v.quad(R, [x1, y0, -d], [x1, y0, 0], [x1, y0 + FH, 0], [x1, y0 + FH, -d]);
       v.slab(TERR, x0, y0 + 3.4, -T, w, FH - 3.4, T, 'N');
       v.quad(R, [x0, y0 + 3.4, -d], [x1, y0 + 3.4, -d], [x1, y0 + 3.4, -T], [x0, y0 + 3.4, -T]);
-      if (!open) face('glassDark', x0 + 0.6, x1 - 0.6, y0 + 0.1, y0 + 2.4, -d + 0.02);
+      if (!open) viewPane(x0 + 0.6, x1 - 0.6, y0 + 0.1, y0 + 2.4, -d + 0.02, y0, k, 8, 0.6);
     }
   };
   const facade = (P, Q, floors, ledges) => {
@@ -580,16 +595,16 @@ export function build(item, ctx) {
   const LS = dist(LE, LD), LNW = dist(LB, LA), LNE = dist(LC, LB), LEa = dist(LD, LC), LW = dist(LA, LE);
   const VOID_S = [47, 55.5], FIN_S = 55.5;                            // south face: two-storey void and the start of the fin strip
   // south face (frames 20, 25-27)
-  { const lo = [[0, 1.5, 's'], [1.5, 9.5, 'r'], [9.5, 11.5, 's'], [11.5, 19.5, 'r'], [19.5, 21.5, 's'], [21.5, 28, 'r'], [28, 30, 's'], [30, 38, 'r'], [38, 39.5, 's'], [39.5, 46, 'r'], [46, VOID_S[0], 's'], [VOID_S[0], VOID_S[1], 'o'], [FIN_S, LS, 'l']];
+  faceId = 'S'; { const lo = [[0, 1.5, 's'], [1.5, 9.5, 'r'], [9.5, 11.5, 's'], [11.5, 19.5, 'r'], [19.5, 21.5, 's'], [21.5, 28, 'r'], [28, 30, 's'], [30, 38, 'r'], [38, 39.5, 's'], [39.5, 46, 'r'], [46, VOID_S[0], 's'], [VOID_S[0], VOID_S[1], 'o'], [FIN_S, LS, 'l']];
     const hi = [[0, 1.5, 's'], [1.5, 9.5, 'r'], [9.5, 11.5, 's'], [11.5, 19.5, 'r'], [19.5, 21, 's'], [21, 28.5, 'T'], [28.5, 30, 's'], [30, 38, 'r'], [38, 39.5, 's'], [39.5, 46, 'r'], [46, 48, 's'], [48, 54.5, 'r'], [54.5, FIN_S, 's'], [FIN_S, LS, 'l']];
     facade(LE, LD, [lo, lo, hi, hi], [[F3 + FH, 0, FIN_S, 0.35], [F3 + 2 * FH, 0, FIN_S, 0.5], [F3 + 3 * FH, 0, FIN_S, 0.35], [H, 0, LS, 0.3]]); }
   // north-west face, from the north corner B to the west corner A (frames 55-57). Distances along it measured from A in frame 55.
   const PORTAL = [LNW - 11.03, LNW - 2.89];                           // mouth of the portal along this face
-  { const mid = [[0, 10.4, 'x'], [10.4, 16.5, 'b'], [16.5, 17.3, 's'], [17.3, 24.6, 'r'], [24.6, 25.7, 's'], [25.7, 32.9, 'r'], [32.9, 33.7, 's'], [33.7, 40.1, 'B']];
+  faceId = 'N'; { const mid = [[0, 10.4, 'x'], [10.4, 16.5, 'b'], [16.5, 17.3, 's'], [17.3, 24.6, 'r'], [24.6, 25.7, 's'], [25.7, 32.9, 'r'], [32.9, 33.7, 's'], [33.7, 40.1, 'B']];
     const lo = [...mid, [40.1, PORTAL[0], 's']], hi = [...mid, [40.1, LNW, 'l']];
     facade(LB, LA, [lo, lo, hi, hi], [[F3, 0, PORTAL[0], 0.3], [F3 + FH, 0, PORTAL[0], 0.35], [F3 + 2 * FH, 0, 40.1, 0.5], [F3 + 3 * FH, 0, 40.1, 0.35], [H, 0, LNW, 0.3]]); }
   // north-east and east faces: not seen anywhere, drawn with fins (see ASSUMED)
-  facade(LC, LB, [0, 1, 2, 3].map(() => [[0, LNE, 'm']]), [[H, 0, LNE, 0.3]]);
+  faceId = 'E'; facade(LC, LB, [0, 1, 2, 3].map(() => [[0, LNE, 'm']]), [[H, 0, LNE, 0.3]]);
   facade(LD, LC, [0, 1, 2, 3].map(() => [[0, LEa, 'm']]), [[H, 0, LEa, 0.3]]);
 
   // ================================================================= WEST CORNER: end wall, portal, driveway
@@ -871,25 +886,63 @@ export function build(item, ctx) {
       chair(X + lx * co + lz * si, Z - lx * si + lz * co, yaw + (s > 0 ? Math.PI / 2 : -Math.PI / 2), cols[(i + (s > 0 ? 1 : 0)) % cols.length], y);
     }
   };
-  /** Round reading pod: a ring of counter open on one side, chairs inside facing the counter, brass posts and rail round the inner edge (frames 40-41). */
+  /**
+   * Round 2: the island is ONE large pale counter with four round cut-outs in which people sit (frames 40-41 as the header
+   * reads them; the first round drew four rings pushed together). Each cut-out opens to the outside by a slot 1 m wide
+   * where the ring had its gap (IMAGINED: so that one can get in). Outline: the hull of the four pods' outer circles,
+   * with the keyhole of each cut-out walked into it. Top, a pale band at its edge, plaster sides; the walker meets its
+   * sides as one-sided quads.
+   */
+  const ISL = { pods: [[34.6, -11.0], [39.2, -12.4], [35.4, -15.7], [40.0, -17.0]], gaps: [2.26, 0.69, -2.45, -0.86], R0: 1.45, R1: 2.45, W: 1.0 };
+  const islandOutline = () => {
+    const { pods, gaps, R0, R1, W } = ISL, cr = (o, a, b) => (a[0] - o[0]) * (b[1] - o[1]) - (a[1] - o[1]) * (b[0] - o[0]);
+    const pts = []; for (const [x, z] of pods) for (let i = 0; i < 64; i++) { const a = i / 64 * TAU; pts.push([x + R1 * Math.cos(a), z + R1 * Math.sin(a)]); }
+    pts.sort((a, b) => a[0] - b[0] || a[1] - b[1]);
+    const lo = [], hi = []; for (const p of pts) { while (lo.length >= 2 && cr(lo[lo.length - 2], lo[lo.length - 1], p) <= 0) lo.pop(); lo.push(p); }
+    for (let i = pts.length - 1; i >= 0; i--) { const p = pts[i]; while (hi.length >= 2 && cr(hi[hi.length - 2], hi[hi.length - 1], p) <= 0) hi.pop(); hi.push(p); }
+    let hull = lo.slice(0, -1).concat(hi.slice(0, -1));                                       // counter-clockwise in (X, Z)
+    const ctr = [pods.reduce((t, p) => t + p[0], 0) / 4, pods.reduce((t, p) => t + p[1], 0) / 4], ang = p => Math.atan2(p[1] - ctr[1], p[0] - ctr[0]);
+    { const gA = gaps.map(g => g), far = hull.reduce((best, p, i) => { const d = Math.min(...gA.map(g => Math.abs(Math.atan2(Math.sin(ang(p) - g), Math.cos(ang(p) - g))))); return d > best[0] ? [d, i] : best; }, [-1, 0])[1]; hull = hull.slice(far).concat(hull.slice(0, far)); }   // start away from every slot
+    const N = hull.length, hit = (o, u) => { for (let i = 0; i < N; i++) { const a = hull[i], b = hull[(i + 1) % N], e = [b[0] - a[0], b[1] - a[1]], den = u[0] * e[1] - u[1] * e[0]; if (Math.abs(den) < 1e-9) continue;
+      const t = ((a[0] - o[0]) * e[1] - (a[1] - o[1]) * e[0]) / den, s2 = ((a[0] - o[0]) * u[1] - (a[1] - o[1]) * u[0]) / den; if (t > 0 && s2 >= 0 && s2 <= 1) return { i, s: s2, p: [o[0] + u[0] * t, o[1] + u[1] * t] }; } return null; };
+    const notch = pods.map((c, k) => { const g = gaps[k], u = [Math.cos(g), Math.sin(g)], n = [-u[1], u[0]], al = Math.asin(W / 2 / R0), side = sg => hit([c[0] + n[0] * sg * W / 2, c[1] + n[1] * sg * W / 2], u);
+      const A = side(-1), B = side(1), arc = []; for (let i = 0; i <= 28; i++) { const a = g - al - (TAU - 2 * al) * i / 28; arc.push([c[0] + R0 * Math.cos(a), c[1] + R0 * Math.sin(a)]); }
+      return { A, B, arc }; });
+    const out = [];
+    for (let i = 0; i < N; i++) {
+      out.push(hull[i]);
+      const here = notch.filter(q => q.A.i === i).sort((p, q) => p.A.s - q.A.s);
+      for (const q of here) { out.push(q.A.p, ...q.arc, q.B.p); }
+    }
+    // drop the hull points that fall inside a slot mouth (between its two sides along the hull)
+    return out.filter(p => !notch.some(q => { if (p === q.A.p || p === q.B.p || q.arc.includes(p)) return false; const g = gaps[notch.indexOf(q)], c = pods[notch.indexOf(q)], u = [Math.cos(g), Math.sin(g)], d = [p[0] - c[0], p[1] - c[1]], along = d[0] * u[0] + d[1] * u[1], across = Math.abs(-d[0] * u[1] + d[1] * u[0]); return along > R0 - 0.01 && across < W / 2 - 1e-6; }));
+  };
+  const island = () => {
+    const TT = lm('tableTop'), PLs = lm('plaster'), pts = islandOutline(), n = pts.length, ctr = [37.3, -14.0];
+    home(fu); cap(fu, TT, pts, F0 + 0.76, true);
+    for (let i = 0; i < n; i++) {
+      const P = pts[i], Q = pts[(i + 1) % n], e = [Q[0] - P[0], Q[1] - P[1]], l = Math.hypot(e[0], e[1]); if (l < 1e-4) continue;
+      const toward = [(P[0] + Q[0]) / 2 + e[1] / l * 0.5, (P[1] + Q[1]) / 2 - e[0] / l * 0.5];            // the right of the edge: outside the counter
+      wallQuad(fu, PLs, P, Q, F0, F0 + 0.7, toward); wallQuad(fu, TT, P, Q, F0 + 0.7, F0 + 0.76, toward, 0.006);
+      wallQuad(c, G, P, Q, F0 + 0.02, F0 + 1.0, toward);
+    }
+    void ctr; home(c);
+  };
+  /** Round reading pod: chairs inside a cut-out of the island facing its counter, brass posts and rail round the inner edge (frames 40-41). */
   const pod = (X, Z, gap, cols) => {
-    const r0 = 1.45, r1 = 2.45, a0 = gap + 0.45, a1 = gap + 2 * Math.PI - 0.45, TT = lm('tableTop'), PL = lm('plaster'), BR = lm('brass');
-    at(fu, X, Z, 0, F0); ringTop(fu, TT, 0, 0, r0, r1, a0, a1, 0.76, 20); ringWall(fu, PL, 0, 0, r1, a0, a1, 0, 0.76, 20, true); ringWall(fu, PL, 0, 0, r1 - 0.04, a0, a1, 0, 0.72, 20, false);
-    ringWall(fu, TT, 0, 0, r0, a0, a1, 0.7, 0.76, 20, false);
-    for (const a of [a0, a1]) { const p = [Math.cos(a), Math.sin(a)]; wallQuad(fu, PL, mul(p, r0 + 0.5), mul(p, r1), 0, 0.76, [Math.cos(gap) * 3, Math.sin(gap) * 3]); }
-    home(fu); at(fx, X, Z, 0, F0);
+    const r0 = 1.45, a0 = gap + 0.45, a1 = gap + 2 * Math.PI - 0.45, BR = lm('brass');
+    at(fx, X, Z, 0, F0);
     const np = 11; let prev = null;
     for (let i = 0; i <= np; i++) { const a = a0 + 0.05 + (a1 - a0 - 0.1) * i / np, p = [(r0 + 0.07) * Math.cos(a), 1.12, (r0 + 0.07) * Math.sin(a)];
       fx.cyl(BR, p[0], 0.76, p[2], 0.018, 0.36, 6, false); if (prev) bar(fx, BR, prev, p, 0.022); prev = p; }
     home(fx);
     for (let i = 0; i < 4; i++) { const a = a0 + 0.5 + (a1 - a0 - 1.0) * i / 3; chair(X + 0.86 * Math.cos(a), Z + 0.86 * Math.sin(a), -a, cols[i % cols.length]); }
-    at(c, X, Z, 0, F0); c.box(G, 0, 0.5, 0, 3.5, 1.0, 3.5); home(c);
   };
   const plant = (b, X, Z, y = F0, k = 1) => { at(b, X, Z, 0, y); lathe(b, MW, 0, 0, [[0.1 * k, 0], [0.17 * k, 0.3 * k], [0.16 * k, 0.34 * k], [0.13 * k, 0.33 * k]], 10); home(b); const w = toW([X, Z]); (b === gx ? highGreens : LP).push([w[0], y + 0.33 * k, w[1], 0.27 * k]); };      // white pot, leafy ball
 
   const GRN = ['chairGreen', 'chairBeige', 'chairGreen', 'chairCream'], BEI = ['chairBeige', 'chairDark', 'chairBeige'];
   // ground floor
-  pod(34.6, -11.0, 2.26, GRN); pod(39.2, -12.4, 0.69, GRN); pod(35.4, -15.7, -2.45, GRN); pod(40.0, -17.0, -0.86, GRN);
+  island(); pod(34.6, -11.0, 2.26, GRN); pod(39.2, -12.4, 0.69, GRN); pod(35.4, -15.7, -2.45, GRN); pod(40.0, -17.0, -0.86, GRN);
   for (const [X, Z, yaw] of [[33.5, -7.6, 0], [38.5, -7.6, 0], [44.5, -10.5, Math.PI / 2], [44.9, -16.5, Math.PI / 2], [30.3, -13.5, 1.27]]) shelf(X, Z, yaw, 3.4, 3, false, F0, 0.38);   // low shelves round the island
   // shelf wall with two black alcoves along the north-west wall, tables in front (frame 36)
   const NW0 = HALL[6], NW1 = HALL[5], nwLen = dist(NW0, NW1), nwDir = unit(sub(NW1, NW0)), nwIn = [-nwDir[1], nwDir[0]], nwYaw = Math.atan2(-nwDir[1], nwDir[0]);
@@ -937,7 +990,6 @@ export function build(item, ctx) {
     floorLamp(29.7, 1.2, F0); floorLamp(29.3, -11.4, F0); floorLamp(55.3, -18.6, F2); floorLamp(26.9, -14.3, F2);
     // the island: the gaps between the four rings closed, a ring of light over each cut-out, pots and piles of books on the counter (frame 41)
     const pods = [[34.6, -11.0], [39.2, -12.4], [35.4, -15.7], [40.0, -17.0]], r = rng(404);
-    for (const tri3 of [[0, 1, 2], [1, 2, 3]]) { const g = [0, 1].map(e => tri3.reduce((s, i) => s + pods[i][e] / 3, 0)); cap(fu, TT, tri3.map(i => add(pods[i], mul(unit(sub(g, pods[i])), 2.3))), F0 + 0.757, true); }
     pods.forEach(([X, Z], q) => { at(fx, X, Z, 0, F0); ringTop(fx, LMP, 0, 0, 0.92, 0.98, 0, TAU, 3.3, 24, false); ringWall(fx, WHG, 0, 0, 0.99, 0, TAU, 3.3, 3.36, 24, true); for (let i = 0; i < 3; i++) fx.box(DK, 0.95 * Math.cos(i * 2.094), 5.5, 0.95 * Math.sin(i * 2.094), 0.008, 4.3, 0.008, 'UD');
       for (let i = 0; i < 4; i++) { const a = q * 1.3 + i * 1.57 + r(), px = 1.98 * Math.cos(a), pz = 1.98 * Math.sin(a); if (i % 2) pile(fx, px, 0.76, pz, 3 + Math.floor(r() * 5), q * 9 + i, 0.2, 0.27); else { fx.cyl(MW, px, 0.76, pz, 0.055, 0.1, 8); const w = toW([X + px, Z + pz]); LP.push([w[0], F0 + 0.86, w[1], 0.1]); } }
       home(fx); });
@@ -1648,6 +1700,7 @@ export function build(item, ctx) {
   const M4 = new THREE.Matrix4(), P3 = new THREE.Vector3(), Q4 = new THREE.Quaternion(), S3 = new THREE.Vector3();
   const potted = (list, seed) => { const im = shrubs(list.map(([x, , z, r]) => [x, z, r]), { seed }); list.forEach(([, yy], i) => { im.getMatrixAt(i, M4); M4.decompose(P3, Q4, S3); P3.y = yy + 0.16 * S3.x; im.setMatrixAt(i, M4.compose(P3, Q4, S3)); }); im.castShadow = false; return im; };
   finish(v, 'shell', true);
+  { const vm = views.build(ctx, item.id + '-rooms-behind-glass'); if (vm) ctx.add(vm); }     // the windows of storeys 3 to 6 (one mesh)
   const mid = toW([40, -12]);
   ctx.detail(finish(iv, 'interior', false), mid[0], mid[1], 140);
   const ufG = finish(uf, 'fittings', false); UI.build(ufG, item.id + '-halls'); if (UFP.length) ufG.add(potted(UFP, 33)); ctx.detail(ufG, mid[0], mid[1], 105);

@@ -23,7 +23,7 @@
 //     open-air dog-leg stair from the ground (two storeys of 3.9 m, a landing under the end bay at 3.9 m, a dark-red blade
 //     wall behind the half landings, a store under the first flight);
 //   - the end bay (the small white rectangle of the satellite image) drawn as the deck's last bay under a flat white roof
-//     on four posts;
+//     on four posts (declared indoors for the lighting with ctx.indoor: one stands under a roof there);
 //   - finishes: granite floor slabs, a stainless rail on the parapets, scuppers with dirt streaks below them and under the
 //     copings, dark tile round the column feet, lamps under the deck (they light the paved strip below after dusk) and
 //     low lamps in the parapets, planter boxes at two bends, a paved strip with kerbs on the ground.
@@ -228,6 +228,7 @@ export function build(item, ctx) {
       F(S.v, lm('frame'), px - 0.06, DECK + PARAPET, pz - 0.06, 0.12, yR - DECK - PARAPET, 0.12, 'NSEW');
     }
     F(S.d, lm('frame'), cxm - 0.3, yR - 0.05, czm - 0.3, 0.6, 0.05, 0.6, 'NSEW'); F(S.d, LAMP, cxm - 0.26, yR - 0.06, czm - 0.26, 0.52, 0.012, 0.52, 'D');
+    if (ctx.indoor) ctx.indoor(rp, yR, DECK - 0.5);                                                           // the roofed end bay: indoors for the lighting
   }
   if (st) {
     const { xc, zN } = st, FH = DECK / 2, run = 13 * 0.28, landB = 1.4, tw = 0.12, xw = xc - 1.5 - tw, xe = xc + 1.5 + tw, zH = zN - run, zE = zH - landB;

@@ -41,6 +41,8 @@
 //   above a timber dado; a stand of eight rows with moulded seats along the east wall whose top walkway is level
 //   with the east gallery and opens onto it through three doors; scoreboard, team benches, scorer's table, ball
 //   trolleys, wall bars, stored volleyball posts, hose cabinets, exit signs, a store under the stand.
+// - When the interior is drawn: only from inside the hall or within 30 m of its walls (where the doors and the glazing show
+//   it), the fine things only within 52 m of its middle as well (second refinement round; it used to be drawn from 100 m).
 // - The light inside: the hall is rendered into a cube map (twice, so that one bounce of light is in it) whenever the
 //   time of day has moved on; every surface of the interior is lit by that map, and the floor mirrors it.
 import { THREE, bbox } from '../../kit.js';
@@ -964,7 +966,21 @@ export function build(item, ctx) {
   const tierI = ctx.add(noShadow(vi.build({ name: item.id + '-interior' }))), tierF = ctx.add(noShadow(vf.build({ name: item.id + '-interior-fine' })));
   const inner = new THREE.Group(); inner.position.set(b.w, 0, b.n); inner.name = item.id + '-interior-meshes'; ctx.add(inner);
   const innerFine = new THREE.Group(); innerFine.position.set(b.w, 0, b.n); innerFine.name = item.id + '-interior-fine-meshes'; ctx.add(innerFine);
-  ctx.detail(tierI, HC[0], HC[1], 100); ctx.detail(inner, HC[0], HC[1], 100); ctx.detail(tierF, HC[0], HC[1], 52); ctx.detail(innerFine, HC[0], HC[1], 52);
+  // The interior is drawn only where it can be seen: inside the hall, or within NEAR metres of its walls (through the doors
+  // and the glazing); the fine tier also only within 52 m of the middle of the hall. It used to be drawn from 100 m round the
+  // middle, which took in most of the running track (about 70,000 triangles that no one could see through the walls).
+  const NEAR = 30, hx0 = b.w + ix0, hx1 = b.w + ix1, hz0 = b.n + iz0, hz1 = b.n + iz1;
+  const showInside = (x, y, zz) => { const dx = Math.max(hx0 - x, 0, x - hx1), dz = Math.max(hz0 - zz, 0, zz - hz1); const d = Math.hypot(dx, dz); return [d < NEAR && y < H + 40, d < NEAR && y < H + 40 && Math.hypot(x - HC[0], zz - HC[1]) < 52]; };
+  if (ctx.animate) {
+    for (const o of [tierI, inner, tierF, innerFine]) o.visible = false;
+    let last = -1;
+    ctx.animate((dt, t, env) => {
+      const cam = env && env.camera; if (!cam || st.busy) return;
+      if (++last % 10) return;                                     // ten frames are fine for this (the page's own detail check runs every 15)
+      const p = cam.matrixWorld.elements, [a, f] = showInside(p[12], p[13], p[14]);
+      tierI.visible = inner.visible = a; tierF.visible = innerFine.visible = f;
+    });
+  } else { ctx.detail(tierI, HC[0], HC[1], 100); ctx.detail(inner, HC[0], HC[1], 100); ctx.detail(tierF, HC[0], HC[1], 52); ctx.detail(innerFine, HC[0], HC[1], 52); }
   ctx.detail(ctx.add(xw.build({ name: item.id + '-west-fine' })), b.w + xW, b.cz, 70);
   ctx.detail(ctx.add(xe.build({ name: item.id + '-east-fine' })), b.w + xE + 6, b.cz, 75);
   ctx.detail(ctx.add(xs.build({ name: item.id + '-south-fine' })), b.cx, b.n + zS, 60);

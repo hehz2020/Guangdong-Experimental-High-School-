@@ -5,6 +5,61 @@ import { PointerLockControls } from 'three/addons/controls/PointerLockControls.j
 import { Octree } from 'three/addons/math/Octree.js';
 import { Capsule } from 'three/addons/math/Capsule.js';
 
+// three's Octree tests every triangle against all eight children at every level with a full separating-axis test (and
+// allocates arrays for each test). For this campus that took about 16 s of the load (measured in the software renderer
+// here, 2026-11-21). This subclass builds the same tree faster: a child whose box the triangle's bounding box misses is
+// skipped (the full test's box-face axes would reject it), a child that holds the triangle's bounding box entirely takes
+// it without the test, and only triangles that straddle a child's faces get the full test, as before. Children are made
+// in the same order, so queries walk the tree in the same order.
+const EPS = 1e-6;
+export class FastOctree extends Octree {
+  // The same triangles in the same order as Octree.fromGraphNode, read straight from the index and the positions instead of
+  // first copying every attribute of every geometry (normals, texture coordinates, colours) through toNonIndexed().
+  fromGraphNode(group) {
+    group.updateWorldMatrix(true, true);
+    group.traverse(obj => {
+      if (obj.isMesh !== true || !this.layers.test(obj.layers)) return;
+      const pos = obj.geometry.getAttribute('position'), index = obj.geometry.index, m = obj.matrixWorld;
+      if (!pos) return;
+      const n = index ? index.count : pos.count;
+      for (let i = 0; i < n; i += 3) {
+        const t = new THREE.Triangle();
+        t.a.fromBufferAttribute(pos, index ? index.getX(i) : i).applyMatrix4(m);
+        t.b.fromBufferAttribute(pos, index ? index.getX(i + 1) : i + 1).applyMatrix4(m);
+        t.c.fromBufferAttribute(pos, index ? index.getX(i + 2) : i + 2).applyMatrix4(m);
+        this.addTriangle(t);
+      }
+    });
+    this.build();
+    return this;
+  }
+  split(level) {
+    if (!this.box) return this;
+    const subTrees = [], lo = this.box.min, hx = (this.box.max.x - lo.x) * 0.5, hy = (this.box.max.y - lo.y) * 0.5, hz = (this.box.max.z - lo.z) * 0.5;
+    for (let x = 0; x < 2; x++) for (let y = 0; y < 2; y++) for (let z = 0; z < 2; z++) {
+      const box = new THREE.Box3();
+      box.min.set(lo.x + x * hx, lo.y + y * hy, lo.z + z * hz); box.max.set(box.min.x + hx, box.min.y + hy, box.min.z + hz);
+      const sub = new FastOctree(box); sub.trianglesPerLeaf = this.trianglesPerLeaf; sub.maxLevel = this.maxLevel; subTrees.push(sub);
+    }
+    let t;
+    while ((t = this.triangles.pop())) {
+      const { a, b, c } = t;
+      const x0 = Math.min(a.x, b.x, c.x), x1 = Math.max(a.x, b.x, c.x), y0 = Math.min(a.y, b.y, c.y), y1 = Math.max(a.y, b.y, c.y), z0 = Math.min(a.z, b.z, c.z), z1 = Math.max(a.z, b.z, c.z);
+      for (let i = 0; i < 8; i++) {
+        const sub = subTrees[i], m = sub.box.min, M = sub.box.max;
+        if (x0 > M.x || x1 < m.x || y0 > M.y || y1 < m.y || z0 > M.z || z1 < m.z) continue;
+        if ((x0 >= m.x + EPS && x1 <= M.x - EPS && y0 >= m.y + EPS && y1 <= M.y - EPS && z0 >= m.z + EPS && z1 <= M.z - EPS) || sub.box.intersectsTriangle(t)) sub.triangles.push(t);
+      }
+    }
+    for (let i = 0; i < 8; i++) {
+      const len = subTrees[i].triangles.length;
+      if (len > this.trianglesPerLeaf && level < this.maxLevel) subTrees[i].split(level + 1);
+      if (len !== 0) this.subTrees.push(subTrees[i]);
+    }
+    return this;
+  }
+}
+
 export const PLAYER = { radius: 0.35, eye: 1.6, walk: 3.2, run: 8.0, gravity: 30, jump: 6.5, response: 10, fly: 14, flyFast: 40 };
 const SUB = 1 / 120;                                   // fixed physics step, seconds
 const LIMIT = 680;                                     // metres from the origin the player may go (the ground plane ends at 700)
@@ -12,7 +67,7 @@ const LIMIT = 680;                                     // metres from the origin
 export function createPlayer(camera, domElement, colliders, start = { x: 0, z: 0, yawDeg: 0 }) {
   const controls = new PointerLockControls(camera, domElement);
   colliders.updateWorldMatrix(true, true);
-  const octree = new Octree(); octree.fromGraphNode(colliders);
+  const octree = new FastOctree(); octree.fromGraphNode(colliders);
   const capsule = new Capsule(new THREE.Vector3(), new THREE.Vector3(), PLAYER.radius);
   const vel = new THREE.Vector3(), dir = new THREE.Vector3(), push = new THREE.Vector3();
   const keys = { f: false, b: false, l: false, r: false, run: false, jump: false, down: false };

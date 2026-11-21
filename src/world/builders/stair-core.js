@@ -71,6 +71,7 @@ function stairHall(S, c) {
     for (const [lx, lz] of [[ix0 + (ix1 - ix0) * 0.3, (gz0 + gz1) / 2], [ix0 + (ix1 - ix0) * 0.72, (gz0 + gz1) / 2], [(xo + ix1) / 2, (lz0 + lz1) / 2]]) {
       if (k === top && yc - y > 5) continue;
       F(S.d, lm('frame'), lx - 0.22, yc - 0.035, lz - 0.22, 0.44, 0.035, 0.44, 'NSEW'); F(S.d, LAMP, lx - 0.19, yc - 0.045, lz - 0.19, 0.38, 0.012, 0.38, 'D');
+      if (k === 0) LIT.push([lx, lz, 2.2, yc - 0.05]);                                                  // the ground storey's lamps light its floor (street.js); the ones above are inside
     }
     // skirting, storey number, a bench and a plant on the gallery
     gPut(S.d, lm('shade'), ix0, xo, y + 0.02, y + 0.12, 0, 0.012, 'FU');

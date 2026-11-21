@@ -38,12 +38,25 @@
 //     the campus built from the outlines of campus-data.js at 1 : 250, benches, a visitors' book; a back door on the north;
 //   - teaching-slab-west-link-e: its ground floor is a glazed lobby toward the plaza that can be entered (pin boards with
 //     blank sheets, benches);
-//   - the other blocks have closed doors only.
-// Colliders: each block is solid up to its roof plane (plus parapets and roof boxes); the two rooms are hollow, with
-// walls, a doorway, and blocks for cases, table and benches.
-import { THREE, bbox, itemPolygon } from '../../kit.js';
+//   - second refinement round, a room behind the door of every other block, its door standing open and the glass in front
+//     of it clear: in slab-north-se-block a MAIL ROOM (pigeonholes with letters, a counter, parcels, a desk), its east face
+//     glazed on the ground floor; in slab-south-se-block a SCHOOL CLINIC (couch with a curtain, desk, medicine cabinet,
+//     scale, basin, an eye chart of letters E and Ш) behind a tinted glazed front; in the south part of
+//     slab-north-ne-wing a PRINT ROOM (two copiers, a counter with bundles of papers, shelves of paper, a guillotine, a desk),
+//     entered from its east and west doors; in dorm-a-east-link a LAUNDRY (washing machines, a tiled trough with taps and
+//     basins, a folding table, a rack of drying clothes), in dorm-b-east-link a HOT-WATER ROOM (a steel boiler with taps
+//     over a tiled trough, shelves of thermos flasks, a bench). The uses and the plates beside the doors are made up:
+//     收发室, 医务室, 文印室, 洗衣房, 开水房. The links' upper floors stay closed: the galleries of the dormitory blocks end
+//     at closed balustrades (slab-block.js) and the round towers' parapets are closed toward them (round-tower.js), so no
+//     passage through a link can be made from this file;
+//   - the far look of the glazed tile: farMips() / farTile() fade the tile picture to its mean colour where a tile becomes
+//     smaller than a few texels, so that walls read as tile close up and as an even colour from afar.
+// Colliders: each block is solid up to its roof plane (plus parapets and roof boxes); the rooms are hollow, with walls,
+// their doorways, and blocks for the furniture that stands in the way (cases, tables, counters, shelves, machines, benches).
+import { THREE, mat, bbox, itemPolygon } from '../../kit.js';
 import { Batch } from '../../batch.js';
 import { SURFACES } from '../../hifi.js';
+import { LIT } from '../../street.js';
 
 const ALL = 'EWUDSN', skipCache = {};
 const skipOf = faces => skipCache[faces] ?? (skipCache[faces] = [...ALL].filter(f => !faces.includes(f)).join(''));
@@ -62,13 +75,45 @@ export const F = (b, m, x, y, z, sx, sy, sz, faces = ALL) => b.slab(m, x, y, z, 
 //   floor  granite slabs 0.8 m: lobby floors, landings, paving
 //   steel  brushed stainless steel: handrails, door furniture, column collars
 const BASE = { tile: 0xf1efe8, stone: 0xb9b6ad, glass: 0xa9cdd4, clear: 0xa9cdd4, floor: 0xa8a39a, steel: 0xc9cdd1 };
+
+// ---- facade tile seen from afar ------------------------------------------------------------------------------------------
+// The glazed tile of hifi.js has 6 x 6 tiles of slightly different tone in every 0.6 m. Where a tile shrinks to a pixel or
+// two on the screen, the generated mipmaps keep that variation at the size of a pixel and the wall reads as a fine
+// checkerboard (seen from 20 to 150 m). These copies carry mipmaps of their own: the finer levels are the picture scaled down,
+// the level where a tile is about five texels is half way to the wall's mean colour, and the coarser ones are that mean colour.
+const farCache = new Map();
+/** A copy of a canvas texture whose mip levels fade to the picture's mean value (see above). */
+export function farMips(tex) {
+  if (!tex || typeof document === 'undefined' || !tex.image || !tex.image.width) return tex;
+  if (farCache.has(tex)) return farCache.get(tex);
+  const src = tex.image, S = src.width, px = src.getContext('2d').getImageData(0, 0, S, S).data, mean = [0, 0, 0, 0];
+  for (let i = 0; i < px.length; i += 4) for (let c = 0; c < 4; c++) mean[c] += px[i + c];
+  const n = px.length / 4, css = `rgba(${Math.round(mean[0] / n)},${Math.round(mean[1] / n)},${Math.round(mean[2] / n)},${(mean[3] / n / 255).toFixed(3)})`;
+  const mips = [src]; let prev = src;
+  for (let size = S >> 1; size >= 1; size >>= 1) {
+    const c = document.createElement('canvas'); c.width = c.height = size; const g = c.getContext('2d');
+    if (size >= 32) { g.imageSmoothingEnabled = true; g.imageSmoothingQuality = 'high'; g.drawImage(prev, 0, 0, size, size); }
+    if (size <= 32) { g.globalAlpha = size === 32 ? 0.5 : 1; g.fillStyle = css; g.fillRect(0, 0, size, size); g.globalAlpha = 1; }
+    mips.push(c); prev = c;
+  }
+  const t = tex.clone(); t.mipmaps = mips; t.generateMipmaps = false; t.minFilter = THREE.LinearMipmapLinearFilter; t.needsUpdate = true;
+  farCache.set(tex, t); return t;
+}
+const farMats = new Map();
+/** The kit's palette tile (mat('wallWhite'), mat('wallMaroon') ...) with far mipmaps: a material of its own, the shared one is left alone. */
+export function farTile(name) {
+  if (farMats.has(name)) return farMats.get(name);
+  const m = mat(name).clone(); m.name = name;                           // the same name: the lighting module and the grain pass see the same finish
+  for (const k of ['map', 'normalMap', 'roughnessMap']) if (m[k]) m[k] = farMips(m[k]);
+  farMats.set(name, m); return m;
+}
 const classes = {};
 export function classMaterial(cls) {
   if (classes[cls]) return classes[cls];
   const S = o => new THREE.MeshStandardMaterial({ vertexColors: true, ...o }), tex = s => ({ map: s.map, normalMap: s.normalMap || null, roughnessMap: s.roughnessMap || null, roughness: s.roughness, metalness: s.metalness });
   let m;
   if (typeof document === 'undefined' || cls === 'flat') m = S({ roughness: 0.8, metalness: 0.03 });
-  else if (cls === 'tile') m = S(tex(SURFACES.tiles(BASE.tile, 6, 0.6, 0.5)));
+  else if (cls === 'tile') { const t = SURFACES.tiles(BASE.tile, 6, 0.6, 0.5); m = S(tex({ ...t, map: farMips(t.map), normalMap: farMips(t.normalMap), roughnessMap: farMips(t.roughnessMap) })); }
   else if (cls === 'stone') m = S(tex(SURFACES.concrete(BASE.stone)));
   else if (cls === 'floor') m = S({ ...tex(SURFACES.paving(0xa8a39a, 0x9a958c, 2, 2, [1.6, 1.6], 17, false)), envMapIntensity: 0.6 });
   else if (cls === 'steel') m = S(tex(SURFACES.steel()));
@@ -342,6 +387,11 @@ export function doorSet(S, put, uc, o = {}) {
     put(S.v, lm('cope'), ua - 0.45, ub + 0.45, yc, yc + 0.12, 0, c, 'FLRUD'); put(S.v, lm('cope'), ua - 0.45, ub + 0.45, yc + 0.12, yc + 0.2, c - 0.08, c, 'FBLRU');
     for (const u of [ua - 0.3, ub + 0.3]) put(S.v, lm('cope'), u - 0.05, u + 0.05, yc - 0.22, yc, 0, c * 0.7, 'FLRD');
     stain(S, put, ua - 0.4, ub + 0.4, yc, 0.35);
+    // a porch deep enough to stand under counts as indoors for the lighting (the lamp that follows the viewer comes on)
+    if (c >= 1.2 && S.ctx && S.ctx.indoor) {
+      const a = put.plane, e = put.plane + put.out * c, lo = Math.min(a, e), hi = Math.max(a, e), u0 = ua - 0.45, u1 = ub + 0.45;
+      S.ctx.indoor(put.alongX ? [[u0, lo], [u1, lo], [u1, hi], [u0, hi]] : [[lo, u0], [hi, u0], [hi, u1], [lo, u1]], yc, y0 - 0.6);
+    }
   }
   if (o.lamp !== false) { const yl = yt + (o.canopy ? 0.18 : 0.3); put(S.d, lm('alu'), uc - 0.05, uc + 0.05, yl, yl + 0.12, 0, 0.1, 'FLRU'); put(S.d, lm('lamp'), uc - 0.14, uc + 0.14, yl - 0.07, yl + 0.005, 0.02, 0.2, 'FLRD'); }
   if (o.plate !== false) { put(S.d, lm('steel'), ub + 0.18, ub + 0.48, y0 + 1.45, y0 + 1.65, 0, 0.012, 'FLRUD'); if (o.plateMat) card(S.d, put, o.plateMat, ub + 0.19, ub + 0.47, y0 + 1.46, y0 + 1.64, 0.016); }
@@ -462,15 +512,16 @@ export const card = (b, put, m, u0, u1, y0, y1, d = 0.02) => b.quad(m, ...quadOn
  * The teaching slabs' pattern on one facade: white piers and floor bands standing proud of a recessed infill
  * (spandrel, then a window strip with a transom and mullions) in every bay and storey.
  */
-export function grid(S, put, u0, u1, floors, FH, { y0 = 0, bay = 3.8, spandrel = lm('maroon'), head = 3.2, sillH = 0.95, proud = 0.14, transomAt = 2.55 } = {}) {
-  const W = lm('white'), nb = Math.max(1, Math.round((u1 - u0) / bay)), bw = (u1 - u0) / nb, G = lm('glassWin'), FR = lm('frame');
+export function grid(S, put, u0, u1, floors, FH, { y0 = 0, bay = 3.8, spandrel = lm('maroon'), head = 3.2, sillH = 0.95, proud = 0.14, transomAt = 2.55, glass0 = null } = {}) {
+  const W = lm('white'), nb = Math.max(1, Math.round((u1 - u0) / bay)), bw = (u1 - u0) / nb, FR = lm('frame');
   for (let i = 0; i <= nb; i++) { const u = u0 + i * bw, hw = i === 0 || i === nb ? 0.3 : 0.22; put(S.v, W, Math.max(u0, u - hw), Math.min(u1, u + hw), y0, y0 + floors * FH, 0, proud, 'FLR'); }
   for (let k = 0; k < floors; k++) {
     const y = y0 + k * FH, hd = Math.min(head, FH - 0.4);
     put(S.v, W, u0, u1, y + hd, y + FH, 0, proud - 0.03, 'FUD');                                     // floor band
     put(S.v, k === 0 ? lm('base') : spandrel, u0, u1, y, y + sillH, 0, 0.05, 'FU');                  // spandrel (dark at ground level)
     put(S.v, lm('cope'), u0, u1, y + sillH, y + sillH + 0.04, 0, 0.08, 'FUD');                       // sill
-    put(S.v, G, u0, u1, y + sillH + 0.04, y + hd, 0, 0.02, 'F');
+    const G = k === 0 && glass0 ? glass0 : lm('glassWin');
+    put(S.v, G, u0, u1, y + sillH + 0.04, y + hd, 0, 0.02, k === 0 && glass0 ? 'FB' : 'F');
     for (let i = 0; i < nb; i++) {
       const a = u0 + i * bw + 0.22, b = a + bw - 0.44, n = Math.max(1, Math.round((b - a) / 0.75) - 1);
       put(S.v, FR, a, b, y + transomAt - 0.03, y + transomAt + 0.03, 0.02, 0.07, 'FUD');
@@ -552,18 +603,176 @@ export function apron(ctx, side, plane, uc, w = 2.6, d = 2.2) {
   if (side === 'N' || side === 'S') occupy(ctx, uc - w / 2, a, uc + w / 2, b); else occupy(ctx, a, uc - w / 2, b, uc + w / 2);
 }
 
+// ---- ground-floor rooms behind the doors and the glass of the smaller blocks (IMAGINED, all of them) ----------------------
+/** The inside of a room q = { x0, x1, z0, z1, h }: floor, ceiling with lamp panels, plastered walls with a skirting, the openings
+ *  of each wall (holes: { N, S, E, W } lists as pierce() takes them) left out. Interior detail. */
+function roomShell(S, q, holes = {}, { floor = lm('graniteLight'), dado = null } = {}) {
+  const B = S.i, PL = lm('plaster');
+  F(B, floor, q.x0, 0.0, q.z0, q.x1 - q.x0, 0.03, q.z1 - q.z0, 'U'); F(S.i, lm('ceil'), q.x0, q.h, q.z0, q.x1 - q.x0, 0.02, q.z1 - q.z0, 'D');
+  for (const [k, put, a, c] of [['N', face('S', q.z0), q.x0, q.x1], ['S', face('N', q.z1), q.x0, q.x1], ['W', face('E', q.x0), q.z0, q.z1], ['E', face('W', q.x1), q.z0, q.z1]]) {
+    const hs = holes[k] || [];
+    pierce(B, PL, put, a, c, 0.03, q.h, hs, -0.01, 0, 'F'); pierce(B, lm('shade'), put, a, c, 0.03, 0.13, hs, -0.012, 0.004, 'FU');
+    if (dado) { pierce(B, dado, put, a, c, 0.13, 1.2, hs, -0.012, 0.002, 'FU'); }
+  }
+  const nx = Math.max(1, Math.round((q.x1 - q.x0) / 2.6)), nz = Math.max(1, Math.round((q.z1 - q.z0) / 2.6));
+  for (let i = 0; i < nx; i++) for (let j = 0; j < nz; j++) { const x = q.x0 + (q.x1 - q.x0) * (i + 0.5) / nx, z = q.z0 + (q.z1 - q.z0) * (j + 0.5) / nz; F(B, lm('frame'), x - 0.6, q.h - 0.04, z - 0.15, 1.2, 0.04, 0.3, 'NSEWD'); F(B, lm('lamp'), x - 0.56, q.h - 0.045, z - 0.11, 1.12, 0.006, 0.22, 'D'); LIT.push([x, z, 2.0, q.h - 0.05]); }
+}
+/** Shelving along a wall: uprights, boards and things on them in a few colours (boxes, files, folded paper). */
+function shelves(S, x0, z0, x1, z1, h, levels, seed, cols = ['sheet', 'blue', 'yellow', 'woodDark', 'red', 'frame']) {
+  const B = S.i, ST = lm('alu'), alongX = x1 - x0 > z1 - z0, L = alongX ? x1 - x0 : z1 - z0, D = alongX ? z1 - z0 : x1 - x0; let sd = seed;
+  const r = () => ((sd = (sd * 1664525 + 1013904223) >>> 0) / 4294967296);
+  for (let i = 0; i <= Math.round(L / 0.9); i++) { const u = Math.min(L - 0.03, i * L / Math.round(L / 0.9)); F(B, ST, alongX ? x0 + u : x0, 0.03, alongX ? z0 : z0 + u, alongX ? 0.03 : D, h, alongX ? D : 0.03, 'NSEW'); }
+  for (let k = 0; k < levels; k++) {
+    const y = 0.12 + k * (h - 0.2) / (levels - 1);
+    F(B, ST, x0, y, z0, alongX ? L : D, 0.025, alongX ? D : L, 'NSEWUD');
+    if (k === levels - 1) continue;
+    for (let u = 0.05; u < L - 0.2;) { const w = 0.12 + r() * 0.35, hh = Math.min(0.32, 0.08 + r() * 0.3), m = lm(cols[Math.floor(r() * cols.length)]), dd = D * (0.6 + 0.3 * r()); if (r() < 0.85) F(B, m, alongX ? x0 + u : x0 + (D - dd) / 2, y + 0.025, alongX ? z0 + (D - dd) / 2 : z0 + u, alongX ? Math.min(w, L - u - 0.05) : dd, hh, alongX ? dd : Math.min(w, L - u - 0.05), 'NSEWU'); u += w + 0.03; }
+  }
+  hit(S, x0, 0.03, z0, alongX ? L : D, h, alongX ? D : L);
+}
+/** A plain desk (top, two side panels) with a chair; alongX: its long side runs east-west; front: +1/-1 the side the chair is on. */
+function desk(S, x, z, alongX, front, { w = 1.4, d = 0.7, top = lm('wood'), monitor = true } = {}) {
+  const B = S.i, sx = alongX ? w : d, sz = alongX ? d : w, x0 = x - sx / 2, z0 = z - sz / 2, DK = lm('dark');
+  F(B, top, x0, 0.72, z0, sx, 0.035, sz, 'NSEWUD');
+  for (const s of [0, 1]) F(B, lm('frame'), alongX ? x0 + s * (sx - 0.03) : x0, 0.03, alongX ? z0 : z0 + s * (sz - 0.03), alongX ? 0.03 : sx, 0.69, alongX ? sz : 0.03, 'NSEW');
+  if (monitor) { const mx = alongX ? x : x - front * 0.18, mz = alongX ? z - front * 0.18 : z; F(B, DK, mx - (alongX ? 0.25 : 0.02), 0.755, mz - (alongX ? 0.02 : 0.25), alongX ? 0.5 : 0.04, 0.32, alongX ? 0.04 : 0.5, 'NSEWU'); F(B, DK, mx - 0.06, 0.755, mz - 0.06, 0.12, 0.08, 0.12, 'NSEWU'); }
+  const cx = alongX ? x : x + front * (d / 2 + 0.25), cz = alongX ? z + front * (d / 2 + 0.25) : z;
+  F(B, DK, cx - 0.23, 0.44, cz - 0.23, 0.46, 0.06, 0.46, 'NSEWUD'); F(B, DK, alongX ? cx - 0.23 : cx + front * 0.2, 0.5, alongX ? cz + front * 0.2 : cz - 0.23, alongX ? 0.46 : 0.05, 0.45, alongX ? 0.05 : 0.46, 'NSEWU'); B.cyl(lm('alu'), cx, 0.06, cz, 0.025, 0.38, 6, false);
+  hit(S, x0, 0.03, z0, sx, 0.76, sz);
+}
+/** Lettered plate beside a door, outside (near view). */
+const doorPlate = (S, put, u, y, text) => { put(S.d, lm('steel'), u, u + 0.5, y, y + 0.18, 0, 0.012, 'FLRUD'); card(S.d, put, textCard(text, 0.46, 0.15, { bg: '#1f5fa8' }), u + 0.02, u + 0.48, y + 0.015, y + 0.165, 0.016); };
+
+/** Mail room (收发室) behind the east door of the north block: a counter with a hatch, pigeonholes, parcels, a desk. */
+function mailRoom(S, q) {
+  const B = S.i, WD = lm('wood');
+  // pigeonholes along the north wall: a grid of small compartments with letters in some of them
+  const x0 = q.x0 + 0.2, x1 = q.x1 - 0.3, y0 = 0.9, y1 = 2.3, nx = Math.max(4, Math.round((x1 - x0) / 0.3)), ny = 5, d = 0.32; let sd = 51; const r = () => ((sd = (sd * 1664525 + 1013904223) >>> 0) / 4294967296);
+  F(B, WD, x0, 0.03, q.z0, x1 - x0, y0 - 0.03, d, 'SU'); F(B, WD, x0, y0, q.z0, x1 - x0, y1 - y0, 0.02, 'S');
+  for (let i = 0; i <= nx; i++) F(B, WD, x0 + i * (x1 - x0) / nx - 0.01, y0, q.z0, 0.02, y1 - y0, d, 'SEW');
+  for (let j = 0; j <= ny; j++) F(B, WD, x0, y0 + j * (y1 - y0) / ny - 0.01, q.z0, x1 - x0, 0.02, d, 'SUD');
+  for (let i = 0; i < nx; i++) for (let j = 0; j < ny; j++) if (r() < 0.55) F(B, lm(r() < 0.7 ? 'sheet' : 'yellow'), x0 + i * (x1 - x0) / nx + 0.04, y0 + j * (y1 - y0) / ny + 0.01, q.z0 + 0.05, (x1 - x0) / nx - 0.08, 0.04 + 0.05 * r(), d - 0.1, 'NSEWU');
+  hit(S, x0, 0.03, q.z0 + 0.01, x1 - x0, y1, d);
+  // the counter across the room, its hatch toward the door; parcels on the floor and a desk behind
+  const zc = q.z1 - 1.6;
+  F(B, WD, q.x0 + 0.4, 0.03, zc, q.x1 - q.x0 - 1.6, 1.0, 0.5, 'NSEWU'); F(B, lm('graniteLight'), q.x0 + 0.38, 1.03, zc - 0.04, q.x1 - q.x0 - 1.56, 0.04, 0.58, 'NSEWUD');
+  hit(S, q.x0 + 0.4, 0.03, zc, q.x1 - q.x0 - 1.6, 1.06, 0.5);
+  desk(S, q.x0 + 1.2, q.z0 + 1.4, true, 1, { w: 1.2 });
+  for (let i = 0; i < 6; i++) F(B, lm(i % 3 ? 'woodDark' : 'sheet'), q.x0 + 0.3 + (i % 3) * 0.45, 0.03 + Math.floor(i / 3) * 0.3, zc - 0.8 + (i % 2) * 0.05, 0.4, 0.28, 0.35, 'NSEWU');
+  hit(S, q.x0 + 0.3, 0.03, zc - 0.8, 1.3, 0.6, 0.42);
+}
+/** School clinic (医务室) behind the north door of the south block: couch with a curtain, desk, medicine cabinet, scale, sink, eye chart. */
+function clinic(S, q) {
+  const B = S.i, WH = lm('frame'), ST = lm('steel');
+  // examination couch along the west wall, a white sheet and a pillow, a curtain on a ceiling rail
+  F(B, lm('blue'), q.x0 + 0.1, 0.6, q.z0 + 0.6, 0.75, 0.12, 1.9, 'NSEWU'); F(B, lm('sheet'), q.x0 + 0.12, 0.72, q.z0 + 0.62, 0.71, 0.02, 1.86, 'NSEWU'); F(B, lm('sheet'), q.x0 + 0.2, 0.74, q.z0 + 0.7, 0.55, 0.1, 0.35, 'NSEWU');
+  for (const [dx, dz] of [[0.12, 0.62], [0.8, 0.62], [0.12, 2.45], [0.8, 2.45]]) F(B, ST, q.x0 + dx, 0.03, q.z0 + dz, 0.04, 0.57, 0.04, 'NSEW');
+  hit(S, q.x0 + 0.1, 0.03, q.z0 + 0.6, 0.75, 0.82, 1.9);
+  F(B, ST, q.x0 + 1.15, q.h - 0.3, q.z0 + 0.3, 0.03, 0.03, 2.5, 'NSEWD'); F(B, ST, q.x0 + 0.05, q.h - 0.3, q.z0 + 2.8, 1.13, 0.03, 0.03, 'NSEWD');
+  for (let i = 0; i < 9; i++) F(B, lm('dadoLine'), q.x0 + 1.14, 0.35, q.z0 + 1.3 + i * 0.17, 0.02, q.h - 0.68, 0.14, 'EW');            // the curtain, half drawn
+  // the doctor's desk under the north windows, a cabinet of medicines with glass doors, a scale, a basin, an eye chart
+  desk(S, (q.x0 + q.x1) / 2 + 2.0, q.z0 + 0.6, true, 1, { w: 1.4 });
+  F(B, WH, q.x1 - 0.45, 0.03, q.z0 + 0.6, 0.42, 1.9, 1.2, 'NSWU'); F(B, lm('glassLobby'), q.x1 - 0.46, 0.95, q.z0 + 0.63, 0.01, 0.9, 1.14, 'W');
+  for (let k = 0; k < 3; k++) for (let i = 0; i < 6; i++) F(B, lm(['red', 'sheet', 'blue', 'yellow', 'sheet', 'dadoLine'][(i + k) % 6]), q.x1 - 0.4, 1.0 + k * 0.3, q.z0 + 0.68 + i * 0.18, 0.28, 0.12 + 0.05 * ((i * 7 + k) % 3), 0.13, 'NSEWU');
+  hit(S, q.x1 - 0.45, 0.03, q.z0 + 0.6, 0.44, 1.9, 1.2);
+  F(B, lm('graniteDark'), q.x1 - 1.6, 0.03, q.z1 - 0.6, 0.35, 0.06, 0.35, 'NSEWU'); F(B, WH, q.x1 - 1.47, 0.09, q.z1 - 0.32, 0.08, 1.1, 0.05, 'NSEWU'); F(B, lm('dark'), q.x1 - 1.52, 1.15, q.z1 - 0.34, 0.18, 0.1, 0.05, 'NSEWU');
+  F(B, WH, q.x1 - 1.1, 0.03, q.z1 - 0.5, 0.6, 0.8, 0.45, 'NSWU'); F(B, lm('frame'), q.x1 - 1.05, 0.83, q.z1 - 0.48, 0.5, 0.04, 0.42, 'NSEWU'); F(B, lm('alu'), q.x1 - 1.05, 1.1, q.z1 - 0.02, 0.5, 0.6, 0.01, 'N');
+  hit(S, q.x1 - 1.1, 0.03, q.z1 - 0.5, 0.6, 0.85, 0.45);
+  card(B, face('E', q.x0), textCard('E  Ш  E', 0.4, 0.6, { bg: '#ffffff', fg: '#111111', size: 0.3 }), q.z1 - 1.4, q.z1 - 1.0, 1.2, 1.8, 0.01);
+}
+/** Print room (文印室) on the ground floor of the north-east wing: copiers, a long counter with stacks of papers in bundles, shelves of paper, a cutter. */
+function printRoom(S, q) {
+  const B = S.i;
+  for (const x of [q.x0 + 0.5, q.x0 + 1.6]) { F(B, lm('frame'), x, 0.03, q.z0 + 0.15, 0.9, 1.0, 0.7, 'SEWU'); F(B, lm('alu'), x - 0.02, 1.03, q.z0 + 0.13, 0.94, 0.12, 0.74, 'NSEWU'); F(B, lm('dark'), x + 0.55, 1.15, q.z0 + 0.25, 0.3, 0.03, 0.2, 'NSEWU'); F(B, lm('dark'), x + 0.05, 0.4, q.z0 + 0.85, 0.8, 0.02, 0.01, 'S'); hit(S, x, 0.03, q.z0 + 0.15, 0.9, 1.15, 0.7); }
+  const zc = (q.z0 + q.z1) / 2 + 0.3, cx0 = q.x0 + 1.0, cx1 = q.x1 - 1.6;
+  F(B, lm('wood'), cx0, 0.85, zc - 0.45, cx1 - cx0, 0.04, 0.9, 'NSEWUD'); F(B, lm('frame'), cx0, 0.03, zc - 0.43, cx1 - cx0, 0.82, 0.86, 'NSEW'); hit(S, cx0, 0.03, zc - 0.45, cx1 - cx0, 0.9, 0.9);
+  for (let i = 0; i < Math.floor((cx1 - cx0 - 0.4) / 0.5); i++) { const h = 0.12 + 0.1 * ((i * 5) % 3); F(B, lm(i % 4 === 1 ? 'yellow' : 'sheet'), cx0 + 0.2 + i * 0.5, 0.89, zc - 0.3 + (i % 2) * 0.25, 0.3, h, 0.21, 'NSEWU'); F(B, lm('woodDark'), cx0 + 0.32 + i * 0.5, 0.89, zc - 0.31 + (i % 2) * 0.25, 0.06, h + 0.005, 0.23, 'NSEWU'); }
+  shelves(S, q.x0 + 2.9, q.z0 + 0.03, q.x1 - 0.3, q.z0 + 0.45, 2.0, 5, 77, ['sheet', 'sheet', 'blue', 'yellow', 'sheet']);
+  F(B, lm('dark'), q.x0 + 0.2, 0.03, q.z1 - 0.9, 0.7, 0.75, 0.6, 'NSEWU'); F(B, lm('alu'), q.x0 + 0.22, 0.78, q.z1 - 0.88, 0.66, 0.04, 0.56, 'NSEWU'); hit(S, q.x0 + 0.2, 0.03, q.z1 - 0.9, 0.7, 0.8, 0.6);
+  desk(S, q.x0 + 2.4, q.z1 - 0.45, true, -1, { w: 1.3 });
+}
+/** Laundry (洗衣房) in the ground floor of a dormitory link: washing machines along one wall, a wash trough, a folding table, a clothes rack. */
+function laundry(S, q) {
+  const B = S.i, WH = lm('frame'), DK = lm('dark'), n = Math.floor((q.z1 - q.z0 - 0.6) / 0.68);
+  for (let i = 0; i < n; i++) {
+    const z = q.z0 + 0.35 + i * 0.68, x = q.x1 - 0.66;
+    F(B, WH, x, 0.03, z, 0.62, 0.85, 0.62, 'NSWU'); F(B, lm('alu'), x - 0.005, 0.7, z + 0.05, 0.01, 0.12, 0.52, 'W');
+    B.frame(x - 0.006, z + 0.31); for (let k = 0; k < 12; k++) { const a0 = k / 12 * 6.2832, a1 = (k + 1) / 12 * 6.2832; B.quad(i % 2 ? lm('glassLobby') : DK, [0, 0.4 + Math.sin(a1) * 0.2, Math.cos(a1) * 0.2], [0, 0.4 + Math.sin(a0) * 0.2, Math.cos(a0) * 0.2], [0, 0.4, 0], [0, 0.4, 0]); } B.frame();
+  }
+  hit(S, q.x1 - 0.66, 0.03, q.z0 + 0.35, 0.65, 0.88, n * 0.68);
+  const tx0 = q.x0 + 0.4, tx1 = q.x1 - 1.0;                                                   // tiled wash trough along the north wall with four taps
+  F(B, lm('tileGreen'), tx0, 0.03, q.z0 + 0.02, tx1 - tx0, 0.8, 0.55, 'SEWU'); F(B, lm('tileGrey'), tx0 + 0.05, 0.6, q.z0 + 0.07, tx1 - tx0 - 0.1, 0.005, 0.45, 'U');
+  for (let i = 0; i < 4; i++) { const x = tx0 + (tx1 - tx0) * (i + 0.5) / 4; F(B, lm('steel'), x - 0.015, 0.83, q.z0 + 0.03, 0.03, 0.25, 0.03, 'SEWU'); F(B, lm('steel'), x - 0.015, 1.05, q.z0 + 0.03, 0.03, 0.03, 0.18, 'SEWUD'); B.cyl(lm(['blue', 'red', 'yellow', 'green'][i]), x, 0.03, q.z0 + 0.95, 0.2, 0.18, 12); }
+  hit(S, tx0, 0.03, q.z0 + 0.02, tx1 - tx0, 0.85, 0.55);
+  const fx = (q.x0 + q.x1) / 2 - 0.6, fz = (q.z0 + q.z1) / 2 + 0.6;                       // folding table with folded clothes
+  F(B, lm('wood'), fx - 0.9, 0.76, fz - 0.4, 1.8, 0.04, 0.8, 'NSEWUD'); for (const [dx, dz] of [[-0.85, -0.35], [0.8, -0.35], [-0.85, 0.3], [0.8, 0.3]]) F(B, lm('alu'), fx + dx, 0.03, fz + dz, 0.05, 0.73, 0.05, 'NSEW');
+  for (let i = 0; i < 5; i++) F(B, lm(['blue', 'sheet', 'red', 'yellow', 'tileGreen'][i]), fx - 0.75 + i * 0.32, 0.8, fz - 0.2, 0.28, 0.05 + 0.03 * (i % 3), 0.32, 'NSEWU');
+  hit(S, fx - 0.9, 0.03, fz - 0.4, 1.8, 0.8, 0.8);
+  const rz = q.z1 - 0.5;                                                                        // a rack of clothes drying along the south wall
+  F(B, lm('steel'), q.x0 + 0.5, 1.7, rz, 2.4, 0.03, 0.03, 'NSUD'); for (const x of [q.x0 + 0.5, q.x0 + 2.87]) F(B, lm('steel'), x, 0.03, rz, 0.03, 1.7, 0.03, 'NSEW');
+  for (let i = 0; i < 7; i++) F(B, lm(['blue', 'sheet', 'red', 'frame', 'yellow', 'dadoLine', 'sheet'][i]), q.x0 + 0.6 + i * 0.32, 1.05 + 0.1 * (i % 2), rz - 0.02, 0.26, 0.62 - 0.1 * (i % 2), 0.02, 'NSEW');
+  hit(S, q.x0 + 0.5, 0.03, rz - 0.05, 2.4, 1.75, 0.13);
+}
+/** Hot-water room (开水房) in the ground floor of a dormitory link: a steel boiler with taps over a tiled trough, a shelf of flasks. */
+function boilerRoom(S, q) {
+  const B = S.i, ST = lm('steel'), bx = q.x1 - 1.0, bz0 = q.z0 + 0.4, bz1 = q.z1 - 0.4;
+  F(B, ST, bx, 0.03, bz0, 0.95, 2.0, bz1 - bz0, 'NSWU'); F(B, lm('dark'), bx - 0.01, 1.5, bz0 + 0.3, 0.01, 0.25, 0.4, 'W'); B.cyl(lm('frame'), bx - 0.02, 1.62, bz0 + 1.0, 0.1, 0.02, 12);
+  for (const z of [bz0 + 0.2, bz1 - 0.2]) F(B, ST, bx + 0.3, 2.03, z - 0.05, 0.1, q.h - 2.03, 0.1, 'NSEW');
+  hit(S, bx, 0.03, bz0, 0.95, 2.0, bz1 - bz0);
+  const tz0 = bz0 + 0.3, tz1 = bz1 - 0.3, n = Math.max(3, Math.floor((tz1 - tz0) / 0.45));                       // taps out of the boiler's front over a tiled trough
+  F(B, lm('tileGrey'), bx - 0.55, 0.03, tz0, 0.55, 0.6, tz1 - tz0, 'NSWU'); F(B, lm('dark'), bx - 0.5, 0.6, tz0 + 0.05, 0.45, 0.005, tz1 - tz0 - 0.1, 'U');
+  for (let i = 0; i < n; i++) { const z = tz0 + (tz1 - tz0) * (i + 0.5) / n; F(B, ST, bx - 0.3, 1.0, z - 0.02, 0.3, 0.04, 0.04, 'NSWUD'); F(B, ST, bx - 0.32, 0.88, z - 0.02, 0.04, 0.14, 0.04, 'NSEW'); F(B, lm('red'), bx - 0.2, 1.04, z - 0.03, 0.06, 0.04, 0.06, 'NSEWU'); }
+  hit(S, bx - 0.55, 0.03, tz0, 0.55, 0.65, tz1 - tz0);
+  const sx0 = q.x0 + 0.3, sx1 = q.x1 - 1.8;                                                     // a shelf of thermos flasks along the north wall
+  for (const y of [0.45, 1.05]) { F(B, lm('wood'), sx0, y, q.z0 + 0.05, sx1 - sx0, 0.04, 0.4, 'NSEWUD'); for (let x = sx0 + 0.15, i = 0; x < sx1 - 0.1; x += 0.22, i++) if ((i * 7 + (y > 1 ? 3 : 0)) % 5) { B.cyl(lm(['red', 'blue', 'yellow', 'dadoLine', 'frame'][(i + (y > 1 ? 2 : 0)) % 5]), x, y + 0.04, q.z0 + 0.25, 0.075, 0.36, 10); B.cyl(lm('dark'), x, y + 0.4, q.z0 + 0.25, 0.045, 0.06, 8); } }
+  for (const x of [sx0, sx1 - 0.04]) F(B, lm('wood'), x, 0.03, q.z0 + 0.05, 0.04, 1.06, 0.4, 'NSEW');
+  hit(S, sx0, 0.03, q.z0 + 0.05, sx1 - sx0, 1.5, 0.4);
+  F(B, lm('frame'), q.x0 + 0.4, 0.03, q.z1 - 0.5, 1.6, 0.42, 0.4, 'NSEWU'); hit(S, q.x0 + 0.4, 0.03, q.z1 - 0.5, 1.6, 0.45, 0.4);              // a bench to wait on
+}
+
 // Three-storey blocks beside the east ends of the slabs: the slabs' own pattern, all ASSUMED.
+/** The ground storey of a gridded face, glazed with clear glass between the piers, with doorways (holes): for faces with a room behind. */
+export function glazedGround(S, put, u0, u1, FH, bay, holes = [], glass = lm('glassLobby')) {
+  const nb = Math.max(1, Math.round((u1 - u0) / bay)), bw = (u1 - u0) / nb, head = Math.min(3.0, FH - 0.4);
+  // piers in the rhythm of the floors above, but none in a doorway: the bays on either side of a dropped pier become one
+  const piers = []; for (let i = 0; i <= nb; i++) { const u = u0 + i * bw, hw = i === 0 || i === nb ? 0.3 : 0.22; if (i === 0 || i === nb || !holes.some(h => h[1] > u - hw - 0.05 && h[0] < u + hw + 0.05)) piers.push([u, hw]); }
+  for (const [u, hw] of piers) put(S.v, lm('white'), Math.max(u0, u - hw), Math.min(u1, u + hw), 0, FH, 0, 0.14, 'FLR');
+  put(S.v, lm('white'), u0, u1, head, FH, 0, 0.11, 'FUD');
+  for (let i = 0; i + 1 < piers.length; i++) {
+    const ua = piers[i][0] + piers[i][1], ub = piers[i + 1][0] - piers[i + 1][1], hs = holes.filter(h => h[1] > ua && h[0] < ub);
+    curtain(S, put, ua, ub, 0.45, head, [0, head + 0.4], hs, { t: 0.12, glass, pitch: 1.1 });
+    pierce(S.v, lm('base'), put, ua, ub, 0, 0.45, hs, -0.12, 0.02, 'FBU');
+  }
+}
+
+// Three-storey blocks beside the east ends of the slabs: the slabs' own pattern, all ASSUMED. Behind the door of each a room on
+// the ground floor that can be entered (IMAGINED): the mail room (收发室) of the north one, the school clinic (医务室) of the
+// south one; their door faces are glazed on the ground floor.
 function seBlock(S, item, b, H, ctx) {
   const r = rectOf(b), FH = (H - 0.9) / 3, P = planes(r), north = item.id === 'slab-north-se-block';
   const wing = north ? other(ctx, 'sign-wing-between-slabs') : null;       // the north one stands partly inside the taller sign wing
-  const yr = body(S, r, H, { roof: lm('roofBeige') });
+  const wx = wing && wing.e > r.w + 1 && wing.e < r.e - 2.5 ? wing.e : r.w;
+  const dSide = north ? 'E' : 'N', [a, c] = span(r, dSide), uc = (a + c) / 2, plane = planeOf(r, dSide);
+  const q = { x0: wx + 0.25, x1: r.e - 0.25, z0: r.n + 0.25, z1: r.s - 0.25, h: FH - 0.2 };
+  const hollow = { ...q, ...(dSide === 'E' ? { x1: r.e } : { z0: r.n }) };
+  const yr = body(S, r, H, { roof: lm('roofBeige'), faces: '', hollow });
+  F(S.v, lm('white'), r.w, FH, r.n, r.e - r.w, H - FH, r.s - r.n, north ? 'NES' : 'NESW'); if (north) F(S.v, lm('white'), r.w, 0, r.n, r.e - r.w, FH, r.s - r.n, 'NS');
   for (const side of north ? 'NES' : 'NESW') {
     let [u0, u1] = span(r, side);
     if (wing && side === 'S' && wing.e > u0 && wing.e < u1) u0 = wing.e;
-    grid(S, P[side], u0, u1, 3, FH, { bay: 3.4, head: 3.0 });
+    if (side === dSide) grid(S, P[side], u0, u1, 2, FH, { y0: FH, bay: 3.4, head: 3.0 });
+    else grid(S, P[side], u0, u1, 3, FH, { bay: 3.4, head: 3.0 });
   }
-  const dSide = north ? 'E' : 'N', [a, c] = span(r, dSide), uc = (a + c) / 2;
-  doorOn(S, dSide, planeOf(r, dSide), uc, { w: 1.4, canopy: 1.1, leaf: lm('door') }); apron(ctx, dSide, planeOf(r, dSide), uc);
+  const dh = doorSet(S, P[dSide], uc, { w: 1.4, h: 2.2, t: 0.25, rev: 0.12, canopy: 1.1, swing: 'in', leaf: lm('door'), plate: false });
+  glazedGround(S, P[dSide], a, c, FH, 3.4, [dh], north ? lm('glassLobby') : lm('glassPale')); apron(ctx, dSide, plane, uc);   // the clinic's front is tinted
+  wallHit(S, P[dSide], a, c, 0, FH - 0.22, [dh], 0.2);
+  doorPlate(S, P[dSide], dh[1] + 0.2, 1.4, north ? '收发室' : '医务室'); LIT.push(dSide === 'E' ? [r.e + 1.0, uc, 3.0, 2.7] : [uc, r.n - 1.0, 3.0, 2.7]);   // the lamp over the door
+  // the room: the glazed front seen from inside as one band; on the clinic's other faces a window in each bay of the grid
+  const band = (u0, u1) => [[u0 + 0.3, u1 - 0.3, 0.45, 3.0]];
+  const holes = { [dSide]: [dh, ...band(a, c)] };
+  if (!north) for (const side of 'ESW') { const [u0, u1] = span(r, side), nb = Math.max(1, Math.round((u1 - u0) / 3.4)); holes[side] = Array.from({ length: nb }, (_, i) => { const u = u0 + (u1 - u0) * (i + 0.5) / nb; return [u - 0.7, u + 0.7, 1.0, 2.55]; }); }
+  roomShell(S, q, holes, { floor: lm('graniteLight'), dado: north ? null : lm('dado') });
+  if (north) mailRoom(S, q); else clinic(S, q);
   rwp(S, P.E, r.n + 0.16, yr); rwp(S, P.E, r.s - 0.16, yr); if (!north) rwp(S, P.W, r.n + 0.16, yr);
   for (const side of north ? 'NE' : 'NW') { const [u0, u1] = span(r, side); stain(S, P[side], u0, u1, H, 0.6, 0.15); }
   lightning(S, r, H + 0.07);
@@ -577,12 +786,15 @@ function neWing(S, item, b, H, ctx) {
   const xw = b.w, xe = b.e, xm = p[1][0], xc = p[5][0], zn = (p[0][1] + p[1][1]) / 2, zm = p[2][1], zs = b.s, zc = p[6][1];
   const FH = (H - 0.9) / 3, HA = H - 0.6, CR = lm('cream'), MR = lm('maroon'), GG = lm('glassGreen'), W = lm('white');
   const A = { w: xw, e: xm, n: zn, s: zm }, B = { w: xc, e: xe, n: zm, s: zs }, C = { w: xw, e: xc, n: zm, s: zc };
-  const yB = body(S, B, H, { parMat: CR, faces: '' }), yA = body(S, A, HA, { parMat: CR, faces: '' }); body(S, C, HA, { parMat: CR, faces: '' });
+  const qB = { x0: xc + 0.25, x1: xe - 0.25, z0: zm + 0.25, z1: zs - 0.25, h: FH - 0.2 };                     // the print room on B's ground floor (IMAGINED)
+  const yB = body(S, B, H, { parMat: CR, faces: '', hollow: { ...qB, x0: xc, x1: xe } }), yA = body(S, A, HA, { parMat: CR, faces: '' }); body(S, C, HA, { parMat: CR, faces: '' });
+  hit(S, xc - 0.01, 0, zm + 0.26, 0.26, FH - 0.21, zc - zm - 0.26);                                                 // the party wall with C
   const fa = (side, plane, u0, u1, top, mat = W) => facade(S, side, plane, u0, u1, 0, top, { mat });
   // -- south part, east face: ribbon windows (top one seen, the others continue it) and a door
   const BE = fa('E', xe, zm, zs, H);
-  for (let k = 0; k < 3; k++) BE.win(zm + 1.0, k ? zs - 1.4 : zs - 3.4, k * FH + 1.0, k * FH + 2.6, { n: k ? 5 : 3, transom: 1.15 });
-  const hd = BE.door(zs - 1.9, { w: 1.3, canopy: 1.0, leaf: lm('door') }).holes.slice(-1); BE.done(); plinth(S, BE.put, zm, zs, hd); apron(ctx, 'E', xe, zs - 1.9);
+  for (let k = 0; k < 3; k++) BE.win(zm + 1.0, k ? zs - 1.4 : zs - 3.4, k * FH + 1.0, k * FH + 2.6, k ? { n: 5, transom: 1.15 } : { n: 3, transom: 1.15, glass: lm('glassLobby'), t: 0.25 });
+  const hd = BE.door(zs - 1.9, { w: 1.3, canopy: 1.0, leaf: lm('door'), swing: 'in', t: 0.25, rev: 0.12 }).holes.slice(-1); BE.done(); plinth(S, BE.put, zm, zs, hd); apron(ctx, 'E', xe, zs - 1.9);
+  wallHit(S, BE.put, zm, zs, 0, FH - 0.22, hd, 0.25); doorPlate(S, BE.put, hd[0][1] + 0.15, 1.4, '文印室'); LIT.push([xe + 1.0, zs - 1.9, 3.0, 2.7]);
   rwp(S, BE.put, zs - 0.4, yB);
   // -- its north return: one small window per upper storey, an outdoor unit
   const BN = fa('N', zm, xm, xe, H); for (let k = 1; k < 3; k++) BN.win(xm + 1.1, xm + 2.1, k * FH + 1.1, k * FH + 2.4, { n: 0 }); BN.done(); ac(S, BN.put, xm + 3.0, FH + 0.9);
@@ -608,8 +820,12 @@ function neWing(S, item, b, H, ctx) {
   // -- faces not seen: a few plain windows and a back door
   const WW = fa('W', xw, zn, zc, HA); punch(WW, zn + 0.8, zc - 0.6, 3, FH, { cols: 3, w: 1.3 }); WW.done(); plinth(S, WW.put, zn, zc);
   const CS = fa('S', zc, xw, xc, HA); punch(CS, xw + 0.5, xc - 0.3, 3, FH, { cols: 1, w: 1.4 }); CS.done(); plinth(S, CS.put, xw, xc);
-  const BW = fa('W', xc, zc, zs, H); punch(BW, zc + 0.6, zs - 0.4, 3, FH, { cols: 1, w: 1.4, from: 1 }); const hd3 = BW.door((zc + zs) / 2 + 0.3, { w: 1.2, leaf: lm('door') }).holes.slice(-1); BW.done(); plinth(S, BW.put, zc, zs, hd3);
-  const BS = fa('S', zs, xc, xe, H); punch(BS, xc + 0.8, xe - 0.8, 3, FH, { cols: 2, w: 1.0, h: 1.0, sill: 1.4 }); BS.done(); plinth(S, BS.put, xc, xe);
+  const BW = fa('W', xc, zc, zs, H); punch(BW, zc + 0.6, zs - 0.4, 3, FH, { cols: 1, w: 1.4, from: 1 }); const hd3 = BW.door((zc + zs) / 2 + 0.3, { w: 1.2, leaf: lm('door'), swing: 'in', t: 0.25, rev: 0.12 }).holes.slice(-1); BW.done(); plinth(S, BW.put, zc, zs, hd3);
+  wallHit(S, BW.put, zc, zs, 0, FH - 0.22, hd3, 0.25); LIT.push([xc - 1.0, (zc + zs) / 2 + 0.3, 2.6, 2.7]);
+  const BS = fa('S', zs, xc, xe, H); punch(BS, xc + 0.8, xe - 0.8, 3, FH, { cols: 2, w: 1.0, h: 1.0, sill: 1.4, from: 1 });
+  const sw = [0, 1].map(i => xc + 0.8 + (xe - xc - 1.6) * (i + 0.5) / 2); for (const u of sw) BS.win(u - 0.5, u + 0.5, 1.4, 2.4, { n: 1, glass: lm('glassLobby'), t: 0.25 }); BS.done(); plinth(S, BS.put, xc, xe);
+  roomShell(S, qB, { E: [...hd, [zm + 1.0, zs - 3.4, 1.0, 2.6]], W: hd3, S: sw.map(u => [u - 0.5, u + 0.5, 1.4, 2.4]) });
+  printRoom(S, qB);
   F(S.v, W, xc, HA - 0.6, zm, 0.02, H - HA + 0.6, zc - zm, 'W'); F(S.v, W, xc, HA - 0.6, zm, xm - xc, H - HA + 0.6, 0.02, 'N');   // the taller part's walls above the lower roofs
   lightning(S, B, H + 0.07); lightning(S, { w: xw, e: xm, n: zn, s: zm }, HA + 0.07);
 }
@@ -681,7 +897,7 @@ function lobby(S, ctx, r, side, q, uc, o = {}) {
   const walls = { N: [q.x0, q.h, q.z0 - 0.01, q.x1 - q.x0, 0.01, 'S'], S: [q.x0, q.h, q.z1, q.x1 - q.x0, 0.01, 'N'], W: [q.x0 - 0.01, q.h, q.z0, 0.01, q.z1 - q.z0, 'E'], E: [q.x1, q.h, q.z0, 0.01, q.z1 - q.z0, 'W'] };
   for (const s of 'NSEW') if (s !== side) { const [x, h, z, sx, sz, fc] = walls[s]; F(S.v, PL, x, 0, z, sx, h, sz, fc); }
   const nx = Math.max(1, Math.round((q.x1 - q.x0) / 3.2)), nz = Math.max(1, Math.round((q.z1 - q.z0) / 3.2));
-  for (let i = 0; i < nx; i++) for (let j = 0; j < nz; j++) { const x = q.x0 + (q.x1 - q.x0) * (i + 0.5) / nx, z = q.z0 + (q.z1 - q.z0) * (j + 0.5) / nz; F(S.v, lm('frame'), x - 0.3, q.h - 0.035, z - 0.3, 0.6, 0.035, 0.6, 'NSEWD'); F(S.d, lm('lamp'), x - 0.27, q.h - 0.045, z - 0.27, 0.54, 0.012, 0.54, 'D'); }
+  for (let i = 0; i < nx; i++) for (let j = 0; j < nz; j++) { const x = q.x0 + (q.x1 - q.x0) * (i + 0.5) / nx, z = q.z0 + (q.z1 - q.z0) * (j + 0.5) / nz; F(S.v, lm('frame'), x - 0.3, q.h - 0.035, z - 0.3, 0.6, 0.035, 0.6, 'NSEWD'); F(S.d, lm('lamp'), x - 0.27, q.h - 0.045, z - 0.27, 0.54, 0.012, 0.54, 'D'); LIT.push([x, z, 2.2, q.h - 0.05]); }
   return hole;
 }
 
@@ -735,18 +951,32 @@ function westLink(S, item, b, H, ctx) {
   }
 }
 
-// Link block between the east ends of two long slabs: all ASSUMED beyond its outline.
+// Link block between the east ends of two long slabs: all ASSUMED beyond its outline. Its ground floor behind the door on the
+// courtyard side is a room that can be entered (IMAGINED): a laundry in block A's link, a hot-water room in block B's. The
+// links touch the north blocks' galleries (0.2 to 0.45 m off their balustrades) and, to the south, the round towers; the
+// galleries end at closed balustrades in slab-block.js and the towers' parapets are closed on that side (round-tower.js),
+// so no passage can be made through them from this file: the upper floors stay closed.
 function dormLink(S, item, b, H, ctx) {
-  const r = rectOf(b), FH = 3.0, floors = 6, yr = body(S, r, H, { par: 1.0, roof: lm('roofPale'), faces: 'NS' }), top = floors * FH, W = lm('white');
+  const r = rectOf(b), FH = 3.0, floors = 6, top = floors * FH, W = lm('white'), laundryRoom = item.id === 'dorm-a-east-link';
+  const q = { x0: r.w + 0.25, x1: r.e - 0.25, z0: r.n + 0.25, z1: r.s - 0.25, h: FH - 0.15 };
+  const yr = body(S, r, H, { par: 1.0, roof: lm('roofPale'), faces: 'NS', hollow: { ...q, x0: r.w } });
+  const holes = { W: [], E: [] };
   for (const side of 'EW') {
     const [a, c] = span(r, side), A = facade(S, side, planeOf(r, side), a, c, 0, H, { mat: W });
-    punch(A, a + 0.6, c - 0.6, floors, FH, { cols: 2, w: 1.5, h: 0.6, sill: 1.5, n: 1, from: side === 'W' ? 1 : 0 });
-    let holes = [];
-    if (side === 'W') { punch(A, a + 0.6, c - 0.6, 1, FH, { cols: 2, w: 0.7, h: 0.6, sill: 1.5, n: 0 }); holes = A.door((a + c) / 2, { w: 1.4, canopy: 1.0, leaf: lm('door') }).holes.slice(-1); apron(ctx, 'W', r.w, (a + c) / 2); }
-    A.done(); plinth(S, A.put, a, c, holes);
+    punch(A, a + 0.6, c - 0.6, floors, FH, { cols: 2, w: 1.5, h: 0.6, sill: 1.5, n: 1, from: 1 });
+    const gw = side === 'W' ? 0.7 : 1.5;                                                       // the ground floor's windows: clear, seen from inside too
+    for (let i = 0; i < 2; i++) { const u = a + 0.6 + (c - a - 1.2) * (i + 0.5) / 2; A.win(u - gw / 2, u + gw / 2, 1.5, 2.1, { n: side === 'W' ? 0 : 1, glass: lm('glassLobby'), t: 0.25 }); holes[side].push([u - gw / 2, u + gw / 2, 1.5, 2.1]); }
+    let dh = [];
+    if (side === 'W') {
+      dh = A.door((a + c) / 2, { w: 1.4, canopy: 1.0, leaf: lm('door'), swing: 'in', t: 0.25, rev: 0.12 }).holes.slice(-1); apron(ctx, 'W', r.w, (a + c) / 2);
+      holes.W.push(...dh); wallHit(S, A.put, a, c, 0, q.h - 0.01, dh, 0.25); doorPlate(S, A.put, dh[0][1] + 0.15, 1.45, laundryRoom ? '洗衣房' : '开水房'); LIT.push([r.w - 1.0, (a + c) / 2, 3.0, 2.7]);
+    }
+    A.done(); plinth(S, A.put, a, c, dh);
     A.put(S.v, W, a, c, top, H, 0, 0.1, 'FD');                                 // top band at the height of the slabs' fascia
     rwp(S, A.put, a + 0.3, yr); stain(S, A.put, a, c, top, 0.6, 0.012);
   }
+  roomShell(S, q, holes, { floor: lm('tileGrey'), dado: lm('tileGreen') });
+  if (laundryRoom) laundry(S, q); else boilerRoom(S, q);
   F(S.v, lm('frame'), r.w + 1.0, yr, r.n + 1.0, 2.0, 0.9, 1.8, 'NSEWU'); hit(S, r.w + 1.0, yr + 0.01, r.n + 1.0, 2.0, 0.9, 1.8);   // one roof unit
   lightning(S, r, H + 0.07);
 }

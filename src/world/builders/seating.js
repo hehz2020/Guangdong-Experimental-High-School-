@@ -24,7 +24,8 @@
 // - What is behind each door of the base wall. The doors carry generic room plates (toilets, equipment store, first
 //   aid, changing rooms, switch room and so on); the real uses are not known. Count and positions of doors and windows.
 // - A stair at the north end mirroring the one seen at the south end. The rostrum's desks, its lettering (主席台, the
-//   ordinary word for a rostrum) and the three flag poles (without flags) in front of it.
+//   ordinary word for a rostrum) and the three flag poles (without flags) in front of it; from the second refinement round
+//   eighteen chairs in red slip covers behind the desks, with microphones, blank name cards and cups on the desks.
 // - The rostrum and its stairs project 2.0 m east of the measured outline (outside the strip that was measured).
 // Collision: tier boxes, inclined plates on every aisle and stair, the walls. Every guard (front parapet, rostrum
 // parapet, stair balustrades, end walls, the rail behind the top row) is one solid of its full thickness reaching
@@ -485,6 +486,15 @@ export function build(item, ctx) {
       S3(v, wood, x0 - 0.03, x1 + 0.03, yF + 0.72, yF + 0.76, z0 - 0.03, z1 + 0.03); S3(v, cloth, x1 - 0.02, x1, yF + 0.06, yF + 0.72, z0, z1, 'UD');
       for (const z of [z0 + 0.02, z1 - 0.02]) S3(v, cloth, x0, x1, yF + 0.06, yF + 0.72, z - 0.02, z + 0.02, 'UD');
       S3(c, 'generic', x0, x1, yF, yF + 0.76, z0, z1, 'D');
+      // behind each table a row of chairs in red slip covers facing the track; on it microphones, blank name cards and cups (near view)
+      const f = fine.at(zm + dz), mic = M.dark(), card = M.white();
+      for (let i = 0; i < 6; i++) {
+        const zc = z0 + 0.48 + i * (z1 - z0 - 0.96) / 5, xc = x0 - 0.5;
+        S3(f, cloth, xc - 0.23, xc + 0.23, yF + 0.42, yF + 0.5, zc - 0.23, zc + 0.23); S3(f, cloth, xc - 0.25, xc - 0.19, yF + 0.5, yF + 1.02, zc - 0.23, zc + 0.23);
+        S3(f, cloth, xc - 0.23, xc + 0.23, yF + 0.02, yF + 0.42, zc - 0.21, zc + 0.21, 'UD');
+        S3(f, mic, x0 + 0.08, x0 + 0.2, yF + 0.76, yF + 0.79, zc - 0.06, zc + 0.06); f.cyl(mic, x0 + 0.14, yF + 0.79, zc, 0.008, 0.32, 5, false).cyl(mic, x0 + 0.14, yF + 1.11, zc, 0.02, 0.05, 6);
+        S3(f, card, x0 + 0.33, x0 + 0.36, yF + 0.76, yF + 0.86, zc - 0.11, zc + 0.11); f.cyl(card, x0 + 0.22, yF + 0.76, zc + 0.16, 0.035, 0.09, 8);
+      }
     }
   }
   // three flag poles (no flags) on a granite base in front of the rostrum

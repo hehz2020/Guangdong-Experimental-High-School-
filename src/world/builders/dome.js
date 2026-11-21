@@ -107,7 +107,7 @@ function materials() {
   M = {
     clad: pbr('cladding', [0xe9e8e3, 1.2, 0.8, 0.5]),                                  // the drum: white sheets with open joints
     shell: pbr('cladding', [0xf3f1e7, 0.62, 1.6, 0.34]),                               // the dome: ribs parallel to the slit
-    white: P('whitepaint', 0xf1f0ea, 0.7), shutter: P('shutter', 0xe3e4e0, 0.5, 0.3), gran: pbr('granitePolished', [0x5c5856, 9]), steel: pbr('steel'), roof: pbr('concrete', [0x8f918f]),
+    white: P('whitepaint', 0xf1f0ea, 0.7), shutter: P('shutter', 0xe3e4e0, 0.5, 0.3), gran: pbr('granitePolished', [0x5c5856, 9]), steel: pbr('steel'), roof: pbr('concrete', [0x8f918f]), deck: pbr('tiles', [0xb9b2a2, 2, 1.2, 0.62], { envMapIntensity: 0.4 }),
     frame: P('frame', 0x3d4246, 0.45, 0.5), black: P('black', 0x1b1d20, 0.5), brass: P('brass', 0xc9a04a, 0.3, 0.9), walnut: P('walnut', 0x8a5a34, 0.55), tread: P('tread', 0xb7b1a4, 0.7), nosing: P('nosing', 0x3b3b3b, 0.8),
     pl: P('plaster', 0xf0ede3, 0.78, 0, { emissive: 0xf0ede3, emissiveIntensity: 0.05 }), night: P('nightceiling', 0x121c38, 0.9, 0, { emissive: 0x0b1226, emissiveIntensity: 0.5 }),
     inner: P('shellinner', 0xdcdad2, 0.8, 0, { emissive: 0xdcdad2, emissiveIntensity: 0.04 }), concrete: pbr('concrete', [0xb8b5ac]),
@@ -226,12 +226,41 @@ export function build(item, ctx) {
   }
 
   // ---------- terrace on the drum with a low parapet, recessed top storey with posts ----------
-  s.ring(m.roof, Rg - 0.05, R - 0.25, terrace, 60, 1).wall(m.clad, R - 0.25, 0, TAU, terrace, wallTop, 60, -1);
+  // IMAGINED (round 2): the terrace can be walked on. A steel door from the observatory stands open onto it (folded back
+  // against the wall), the floor is tiled, a steel guard rail stands on the low parapet (with an unseen barrier to 1.8 m for
+  // the walker), benches and two viewing telescopes look out north, wall lights beside the door and round the top storey.
+  const TD = 0.55, TDH = 2.15, tdA = Math.asin(TD / Rg), tdI = Math.asin(TD / RO);      // half width and head of the terrace door; its half angles on the outer and inner face
+  s.ring(m.deck, Rg - 0.05, R - 0.25, terrace, 60, 1).wall(m.clad, R - 0.25, 0, TAU, terrace, wallTop, 60, -1);
   s.ring(m.white, R - 0.3, R + 0.06, wallTop, 90, 1).wall(m.white, R + 0.06, 0, TAU, wallTop - 0.1, wallTop, 90, 1).ring(m.white, R - 0.02, R + 0.06, wallTop - 0.1, 90, -1);
-  s.wall(m.white, Rg, 0, TAU, terrace, ringBot, 60, 1).wall(m.pl, RO, 0, TAU, OB, ringBot, 60, -1);
+  s.wall(m.white, Rg, AD + tdA, AD + TAU - tdA, terrace, ringBot, 60, 1).wall(m.pl, RO, AD + tdI, AD + TAU - tdI, OB, ringBot, 60, -1);
+  s.wall(m.white, Rg, AD - tdA, AD + tdA, terrace + TDH, ringBot, 2, 1).wall(m.pl, RO, AD - tdI, AD + tdI, OB + TDH, ringBot, 2, -1);            // over the doorway
   b.frame(cx, cz);
   for (let i = 0; i < 12; i++) { const a = (i + 0.5) / 12 * TAU; b.cyl(m.white, Rpost * Math.cos(a), terrace, Rpost * Math.sin(a), 0.16, gallery, 10, false); }
-  rad(b, AD); b.slab(m.shutter, Rg, terrace, -0.5, 0.04, 2.05, 1.0).slab(m.shutter, RO - 0.04, OB, -0.5, 0.04, 2.05, 1.0);                               // door from the observatory to the terrace (shut)
+  {
+    const xi = RO * Math.cos(tdI) - 0.02, dep = Rg - xi + 0.04;
+    rad(b, AD);
+    for (const sg of [-1, 1]) b.slab(m.frame, xi, terrace, sg > 0 ? TD - 0.06 : -TD, dep, TDH, 0.06);                                            // the door frame in the reveal
+    b.slab(m.frame, xi, terrace + TDH - 0.06, -TD, dep, 0.06, 2 * TD).slab(m.gran, xi, terrace - 0.02, -TD, dep, 0.04, 2 * TD);                    // its head and a granite threshold
+    b.slab(m.shutter, Rg + 0.03, terrace + 0.02, TD + 0.02, 0.05, 2.05, 1.06).slab(m.steel, Rg + 0.08, terrace + 0.95, TD + 0.2, 0.04, 0.04, 0.7);   // the leaf folded back against the wall, its push bar
+    b.slab(m.steel, Rg + 0.05, terrace + 1.03, TD + 0.12, 0.06, 0.12, 0.04);
+    const t = textTexture('观景平台', { color: '#f4efe2', background: '#23344a', spacing: 0.3 }), tm = new THREE.MeshStandardMaterial({ map: t.texture, roughness: 0.4, metalness: 0.2 }); tm.name = 'dome-terraceplate';
+    const hz = 0.2 * t.aspect / 2; uvq(b, tm, [RO - 0.012, OB + 2.28, -hz], [RO - 0.012, OB + 2.28, hz], [RO - 0.012, OB + 2.48, hz], [RO - 0.012, OB + 2.48, -hz]);   // plate over the door, inside
+  }
+  {                                                                                     // guard rail on the parapet: posts and a top rail, left out where the arc building stands in the drum
+    const rr = R - 0.32, yt = terrace + 1.1, cw = CUT === null ? 0 : Math.acos(Math.min(1, dc / rr)) + 0.06, a0 = CUT === null ? 0 : CUT + cw, a1 = CUT === null ? TAU : CUT - cw + TAU, n = Math.round((a1 - a0) / (2 * RAD));
+    s.wall(m.steel, rr + 0.025, a0, a1, yt - 0.05, yt, n, 1).wall(m.steel, rr - 0.025, a0, a1, yt - 0.05, yt, n, -1).ring(m.steel, rr - 0.025, rr + 0.025, yt, n, 1, a0, a1);
+    s.wall(m.steel, rr + 0.012, a0, a1, terrace + 0.55, terrace + 0.57, n, 1);
+    b.frame(cx, cz); for (let a = a0; a <= a1 + 1e-6; a += (a1 - a0) / Math.max(1, Math.round((a1 - a0) / (8 * RAD)))) b.cyl(m.steel, rr * Math.cos(a), wallTop - 0.02, rr * Math.sin(a), 0.022, yt - wallTop + 0.02, 6, false);
+    // benches against the top storey facing the view, two viewing telescopes, wall lights (IMAGINED)
+    for (const ad of [200, 235, 305, 340]) { const a = ad * RAD; if (inCut(a, Rg + 0.6, 0.3)) continue; rad(fx, a, terrace); rad(c, a, terrace);
+      fx.box(m.walnut, Rg + 0.62, 0.44, 0, 0.44, 0.05, 1.8).box(m.walnut, Rg + 0.36, 0.72, 0, 0.05, 0.42, 1.8).box(m.black, Rg + 0.62, 0.21, -0.78, 0.42, 0.42, 0.05).box(m.black, Rg + 0.62, 0.21, 0.78, 0.42, 0.42, 0.05);
+      c.box('generic', Rg + 0.6, 0.3, 0, 0.55, 0.5, 1.8); }
+    for (const ad of [262, 318]) { const a = ad * RAD; rad(fx, a, terrace); rad(c, a, terrace); const x = R - 0.95;
+      fx.cyl(m.black, x, 0, 0, 0.16, 0.06, 12).cyl(m.steel, x, 0.06, 0, 0.05, 1.0, 8).box(m.black, x + 0.05, 1.18, 0, 0.34, 0.22, 0.3).cyl(m.black, x + 0.2, 1.12, -0.07, 0.045, 0.14, 8).cyl(m.black, x + 0.2, 1.12, 0.07, 0.045, 0.14, 8);
+      c.box('generic', x, 0.65, 0, 0.36, 1.1, 0.36); }
+    for (const ad of [-28, 28, 150, 210, 270, 330]) { const a = ad * RAD; if (inCut(a, Rg + 0.1, 0.25)) continue; rad(b, a, terrace);
+      b.box(m.frame, Rg + 0.05, 2.35, 0, 0.1, 0.22, 0.16).box(m.lamp, Rg + 0.11, 2.3, 0, 0.02, 0.1, 0.12); LIT.push([cx + (Rg + 1.2) * Math.cos(a), cz + (Rg + 1.2) * Math.sin(a), 3.2, terrace + 2.3]); }
+  }
 
   // ---------- flat projecting ring; the dome with its slit ----------
   s.ring(m.white, Rd - 0.1, Rring, ringTop, 72, 1).ring(m.white, Rg - 0.05, Rring, ringBot, 72, -1).wall(m.white, Rring, 0, TAU, ringBot, ringTop, 72, 1).ring(m.pl, Rd - 0.25, RO, ringBot, 72, -1);
@@ -360,7 +389,12 @@ export function build(item, ctx) {
   const edges = [had + 0.004]; for (let a = 10 * RAD; a < TAU - had - 0.05; a += 5 * RAD) edges.push(a); edges.push(TAU - had - 0.004);
   for (let i = 0; i < edges.length - 1; i++) { const a = (edges[i] + edges[i + 1]) / 2, hwd = (edges[i + 1] - edges[i]) / 2; rad(c, AD + a); c.slab('generic', R * Math.cos(hwd) - WT, 0, -R * Math.sin(hwd) - 0.01, WT + R * (1 - Math.cos(hwd)), wallTop, 2 * R * Math.sin(hwd) + 0.02); }
   rad(c, AD); c.slab('generic', R * Math.cos(had) - WT, DH, -0.97, WT + 0.05, wallTop - DH, 1.94);                                               // over the door
-  for (let i = 0; i < 36; i++) { rad(c, (i + 0.5) * 10 * RAD); c.slab('generic', RO, OB + 0.02, -0.72, 0.25, ringBot - OB, 1.44); }
+  { const oe = [tdA + 0.003]; for (let a = 10 * RAD; a < TAU - tdA - 0.05; a += 10 * RAD) oe.push(a); oe.push(TAU - tdA - 0.003);                  // the observatory wall, the terrace doorway left open
+    for (let i = 0; i < oe.length - 1; i++) { const a = (oe[i] + oe[i + 1]) / 2, hw2 = (oe[i + 1] - oe[i]) / 2; rad(c, AD + a); c.slab('generic', RO * Math.cos(hw2), OB + 0.02, -Rg * Math.sin(hw2) - 0.01, Rg - RO * Math.cos(hw2), ringBot - OB, 2 * Rg * Math.sin(hw2) + 0.02); } }
+  // the terrace: the threshold, an unseen barrier on the parapet up to 1.8 m (the parapet alone is 0.9 m: a running jump clears it), the posts of the top storey
+  c.frame(0, 0, 0); { const P = (r, a) => [cx + r * Math.cos(AD + a), OB, cz + r * Math.sin(AD + a)]; upQuad(c, P(RO - 0.08, -tdA), P(Rg + 0.02, -tdA), P(Rg + 0.02, tdA), P(RO - 0.08, tdA)); }
+  for (let i = 0; i < 36; i++) { const a = (i + 0.5) * 10 * RAD, hw2 = 5 * RAD; if (inCut(a, R - 0.4, 0.2)) continue; rad(c, a); c.slab('generic', (R - 0.46) * Math.cos(hw2), terrace + 0.45, -(R - 0.28) * Math.sin(hw2) - 0.01, R - 0.28 - (R - 0.46) * Math.cos(hw2), 1.35, 2 * (R - 0.28) * Math.sin(hw2) + 0.02); }
+  c.frame(cx, cz); for (let i = 0; i < 12; i++) { const a = (i + 0.5) / 12 * TAU; c.box('generic', Rpost * Math.cos(a), terrace + 1.3, Rpost * Math.sin(a), 0.34, 2.4, 0.34); }
 
   // ================= FITTINGS AND FURNITURE (near only) =================
   // hall: information sheets between the windows, show cases, benches, a desk by the door

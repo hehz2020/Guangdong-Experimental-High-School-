@@ -16,7 +16,7 @@
 //   the frames, so both parts are built in one plane with a joint between them.
 //
 // IMAGINED (no reference shows any of it; the owner asked for a complete, good-looking building and said that where nothing
-// is known imagination should fill in; typical of Guangdong school buildings, and without any invented lettering):
+// is known imagination should fill in; typical of Guangdong school buildings; the lettering is listed at the end):
 //   - the whole south side: open corridor with columns, edge beams, solid balustrade with a dark-red band, a stainless
 //     handrail, a drainage channel with spouts, planter troughs, rainwater pipes, ceiling lamps, air-conditioner outdoor
 //     units above the corridor windows, a wash trough with a mirror at the west end, hose cabinets, bins, exit signs;
@@ -28,21 +28,33 @@
 //     storey 3 a door 1.3 m wide in the west wall of the stair hall leads onto the spur of the elevated walkway
 //     (walkway.js). Timber frames as on the classroom doors, leaves folded back against the wall, an exit pictogram over each;
 //   - every interior: terrazzo floors with brass strips, painted walls with a glossy dado, teaching platform, chalkboard
-//     (blank, wiped), console with a monitor, lectern with a globe, projector and screen, clock (no numerals), blank duty
-//     and timetable frames, loudspeakers, fans (they turn), lamps, curtains, air-conditioners, lockers, a book corner,
-//     pin boards (blank sheets), broom corner, water dispenser, desks and chairs with bags, books, pencil cases and
+//     (with the day's lesson), console with a monitor, lectern with a globe, projector and screen, clock (no numerals), duty
+//     and timetable sheets, loudspeakers, fans (they turn), lamps, curtains, air-conditioners, lockers, a book corner,
+//     the chalk drawing and slogan at the back, broom corner, water dispenser, desks and chairs with bags, books, pencil cases and
 //     bottles; in the office desks between low screens with monitors, shelves of files, a sofa and tea table, a copier;
 //     classrooms face east so that daylight from the north windows falls from the pupils' left;
 //   - outside: window sills, sashes slid open here and there, condensers on brackets with drain stacks, downpipes, the
 //     planting strip along the north face, bicycles by the corner block; on the roof copings, a lightning strip, water
 //     tanks, solar water heaters, fan grilles, vents, a paved walkway; the use of the corner block and the roof pavilion.
-// Furniture has no collision. Everything small sits behind ctx.detail in three tiers (corridor/facade fittings, interiors,
+// LETTERING (second refinement round; every word made up, as in the west slab, whose drawing hand and sheets these share):
+//   chalkboards with the day's lesson (the west slab's fifteen and six more here: 《师说》 韩愈 (a classical text), 导数与切线,
+//   动能定理, 化学反应速率, Unit 4 Earthquakes, 主题班会：时间管理), the class's chalk drawing and a slogan on the back
+//   wall, timetables and duty rosters beside the board, posters on the corridor pin boards, door plates with room numbers
+//   (101 to 508), building names 北教学楼 / 南教学楼, class names such as 高一（5）班 (高一 to 高三, numbers 5 to 20), offices (高一年级组, 语文科组,
+//   数学科组, 英语科组, 高三年级组, 德育处, 物理科组, 政治科组, 高二年级组, 心理辅导室), store plates 储物间 / 清洁间, floor plates.
+//   No person and no real class list is named. The toilet pictograms and the exit sign remain pictures.
+// Furniture has no collision except the toilets' partitions, cubicle fronts and closed doors, the urinal screens, the mop
+// sink and the basin counter. Everything small sits behind ctx.detail in three tiers (corridor/facade fittings, interiors,
 // fine objects); ctx.lowPower thins it out. Only stock three.js shaders are used (nothing to switch off in safe mode).
+// The facade tile is the kit's with mipmaps that fade to its mean colour (plain-block.js farTile), so it does not read as a
+// fine checkerboard from afar.
 import { THREE, mat, bbox } from '../../kit.js';
 import { Batch } from '../../batch.js';
 import { plain, pbr, SURFACES } from '../../hifi.js';
 import { shrubs } from '../../flora.js';
 import { LIT } from '../../street.js';
+import { farTile } from './plain-block.js';
+import { Cards, sharedSheets, paintBoard, paintPlate, paintFloor, LESSONS, ART, POSTERS, SLOGANS } from './slab-wide.js';
 
 const FH = 3.9, FLOORS = 5, INSET = 0.3, WALL = 0.24, CORRIDOR = 2.6, X0 = 4.6, RISE = 0.15, GO = 0.28, STEPS = 13;
 const ALL = 'EWUDSN', skipCache = {};
@@ -200,6 +212,50 @@ const exitTex = () => canvasTex(256, 96, (g, W, H) => {                    // em
   g.lineWidth = 9; g.beginPath(); g.moveTo(136, 48); g.lineTo(216, 48); g.moveTo(190, 26); g.lineTo(216, 48); g.lineTo(190, 70); g.stroke();
 }, 0.4, 0.15);
 
+// ---- written things (IMAGINED: every word is made up; nothing names a real person or a real class list) ----
+// Boards, chalk drawings, posters, timetables and slogans come from the two sheets of the west slab (slab-wide.js), so that
+// no second copy of them is uploaded; this sheet adds six lessons of its own and the plates of these two buildings.
+const EAST_LESSONS = [
+  { t: '《师说》  韩愈', l: ['古之学者必有师。', '师者，所以传道受业解惑也。', '人非生而知之者，孰能无惑？', '惑而不从师，其为惑也，', '终不解矣。'], d: 'notes' },
+  { t: '导数与切线', l: ["f '(x) = lim Δy / Δx", "y = x²   →   y ' = 2x", '切线  y − y₀ = k (x − x₀)', '例  y = x² 在 x = 1 处的切线', '∴  k = 2 ,  y = 2x − 1'], d: 'parabola' },
+  { t: '动能定理', l: ['W合 = ΔEk', 'Ek = ½ m v²', '例  m = 1 kg ,  v = 4 m / s', '∴  Ek = ½ × 1 × 4² = 8 J'], d: 'incline' },
+  { t: '化学反应速率', l: ['v = Δc / Δt', '单位：mol / (L · s)', '影响因素：浓度、温度、压强、催化剂', '温度每升高 10 ℃，速率约增大 2 ~ 4 倍'], d: 'burette' },
+  { t: 'Unit 4   Earthquakes', l: ['Reading:  A Night the Earth Didn\'t Sleep', 'burst   v.  爆裂；突然发生', 'in ruins   成为废墟', 'Grammar:  that / which / who', 'The town that was destroyed was rebuilt.'], latin: true, d: 'star' },
+  { t: '主题班会：时间管理', l: ['一、要事第一', '二、今日事  今日毕', '三、25 分钟专注 + 5 分钟休息', '四、每周日晚上复盘'], d: 'star' },
+];
+const SLAB_NAME = { 'slab-north': '北教学楼', 'slab-south': '南教学楼' };
+const OFFICES = { 'slab-north': ['高一年级组', '语文科组', '数学科组', '英语科组', '高三年级组'], 'slab-south': ['德育处', '物理科组', '政治科组', '高二年级组', '心理辅导室'] };
+/** Name on the plate of room i (rooms west to east: class, office, class, class, class) on storey k. Made up. */
+function plateName(id, i, k) {
+  if (i === 1) return (OFFICES[id] || OFFICES['slab-north'])[k];
+  const grade = k < 2 ? '高一' : k < 4 ? '高二' : '高三', j = i === 0 ? 0 : i - 1, base = id === 'slab-south' ? 13 : 5;
+  return `${grade}（${base + (k % 2) * 4 + j}）班`;
+}
+let EAST = null;
+function eastSheet(low) {
+  if (EAST) return EAST;
+  const k = low ? 0.5 : 1, W = 2048 * k, H = 1280 * k, c = document.createElement('canvas'); c.width = W; c.height = H;   // 6 boards, 70 plates, 10 floor plates
+  const g = c.getContext('2d'); g.fillStyle = '#8a8a84'; g.fillRect(0, 0, W, H);
+  const uv = {}; let x = 0, y = 0, row = 0;
+  const put = (key, w, h, draw) => {
+    const P = Math.max(2, Math.round(4 * k)), pw = Math.round(w * k), ph = Math.round(h * k);
+    if (x + pw > W) { x = 0; y += row + P; row = 0; }
+    if (y + ph > H) { uv[key] = [0.001, 0.001, 0.003, 0.003]; return; }
+    g.save(); g.translate(x, y); g.beginPath(); g.rect(0, 0, pw, ph); g.clip(); g.scale(pw / w, ph / h); draw(g, w, h); g.restore();
+    uv[key] = [(x + 0.6) / W, 1 - (y + ph - 0.6) / H, (x + pw - 0.6) / W, 1 - (y + 0.6) / H]; x += pw + P; row = Math.max(row, ph);
+  };
+  EAST_LESSONS.forEach((s, i) => put('board' + i, 676, 196, (gg, w, h) => paintBoard(gg, w, h, s, 40 + i, i % 2 === 1)));
+  for (const id of Object.keys(SLAB_NAME)) for (let f = 0; f < FLOORS; f++) {
+    for (let i = 0; i < 5; i++) put(`plate:${id}:${f}:${i}`, 216, 74, (gg, w, h) => paintPlate(gg, w, h, `${f + 1}0${i + 1}`, plateName(id, i, f), SLAB_NAME[id]));
+    ['储物间', '清洁间'].forEach((nm, i) => put(`store:${id}:${f}:${i}`, 216, 74, (gg, w, h) => paintPlate(gg, w, h, `${f + 1}${i ? '08' : '07'}`, nm, SLAB_NAME[id])));
+  }
+  for (const id of Object.keys(SLAB_NAME)) for (let f = 1; f <= FLOORS; f++) put(`floor:${id}:${f}`, 120, 120, (gg, w) => paintFloor(gg, w, f, SLAB_NAME[id]));
+  const t = new THREE.CanvasTexture(c); t.colorSpace = THREE.SRGBColorSpace; t.anisotropy = 8;
+  const m = new THREE.MeshStandardMaterial({ map: t, roughness: 0.6, metalness: 0, envMapIntensity: 0.4 }); m.name = 'ts-prints';
+  const b = new THREE.MeshStandardMaterial({ map: t, roughness: 0.9, metalness: 0, envMapIntensity: 0.3 }); b.name = 'ts-chalkboards';
+  return (EAST = { uv, PR: m, BD: b, used: y + row });
+}
+
 // ---- materials ----
 let MT = null;
 function materials() {
@@ -210,7 +266,7 @@ function materials() {
   const gz = SURFACES.glazing(0x5a7480, 6, 1, [4.2, FH], 3);          // one row of panes per storey: sky above, a band of trees below
   const G = (name, color, opacity) => std(name, { map: gz.map, normalMap: gz.normalMap, color, roughness: 0.05, metalness: 0.55, envMapIntensity: 1.5, transparent: true, opacity, depthWrite: false });
   MT = {
-    W: mat('wallWhite'), R: mat('wallMaroon'), MW: mat('metalWhite'), GL: mat('glassClear'), RP: mat('roofPale'), GD: mat('glassDark'), KRED: mat('red'),
+    W: farTile('wallWhite'), R: farTile('wallMaroon'), MW: mat('metalWhite'), GL: mat('glassClear'), RP: mat('roofPale'), GD: mat('glassDark'), KRED: mat('red'),
     PL: keep(P('plaster', 0xf0ede3, 0.92, 0, { emissive: 0xf0ede3, emissiveIntensity: 0.05 })), CE: keep(P('ceil', 0xe9e6dc, 0.95, 0, { emissive: 0xe9e6dc, emissiveIntensity: 0.16 })),
     DA: keep(P('dado', 0xb3d0be, 0.4, 0, { envMapIntensity: 0.5 })), DAL: P('dadoline', 0x5f9a80, 0.55), CO: keep(P('corr', 0xeee6d2, 0.9, 0, { emissive: 0xeee6d2, emissiveIntensity: 0.03 })), DK: P('dark', 0x24272a, 0.7),
     BASE: pbr('granitePolished', [0x3b3e42, 7]), CTILE: pbr('tiles', [0xe4ebe4, 4, 0.6, 0.2]),
@@ -386,6 +442,11 @@ export function build(item, ctx) {
   const rnd = rng(item.id.length * 97 + Math.round(L * 10)), sr = rng(item.id.length * 31 + 7);
   // things drawn as instances: [x, y, z, ...] in local coordinates
   const desks = [], bags = [], books = [], cases = [], bottles = [], globes = [], fans = [], plantsIn = [], plantsOut = [], openLights = [];
+  // printed and written cards, in the three detail tiers; the sheets they are cut from (see EAST_LESSONS above)
+  const cEx = new Cards(), cFu = new Cards(), cFx = new Cards(), SH = typeof document !== 'undefined' ? sharedSheets(low, ctx.campus) : null, EA = typeof document !== 'undefined' ? eastSheet(low) : null;
+  const pick = n => Math.floor(sr() * n), roomIx = r => rooms.indexOf(r);
+  /** A board for room i on storey k: one of the west slab's lessons or one of this file's own. */
+  const lessonOf = (i, k) => { const n = LESSONS.length + EAST_LESSONS.length, q = (i * 7 + k * 5 + (item.id === 'slab-south' ? 3 : 0)) % n; return q < LESSONS.length ? [SH.BD, SH.B['board' + q]] : [EA.BD, EA.uv['board' + (q - LESSONS.length)]]; };
   const plant = (list, x, y, z, s = 1, tall = false, pot = true) => list.push([x, y, z, s, tall, pot, rnd()]);
 
   // ================= SHELL (always drawn) and colliders =================
@@ -605,13 +666,14 @@ export function build(item, ctx) {
         F(ex, PV, xm + 0.3, y + 3.27, zc, 0.06, cy - y - 3.27, 0.05, 'SEW');                                                    // pipe cover up to the ceiling
         F(fu, WH, xm - 0.45, y + 2.76, zw - 0.21, 0.9, 0.29, 0.21, 'NEWUD'); F(fu, DK, xm - 0.4, y + 2.775, zw - 0.214, 0.8, 0.03, 0.006, 'N');
       }
-      for (const [xd] of doorsOf(r)) {                                             // blank plates: one projecting above each door, one on the wall beside it
-        F(ex, M.PLT, xd + 1.12, y + 2.22, zc, 0.02, 0.16, 0.36, 'EWSUD'); F(ex, WH, xd + 1.1, y + 1.5, zc, 0.2, 0.28, 0.012, 'SEWUD'); F(ex, AL, xd + 1.09, y + 1.49, zc, 0.22, 0.3, 0.006, 'SEWUD');
+      for (const [xd] of doorsOf(r)) {                                             // plates: one projecting above each door (both faces), one on the wall beside it
+        F(ex, M.PLT, xd + 1.12, y + 2.22, zc, 0.02, 0.16, 0.42, 'SUD'); F(ex, AL, xd + 1.09, y + 1.68, zc, 0.4, 0.16, 0.006, 'SEWUD');
+        if (EA) { const u = EA.uv[`plate:${item.id}:${k}:${roomIx(r)}`] || EA.uv[`plate:slab-north:${k}:${roomIx(r)}`]; cEx.wall(EA.PR, u, 'E', xd + 1.141, y + 2.225, zc, 0.42, 0.15); cEx.wall(EA.PR, u, 'W', xd + 1.119, y + 2.225, zc, 0.42, 0.15); cEx.wall(EA.PR, u, 'S', xd + 1.1, y + 1.69, zc + 0.008, 0.38, 0.13); }
       }
-      if (wl.length === 2) {                                                       // blank pin board between the two windows
+      if (wl.length === 2) {                                                       // pin board between the two windows: two posters and a notice
         const xm = (wl[0][1] + wl[1][0]) / 2;
         F(ex, M.CORK, xm - 0.55, y + 1.3, zc, 1.1, 1.0, 0.02, 'S'); F(ex, AL, xm - 0.59, y + 1.26, zc, 1.18, 1.08, 0.014, 'SEWUD');
-        if (!low) [['SHA', -0.4, 0.55], ['SHB', -0.05, 0.5], ['SHC', 0.2, 0.12], ['SHA', -0.35, 0.1]].forEach(([m, dx, dy]) => F(fx, M[m], xm + dx, y + 1.35 + dy, zc + 0.02, 0.21, 0.3, 0.004, 'S'));
+        if (SH) { const a = pick(POSTERS.length), b = (a + 1 + pick(POSTERS.length - 1)) % POSTERS.length; cEx.wall(SH.PR, SH.P['poster' + a], 'S', xm - 0.5, y + 1.36, zc + 0.022, 0.46, 0.66); cEx.wall(SH.PR, SH.P['poster' + b], 'S', xm + 0.04, y + 1.36, zc + 0.022, 0.46, 0.66); }
       }
     }
     // bins, hose cabinet with two extinguishers and an alarm bell, hot-water dispensers in the niche, closed doors at the east end
@@ -632,7 +694,7 @@ export function build(item, ctx) {
     } else [zc + 0.2, zc + 1.4].forEach((z0, i) => {
       F(ex, M.door, xEnd - 0.03, y + 0.02, z0, 0.03, 2.05, 0.85, 'WNSU'); F(ex, M.DFR, xEnd - 0.05, y, z0 - 0.06, 0.05, 2.13, 0.06, 'WNS'); F(ex, M.DFR, xEnd - 0.05, y, z0 + 0.85, 0.05, 2.13, 0.06, 'WNS');
       F(ex, M.DFR, xEnd - 0.05, y + 2.07, z0, 0.05, 0.06, 0.85, 'WD'); F(ex, AL, xEnd - 0.034, y + 0.02, z0, 0.004, 0.22, 0.85, 'W');
-      if (!eastWC) F(ex, i ? M.PLTR : M.PLT, xEnd - 0.012, y + 2.2, z0 + 0.3, 0.012, 0.14, 0.25, 'WNSUD');
+      if (!eastWC) { F(ex, i ? M.PLTR : M.PLT, xEnd - 0.012, y + 2.2, z0 + 0.25, 0.012, 0.13, 0.36, 'WNSUD'); if (EA) cEx.wall(EA.PR, EA.uv[`store:${item.id}:${k}:${i}`] || EA.uv[`store:slab-north:${k}:${i}`], 'W', xEnd - 0.013, y + 2.2, z0 + 0.25, 0.36, 0.125); }
       F(fx, AL, xEnd - 0.08, y + 1.0, z0 + (i ? 0.08 : 0.67), 0.05, 0.03, 0.1, 'WNSUD');
     });
     if (eastWC && !eDoor(k)) quadW(ex, M.WC, xEnd - 0.006, y + 2.2, y + 2.45, zc + 0.975, zc + 1.475);
@@ -642,7 +704,8 @@ export function build(item, ctx) {
       }
       quadE(ex, M.EXIT, xW + 0.006, y + 2.2, y + 2.35, zdW - 0.2, zdW + 0.2);
     }
-    F(ex, M.PLT, x0 - 0.115, y + 1.55, zl + 0.4, 0.015, 0.3, 0.3, 'WNSUD');                                                      // blank floor plate facing the stairs
+    F(ex, M.PLT, x0 - 0.115, y + 1.55, zl + 0.4, 0.015, 0.3, 0.3, 'WNSUD');                                                      // floor plate facing the stairs
+    if (EA) cEx.wall(EA.PR, EA.uv[`floor:${item.id}:${k + 1}`] || EA.uv[`floor:slab-north:${k + 1}`], 'W', x0 - 0.116, y + 1.56, zl + 0.41, 0.28, 0.28);
     // exit sign hanging before the stair hall
     F(ex, DK, x0 - 0.42, cy - 0.63, zl0 - 0.22, 0.04, 0.19, 0.44, 'NSEWUD'); quadE(ex, M.EXIT, x0 - 0.378, cy - 0.61, cy - 0.46, zl0 - 0.2, zl0 + 0.2);
     for (const dz of [-0.17, 0.17]) F(ex, AL, x0 - 0.405, cy - 0.44, zl0 + dz, 0.01, 0.44, 0.01, 'NSEW');
@@ -753,6 +816,7 @@ export function build(item, ctx) {
   const light = (x, z, cy, len = 1.2) => {                                         // hanging twin-tube fitting, long axis east-west
     F(fu, WH, x - len / 2, cy - 0.5, z - 0.1, len, 0.05, 0.2, 'NSEWU'); F(fu, LAMP, x - len / 2, cy - 0.51, z - 0.08, len, 0.012, 0.16, 'D');
     if (!low) for (const s of [-0.4, 0.4]) F(fu, AL, x + s * len - 0.006, cy - 0.45, z - 0.006, 0.012, 0.45, 0.012, 'NSEW');
+    if (cy < FH) LIT.push([bar.w + x, bar.n + z, 1.8, cy - 0.52]);                                // the ground storey's room lamps light its floor after dusk (street.js)
   };
   const drapes = (r, y, head) => {                                                 // curtains on a track, some gathered at the side, some half drawn; a stone sill
     for (const b of bays) if (b.a > r.a - 0.01 && b.b < r.b + 0.01) {
@@ -792,7 +856,8 @@ export function build(item, ctx) {
     F(fu, M.DAIS, xb - 1.3, y + 0.02, zmid - 2.6, 1.3, 0.15, 5.2, 'UWNS'); F(fu, AL, xb - 1.31, y + 0.14, zmid - 2.6, 0.012, 0.032, 5.2, 'UW');
     F(fu, M.CON, xb - 1.0, y + 0.17, zmid - 2.5, 0.6, 0.86, 1.0, 'NSEW'); F(fu, DK, xb - 1.03, y + 1.03, zmid - 2.53, 0.66, 0.03, 1.06, 'NSEWUD');
     F(fu, DK, xb - 0.9, y + 1.14, zmid - 2.1, 0.5, 0.32, 0.03, 'NEWUD'); F(fu, M.GLOSS, xb - 0.88, y + 1.16, zmid - 2.071, 0.46, 0.28, 0.003, 'S'); F(fu, DK, xb - 0.68, y + 1.06, zmid - 2.11, 0.06, 0.09, 0.05, 'NSEW');
-    F(fu, M.BOARD, xb - 0.03, y + 0.95, zmid - 2.1, 0.03, 1.25, 4.2, 'W');
+    if (SH && EA) { const [bm, bu] = lessonOf(roomIx(r), k); cFu.wall(bm, bu, 'W', xb - 0.03, y + 0.95, zmid - 2.1, 4.2, 1.25); }         // the day's lesson on the chalkboard
+    else F(fu, M.BOARD, xb - 0.03, y + 0.95, zmid - 2.1, 0.03, 1.25, 4.2, 'W');
     for (const yy of [y + 0.91, y + 2.2]) F(fu, AL, xb - 0.045, yy, zmid - 2.14, 0.045, 0.04, 4.28, 'WUD');
     for (const zz of [zmid - 2.14, zmid + 2.1]) F(fu, AL, xb - 0.045, y + 0.95, zz, 0.045, 1.25, 0.04, 'WNS');
     F(fu, AL, xb - 0.13, y + 0.885, zmid - 2.1, 0.13, 0.02, 4.2, 'WUDNS'); F(fu, AL, xb - 0.13, y + 0.905, zmid - 2.1, 0.01, 0.018, 4.2, 'WEU');
@@ -812,6 +877,10 @@ export function build(item, ctx) {
     F(fu, M.LB, xa, y + 0.02, z0, 0.42, 1.25, lz, 'UNS'); F(fu, DK, xa, y + 0.02, z0, 0.425, 0.05, lz, 'E');
     fu.quad(M.LOCK, [xa + 0.421, y + 0.07, z0 + lz], [xa + 0.421, y + 0.07, z0], [xa + 0.421, y + 1.27, z0], [xa + 0.421, y + 1.27, z0 + lz]);
     F(fu, M.CORK, xa, y + 1.5, zmid - 1.5, 0.02, 1.0, 3.0, 'E'); F(fu, AL, xa, y + 1.46, zmid - 1.54, 0.014, 1.08, 3.08, 'ENSUD');
+    if (SH) {                                                                      // the class's chalk drawing over the lockers, a slogan above it
+      const q = (roomIx(r) * 3 + k * 5 + (item.id === 'slab-south' ? 1 : 0)) % ART.length;
+      cFu.wall(SH.BD, SH.B['art' + q], 'E', xa + 0.021, y + 1.5, zmid - 1.5, 3.0, 1.0); cFu.wall(SH.PR, SH.P['slogan' + ((q + k) % SLOGANS.length)], 'E', xa + 0.012, y + 2.66, zmid - 1.6, 3.2, 0.32);
+    }
     dispenser(xa + 0.03, y, z0 + lz + 0.04);
     plant(plantsIn, xa + 0.2, y + 1.27, z0 + 0.3, 1.5, false); plant(plantsIn, xa + 0.2, y + 1.27, z0 + lz - 0.35, 1.3, true);
     fu.cyl(M.BINA, xa + 0.3, y + 0.02, zi + 0.3, 0.17, 0.45, 10); fu.cyl(RED, xa + 0.3, y + 0.02, zi + 0.75, 0.14, 0.26, 10, false); fu.cyl(DK, xa + 0.3, y + 0.03, zi + 0.75, 0.135, 0.2, 10);
@@ -827,10 +896,11 @@ export function build(item, ctx) {
       F(fu, M.BINB, xa + 0.5, y + 0.02, zi + 0.5, 0.24, 0.02, 0.24, 'NSEWU'); F(fu, M.BINB, xa + 0.5, y + 0.02, zi + 0.74, 0.24, 0.1, 0.015, 'NSEWU');                     // dustpan
       // clock, blank duty roster and timetable frames, chalk and eraser, sheets on the pin board, switch plate, keyboard and microphone
       quadW(fx, M.CLOCK, xb - 0.012, y + 2.5, y + 2.84, zmid - 2.1, zmid - 1.76);
-      quadW(fx, M.ROSTER, xb - 0.008, y + 1.25, y + 1.95, zmid + 2.5, zmid + 3.0); if (zw - zmid > 3.75) quadW(fx, M.ROSTER, xb - 0.008, y + 1.25, y + 1.95, zmid + 3.15, zmid + 3.65);
+      if (SH) { cFx.wall(SH.PR, SH.P.timetable, 'W', xb - 0.009, y + 1.25, zmid + 2.5, 0.5, 0.65); if (zw - zmid > 3.75) cFx.wall(SH.PR, SH.P.duty, 'W', xb - 0.009, y + 1.25, zmid + 3.15, 0.5, 0.65); }
+      else { quadW(fx, M.ROSTER, xb - 0.008, y + 1.25, y + 1.95, zmid + 2.5, zmid + 3.0); if (zw - zmid > 3.75) quadW(fx, M.ROSTER, xb - 0.008, y + 1.25, y + 1.95, zmid + 3.15, zmid + 3.65); }
       [[0.4, WH], [0.47, WH], [0.56, M.SHB], [0.63, RED], [-1.2, WH], [-1.26, M.SHC]].forEach(([dz, m]) => F(fx, m, xb - 0.09, y + 0.905, zmid + dz, 0.012, 0.012, 0.06, 'WUNS'));
       F(fx, DK, xb - 0.1, y + 0.905, zmid - 0.6, 0.05, 0.035, 0.13, 'WUNS'); F(fx, M.SHA, xb - 0.1, y + 0.905, zmid - 0.6, 0.05, 0.012, 0.13, 'W');
-      [['SHA', -1.3, 0.6], ['SHB', -0.9, 0.55], ['SHC', -0.4, 0.12], ['SHA', 0.1, 0.58], ['SHC', 0.55, 0.15], ['SHB', 1.0, 0.5]].forEach(([m, dz, dy]) => F(fx, M[m], xa + 0.02, y + 1.55 + dy, zmid + dz, 0.004, 0.3, 0.21, 'E'));
+      if (!SH) [['SHA', -1.3, 0.6], ['SHB', -0.9, 0.55], ['SHC', -0.4, 0.12], ['SHA', 0.1, 0.58], ['SHC', 0.55, 0.15], ['SHB', 1.0, 0.5]].forEach(([m, dz, dy]) => F(fx, M[m], xa + 0.02, y + 1.55 + dy, zmid + dz, 0.004, 0.3, 0.21, 'E'));
       F(fx, WH, xb - 1.75, y + 1.3, zw - 0.012, 0.09, 0.09, 0.012, 'NEWUD');
       F(fx, DK, xb - 0.92, y + 1.06, zmid - 1.95, 0.44, 0.015, 0.15, 'NSEWU'); tube(fx, DK, [xb - 0.5, y + 1.06, zmid - 1.62], [xb - 0.58, y + 1.34, zmid - 1.7], 0.006, 5);
       F(fx, WH, xb - 1.12, y + 1.08, zmid + 0.5, 0.1, 0.05, 0.16, 'NSEWU');                                                      // chalk box
@@ -890,7 +960,8 @@ export function build(item, ctx) {
       plant(plantsIn, xa + 1.47, y + 0.42, zi + 2.35, 0.9, false);
     }
     F(fu, M.CORK, xa, y + 1.2, zmid - 1.2, 0.02, 1.0, 2.4, 'E'); F(fu, AL, xa, y + 1.16, zmid - 1.24, 0.014, 1.08, 2.48, 'ENSUD');
-    if (!low) { quadE(fx, M.ROSTER, xa + 0.024, y + 1.35, y + 2.05, zmid - 0.9, zmid - 0.4); [['SHA', 0.0, 0.5], ['SHC', 0.35, 0.45], ['SHB', 0.7, 0.1]].forEach(([m, dz, dy]) => F(fx, M[m], xa + 0.02, y + 1.25 + dy, zmid + dz, 0.004, 0.3, 0.21, 'E')); }
+    if (SH) { cFx.wall(SH.PR, SH.P.timetable, 'E', xa + 0.024, y + 1.3, zmid - 0.95, 0.5, 0.65); cFx.wall(SH.PR, SH.P['poster' + pick(POSTERS.length)], 'E', xa + 0.024, y + 1.24, zmid - 0.3, 0.46, 0.66); cFx.wall(SH.PR, SH.P.calendar, 'E', xa + 0.024, y + 1.4, zmid + 0.5, 0.3, 0.4); }
+    else if (!low) { quadE(fx, M.ROSTER, xa + 0.024, y + 1.35, y + 2.05, zmid - 0.9, zmid - 0.4); [['SHA', 0.0, 0.5], ['SHC', 0.35, 0.45], ['SHB', 0.7, 0.1]].forEach(([m, dz, dy]) => F(fx, M[m], xa + 0.02, y + 1.25 + dy, zmid + dz, 0.004, 0.3, 0.21, 'E')); }
     const zp = zw - 2.35;                                                                                                        // copier
     F(fu, WH, xa + 0.03, y + 0.02, zp, 0.62, 0.95, 0.66, 'NSEWU'); F(fu, M.CON, xa + 0.01, y + 0.97, zp - 0.02, 0.66, 0.1, 0.7, 'NSEWU'); F(fu, DK, xa + 0.5, y + 1.07, zp + 0.1, 0.14, 0.03, 0.3, 'NSEWU');
     for (const yy of [0.2, 0.42]) F(fu, DK, xa + 0.652, y + yy, zp + 0.05, 0.004, 0.012, 0.56, 'E'); F(fu, M.CON, xa + 0.65, y + 0.68, zp + 0.1, 0.24, 0.02, 0.46, 'NSEWUD');
@@ -920,7 +991,11 @@ export function build(item, ctx) {
         F(fu, LB, xl, y + 0.3, z0 - 0.015, 1.25, 1.75, 0.03, 'NSEWUD');
         F(fu, LB, xf - 0.015, y + 0.3, z0, 0.03, 1.75, side, 'EWNSUD'); F(fu, LB, xf - 0.015, y + 0.3, zc_ + 0.31, 0.03, 1.75, side, 'EWNSUD');
         if ((i + k) % 3 === 1) F(fu, M.CON, Math.min(xf, xf - dir * 0.6), y + 0.32, zc_ + 0.28, 0.6, 1.7, 0.03, 'NSEWUD');      // one door stands open
-        else F(fu, M.CON, xf - 0.012, y + 0.32, zc_ - 0.31, 0.024, 1.7, 0.62, 'EWNSUD');
+        else { F(fu, M.CON, xf - 0.012, y + 0.32, zc_ - 0.31, 0.024, 1.7, 0.62, 'EWNSUD'); hit(xf - 0.012, y + 0.03, zc_ - 0.3, 0.024, 2.0, 0.6); }
+        // the partitions and the fronts stop the walker (from the floor up: the 0.3 m gap under them is too low to pass);
+        // kept a centimetre clear of the walls and of each other, so that no two collider faces coincide
+        hit(xl + 0.01, y + 0.03, z0 - 0.015, 1.23, 2.0, 0.03);
+        hit(xf - 0.015, y + 0.03, z0 + 0.02, 0.03, 2.0, side - 0.03); hit(xf - 0.015, y + 0.03, zc_ + 0.32, 0.03, 2.0, side - 0.03);
         const xc = xw + dir * 0.6;
         F(fu, WH, xc - 0.29, y + 0.158, zc_ - 0.14, 0.58, 0.012, 0.28, 'UNSEW'); F(fu, M.BASIN, xc - 0.21, y + 0.171, zc_ - 0.075, 0.42, 0.002, 0.15, 'U');
         tube(fu, SS, [xw + dir * 0.03, y + 0.2, zc_], [xw + dir * 0.03, y + 0.75, zc_], 0.014, 6); F(fu, SS, xw + (dir > 0 ? 0.01 : -0.07), y + 0.75, zc_ - 0.03, 0.06, 0.06, 0.06, 'NSEWUD');
@@ -931,9 +1006,11 @@ export function build(item, ctx) {
       const z = zt0 + 1.95 + i * 0.75; if (z > zt1 - 0.3) break;
       F(fu, WH, xp[0] - 0.3, y + 0.42, z - 0.17, 0.3, 0.62, 0.34, 'WNSUD'); F(fu, M.BASIN, xp[0] - 0.302, y + 0.5, z - 0.11, 0.002, 0.46, 0.22, 'W');
       tube(fu, SS, [xp[0] - 0.05, y + 1.04, z], [xp[0] - 0.05, y + 1.3, z], 0.012, 6); F(fu, LB, xp[0] - 0.42, y + 0.5, z + 0.36, 0.42, 0.95, 0.02, 'NSWUD');
+      hit(xp[0] - 0.42, y + 0.03, z + 0.36, 0.41, 1.42, 0.02);                                                                     // the screen between two urinals
     }
     // mop sink in the corner of the men's room, with a mop and a bucket; hand dryer and bin in the women's room
     F(fu, M.WT, xt0, y + 0.02, zt0, 0.6, 0.42, 0.6, 'ESU'); F(fu, M.BASIN, xt0 + 0.06, y + 0.441, zt0 + 0.06, 0.48, 0.002, 0.48, 'U'); fu.cyl(SS, xt0 + 0.08, y + 0.44, zt0 + 0.3, 0.012, 0.4, 6);
+    hit(xt0 + 0.01, y + 0.03, zt0 + 0.01, 0.59, 0.41, 0.59); hit(lx0 + 0.01, y + 0.03, zt1 - 0.55, lw - 0.02, 0.8, 0.54);           // mop sink; the basin counter of the wash lobby
     if (!low) { stick(fu, AL, [xt0 + 0.42, y + 0.44, zt0 + 0.3], [xt0 + 0.06, y + 1.5, zt0 + 0.5], 0.025); fu.cyl(RED, xt0 + 0.95, y + 0.02, zt0 + 0.3, 0.14, 0.26, 10, false); fu.cyl(DK, xt0 + 0.95, y + 0.03, zt0 + 0.3, 0.135, 0.2, 10); }
     F(fu, WH, xt1 - 0.16, y + 1.1, zt0 + 0.5, 0.16, 0.28, 0.26, 'WNSUD'); fu.cyl(M.BINA, xt1 - 0.3, y + 0.02, zt0 + 1.1, 0.16, 0.5, 10);
   }
@@ -999,6 +1076,7 @@ export function build(item, ctx) {
     exG.add(instanced(frameGeo, M.bike, bikes, 'bike-frames', (p, i, im) => { im.setMatrixAt(i, Mx.compose(V3(p[0], p[1], p[2]), q.setFromAxisAngle(UP, p[3]), ONE)); im.setColorAt(i, col.setHex(paint[Math.floor(p[4] * paint.length)])); }));
     exG.add(instanced(blackGeo, M.TYRE, bikes, 'bike-tyres', (p, i, im) => im.setMatrixAt(i, Mx.compose(V3(p[0], p[1], p[2]), q.setFromAxisAngle(UP, p[3]), ONE))));
   }
+  exG.add(cEx.build(item.id + '-cards', bar.w, bar.n));
   ctx.detail(ctx.add(exG), cx, cz, L / 2 + (low ? 70 : 100));
   const fuG = mergeFlat(fu.build({ name: item.id + '-interior', castShadow: false }), false), fxG = mergeFlat(fx.build({ name: item.id + '-fine', castShadow: false }), false);
   for (const part of deskSet(low)) fuG.add(instanced(part.geometry, part.material, desks, 'desks', (p, i, im) => im.setMatrixAt(i, Mx.makeTranslation(bar.w + p[0], p[1], bar.n + p[2]))));
@@ -1022,6 +1100,7 @@ export function build(item, ctx) {
     fxG.add(instanced(shape('globe', () => new THREE.SphereGeometry(0.13, 14, 9)), M.GLOBE, globes, 'globes', (p, i, im) => im.setMatrixAt(i, Mx.compose(V3(p[0], p[1] + 0.2, p[2]), q.setFromEuler(new THREE.Euler(0.2, i * 1.3, 0.38)), ONE))));
     fxG.add(instanced(shape('globe-stand', () => mergeGeos([[new THREE.CylinderGeometry(0.075, 0.085, 0.02, 12, 1), TM(0, 0.01, 0)], [new THREE.CylinderGeometry(0.012, 0.012, 0.07, 6, 1), TM(0, 0.045, 0)], [new THREE.TorusGeometry(0.145, 0.006, 4, 16, Math.PI), TM(0, 0.2, 0, 0, 0, -Math.PI / 2 + 0.38)]])), M.BRASS, globes, 'globe-stands', (p, i, im) => im.setMatrixAt(i, Mx.makeTranslation(bar.w + p[0], p[1], bar.n + p[2]))));
   }
+  fuG.add(cFu.build(item.id + '-room-cards', bar.w, bar.n)); fxG.add(cFx.build(item.id + '-fine-cards', bar.w, bar.n));
   ctx.detail(ctx.add(fuG), cx, cz, L / 2 + (low ? 34 : 44));
   ctx.detail(ctx.add(fxG), cx, cz, L / 2 + (low ? 14 : 20));
   const cg = ctx.add(c.build({ name: item.id + '-colliders' })); cg.visible = false;
