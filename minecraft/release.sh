@@ -23,6 +23,8 @@ echo "== $V: the 3D campus lamps"
 [ -f "$W/lamps.json" ] || node minecraft/lamps.mjs "$URL" "$W/lamps.json"
 echo "== $V: the 3D campus trees"
 [ -f "$W/trees.json" ] || node minecraft/trees.mjs "$URL" "$W/trees.json"
+echo "== $V: the words on the 3D classrooms' boards"
+[ -f "$W/boards.json" ] || node minecraft/boards.mjs "$URL" "$W/boards.json"
 echo "== $V: the world"
 rm -rf "$W/world_$V"
 python3 minecraft/build_world.py "$W"/full/vox_*.json --out "$W/world_$V" --name "广东实验中学（荔湾校区）" --spawn 262,-20,90 \
@@ -33,6 +35,7 @@ python3 minecraft/metrics.py "$W/blocks_$V.npz" | tee "$W/metrics_$V.log" || ech
 echo "== $V: through the official server"
 python3 minecraft/lettering.py minecraft/lettering.json "$W/blocks_$V.npz" "$W/commands_$V.txt"
 python3 minecraft/doorplates.py "$W/doors.json" "$W/commands_$V.txt"
+python3 minecraft/boards.py "$W/boards.json" "$W/blocks_$V.npz" "$W/commands_$V.txt"
 python3 minecraft/server_pack.py "$SRV" "$W/world_$V" "$W/out_$V/gdsy-campus" --box=$BOX --commands "$W/commands_$V.txt" | tail -16
 echo "== $V: zip"
 mkdir -p minecraft/releases

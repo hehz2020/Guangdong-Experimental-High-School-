@@ -47,7 +47,39 @@ def thin_vertical(mask):
             return half
     return 0
 
-def choose(vox):
+TEX_CONTRAST = 90
+
+def redmean(a, b):
+    rm = (a[0] + b[0]) / 2
+    return math.sqrt((2 + rm / 256) * (a[0] - b[0]) ** 2 + 4 * (a[1] - b[1]) ** 2 + (2 + (255 - rm) / 256) * (a[2] - b[2]) ** 2)
+
+def weighted_median(v, w):
+    o = np.argsort(v); c = np.cumsum(w[o])
+    return v[o][min(len(v) - 1, int(np.searchsorted(c, c[-1] / 2)))]
+
+def mat_key(m):
+    return (m['name'], m['type'], tuple(m['rgb']), bool(m.get('map')))
+
+def texture_refs(voxes):
+    """The typical colour of each textured material over the whole map: the area-weighted median of its blocks' colours
+    (its mean colour is pulled off by dark seams and baked shadow)."""
+    acc = {}
+    for vox in voxes:
+        if 'rgb' not in vox: continue
+        mats = vox['mats']
+        mid, area = dec(vox['mid'], np.uint16), dec(vox['area'], np.float32)
+        rgb = dec(vox['rgb'], np.uint8).reshape(-1, 3)
+        for m_ in np.unique(mid):
+            if not mats[int(m_)].get('map'): continue
+            w = mid == m_
+            acc.setdefault(mat_key(mats[int(m_)]), []).append((rgb[w], area[w]))
+    refs = {}
+    for k, parts in acc.items():
+        cols = np.concatenate([c for c, _ in parts]).astype(np.float64); ws = np.concatenate([a for _, a in parts]).astype(np.float64)
+        refs[k] = [float(weighted_median(cols[:, j], ws)) for j in range(3)]
+    return refs
+
+def choose(vox, refs):
     """Per block the winner among the blocks its materials stand for: materials that become the same block are counted
     together first (two tones of turf, a texture split into several materials), then the largest area wins, top
     surfaces a little ahead. Returns the winning (category, block) per block, its area and the hit sub-cells."""
@@ -77,10 +109,17 @@ def choose(vox):
             code = mid[sel].astype(np.int64) * 32768 + (q[:, 0] << 10) + (q[:, 1] << 5) + q[:, 2]
             uq, inv_ = np.unique(code, return_inverse=True)
             kmap = np.empty(len(uq), np.int64)
+            # only a clear difference from the material's typical colour changes the block (a window grid, a court
+            # line); slight shading in a texture (streaks, dirt, baked shadow) keeps the typical block (texture_refs),
+            # so a wall is one block and not a speckle of near-identical greys. TEX_CONTRAST: about 30 levels of grey,
+            # CHOSEN by eye.
+            ref = {int(m_): refs[mat_key(mats[int(m_)])] for m_ in np.unique(mid[sel])}
+            refkey = {m_: key_of(block_for({**mats[m_], 'rgb': ref[m_]})) for m_ in ref}
             for i, cde in enumerate(uq):
                 m_ = int(cde // 32768); qq = int(cde % 32768)
                 col = [((qq >> 10) & 31) * 8 + 4, ((qq >> 5) & 31) * 8 + 4, (qq & 31) * 8 + 4]
-                kmap[i] = key_of(block_for({**mats[m_], 'rgb': col}))
+                if redmean(col, ref[m_]) < TEX_CONTRAST: kmap[i] = refkey[m_]
+                else: kmap[i] = key_of(block_for({**mats[m_], 'rgb': col}))
             kid = kid.copy(); kid[sel] = kmap[inv_]
     K = len(info)
     comb = blk.astype(np.int64) * K + kid
@@ -117,11 +156,11 @@ def choose(vox):
     lgrid[blk2[lsel]] = kid2[lsel]
     return grid.reshape(NY, NZ, NX), garea.reshape(NY, NZ, NX), union.reshape(NY, NZ, NX), info, lgrid.reshape(NY, NZ, NX)
 
-def build_states(vox, PAL, PIDX):
+def build_states(vox, PAL, PIDX, refs):
     """Blocks of one voxel file, as indices into the shared palette PAL (0 = air)."""
     X0, X1, Z0, Z1, Y0, Y1 = vox['box']
     NX, NY, NZ = vox['size']
-    grid, garea, union, info, lgrid = choose(vox)
+    grid, garea, union, info, lgrid = choose(vox, refs)
     states = np.zeros((NY, NZ, NX), np.int32)       # index into PAL; 0 = air
     def sid(s):
         if s not in PIDX: PIDX[s] = len(PAL); PAL.append(s)
@@ -341,6 +380,11 @@ def apply_surfaces(states, kinds, PAL, PIDX, files, X0, Z0, Y0):
                     if b in slab_of: mat = b; break
             mat = mat or 'smooth_stone'
             ok = True
+            # a wall in the blocks where the 3D campus has none to collide with (classroom partitions, boards and
+            # lockers on them have no collision there): solid for three blocks above a plain floor, away from steps.
+            # It stays: the 3D walker passes there, but it is a wall to look at.
+            if floorlike(cx, cz, float(h)) and not near_step(cx, cz, float(h)) and sup + 3 < NY and not any(pas[col[j]] for j in (sup + 1, sup + 2, sup + 3)):
+                continue
             for k in (sup + 1, sup + 2):
                 p = PAL[col[k]]
                 if pas[col[k]]: continue
@@ -952,9 +996,10 @@ def main():
     Y0, Y1 = voxes[0]['box'][4], voxes[0]['box'][5]
     NX, NY, NZ = int(X1 - X0), int(Y1 - Y0), int(Z1 - Z0)
     PAL, PIDX = ['air'], {'air': 0}
+    refs = texture_refs(voxes)
     states = np.zeros((NY, NZ, NX), np.int32); kinds = np.zeros((NY, NZ, NX), np.uint8); union = np.zeros((NY, NZ, NX), np.uint8)
     for v in voxes:
-        st, kd, un = build_states(v, PAL, PIDX)
+        st, kd, un = build_states(v, PAL, PIDX, refs)
         ox, oz = int(v['box'][0] - X0), int(v['box'][2] - Z0)
         ny, nz, nx = st.shape
         states[:, oz:oz + nz, ox:ox + nx] = st; kinds[:, oz:oz + nz, ox:ox + nx] = kd; union[:, oz:oz + nz, ox:ox + nx] = un
