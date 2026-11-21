@@ -1,0 +1,4 @@
+{
+  "criteria": { "join": { "trigger": "minecraft:tick" } },
+  "rewards": { "function": "gdsy:welcome" }
+}

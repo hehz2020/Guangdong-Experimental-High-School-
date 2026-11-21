@@ -72,6 +72,10 @@ def main():
     # 2. the map's region files
     for f in os.listdir(os.path.join(a.src, 'region')):
         shutil.copy(os.path.join(a.src, 'region', f), os.path.join(reg, f))
+    # the map's data pack (a welcome and a teleport menu in the chat), in place before the game loads the world
+    dp = os.path.join(os.path.dirname(os.path.abspath(__file__)), 'datapack')
+    if os.path.isdir(dp):
+        shutil.copytree(dp, os.path.join(w, 'datapacks'), dirs_exist_ok=True)
     # the campus map's map files, in place before the game loads the world (the item frames come with the commands)
     if a.maps:
         sys.path.insert(0, os.path.dirname(os.path.abspath(__file__)))
@@ -98,6 +102,8 @@ def main():
             out = s.cmd(f'gamerule {name} {rule[2] if not name.startswith("fire_spread") else "0"}', r'.', 30)
             print('gamerule', name, '->', out.split(']: ')[-1][:100])
             if not re.search(r'(?i)unknown|incorrect|invalid|expected', out): break
+    out = s.cmd('datapack list enabled', r'(?i)data ?pack|enabled', 30); print('datapacks ->', out.split(']: ')[-1][:200])
+    out = s.cmd('function gdsy:menu', r'.', 30); print('function gdsy:menu ->', out.split(']: ')[-1][:200])
     if a.commands:
         ok = 0
         for line in open(a.commands, encoding='utf-8'):
@@ -124,8 +130,12 @@ def main():
         from nbtlib.tag import String
         lv = nbtlib.load(os.path.join(a.out, 'level.dat'))
         if 'Data' in lv and 'LevelName' in lv['Data']:
-            lv['Data']['LevelName'] = String(a.name); lv.save()
-            print('level name set to', a.name)
+            lv['Data']['LevelName'] = String(a.name)
+            # commands on (a world a server made has them off, and then /tp, the menu's teleports and the welcome
+            # board's do not work in single player)
+            from nbtlib.tag import Byte
+            lv['Data']['allowCommands'] = Byte(1); lv.save()
+            print('level name set to', a.name, '; commands allowed')
         else:
             print('level.dat has no Data.LevelName; keys:', list(lv.get('Data', lv).keys())[:40])
     except Exception as e:
