@@ -481,6 +481,8 @@ def place_lamps(states, kinds, PAL, PIDX, lamps, X0, Z0, Y0):
         small housing, so the lantern hangs from its face (the floor above is unchanged). Needs two free blocks below it;
       - in the open: a lamp post, a pole of iron bars from the ground (through tree crowns) up to the lamp's height and a
         lantern on it; the big floodlights of the courts and roads (a pool of 10 m or more) get a sea lantern instead;
+      - in a room too low to hang one (two blocks high), a sea lantern set into the ceiling where the ceiling is a whole
+        block with more solid above it (the floor upstairs stays as it was);
       - left out: lamps that already have a light-giving block within a block (big fittings the voxels kept), very small
         lights (a pool under 1.5 m: beacons, plaques), and lamps outside the map.
     CHOSEN: the lantern for every fitting (the game's hanging lamp; the 3D site's tubes and panels have no thin
@@ -532,7 +534,22 @@ def place_lamps(states, kinds, PAL, PIDX, lamps, X0, Z0, Y0):
                 if f >= 0 and furn(PAL[c2[f]]): f -= 1
                 if u - 1 - f < 3: continue                     # a floor, the player's two blocks, then the lantern
                 spot = (cx_, cz_, u, p, b); break
-            if spot is None: n['no room'] += 1; continue
+            if spot is None:
+                # no head room for a hanging lamp (mostly rooms two blocks high): a lamp set into the ceiling instead,
+                # where the ceiling is a whole block with more solid above it (so the floor upstairs does not change)
+                emb = None
+                for dx, dz in ((0, 0), (1, 0), (-1, 0), (0, 1), (0, -1)):
+                    cx_, cz_ = bx + dx, bz + dz
+                    if not (0 <= cx_ < NX and 0 <= cz_ < NZ): continue
+                    c2 = states[:, cz_, cx_]
+                    u = next((k for k in range(hb, min(NY - 1, hb + 3)) if not free(c2[k])), None)
+                    if u is None or not free(c2[u - 1]): continue
+                    p = PAL[c2[u]]
+                    if '[' in p or kinds[u, cz_, cx_] != 4 or free(c2[u + 1]) or any(t in p for t in ('glass', '_leaves', '_log', 'lantern', 'glowstone')): continue
+                    emb = (u, cz_, cx_); break
+                if emb is None: n['no room'] += 1; continue
+                states[emb] = flood; n['set in the ceiling'] = n.get('set in the ceiling', 0) + 1
+                continue
             cx_, cz_, u, p, b = spot
             if 'type=top' in p or ('_stairs' in b and 'half=top' in p):
                 states[u, cz_, cx_] = sid(full_of[b]); kinds[u, cz_, cx_] = 4; n['housings'] += 1
@@ -725,6 +742,56 @@ def place_balustrades(states, kinds, PAL, PIDX, cols, X0, Z0, Y0, block='diorite
         f = lambda c: 'low' if c else 'none'
         states[y, z, x] = sid(f'{block}[east={f(e)},north={f(n)},south={f(s)},up={str(up).lower()},waterlogged=false,west={f(w)}]')
     print(f'balustrades: {len(placed)} wall blocks')
+
+def stair_shapes(states, PAL, PIDX):
+    """Corner stairs, as the game shapes them when a stair is placed beside another (StairBlock.getStairsShape): every
+    stair here was written straight, and the game only reshapes a stair when a neighbour changes, so where two stairs
+    meet at a corner (roof edges, cornices, a step turning) the map showed two square ends. For a stair facing F:
+    the stair in front of it (same half, facing across F) makes it an outer corner, unless the block on that side
+    is a stair facing F as well; else the stair behind it makes it an inner corner, likewise; left or right by
+    whether the other faces F turned anticlockwise."""
+    NY, NZ, NX = states.shape
+    def sid(s):
+        if s not in PIDX: PIDX[s] = len(PAL); PAL.append(s)
+        return PIDX[s]
+    D = {'north': (0, -1), 'south': (0, 1), 'east': (1, 0), 'west': (-1, 0)}
+    CCW = {'north': 'west', 'west': 'south', 'south': 'east', 'east': 'north'}
+    info = {}
+    for i, p in enumerate(PAL):
+        if '_stairs[' in p:
+            pr = dict(kv.split('=') for kv in p[p.index('[') + 1:-1].split(','))
+            info[i] = (p.split('[')[0], pr['facing'], pr['half'], pr)
+    if not info: return
+    ids = np.array(sorted(info), np.int32)
+    ys, zs, xs = np.nonzero(np.isin(states, ids))
+    def stair(y, z, x):
+        if 0 <= z < NZ and 0 <= x < NX:
+            return info.get(int(states[y, z, x]))
+        return None
+    n = 0
+    new = []
+    for y, z, x in zip(ys, zs, xs):
+        base, f, half, pr = info[int(states[y, z, x])]
+        def can_take(dirname):
+            dx, dz = D[dirname]; o = stair(y, z + dz, x + dx)
+            return not (o and o[1] == f and o[2] == half)
+        shape = 'straight'
+        dx, dz = D[f]; front = stair(y, z + dz, x + dx)
+        if front and front[2] == half and D[front[1]][0] * dx + D[front[1]][1] * dz == 0:
+            f2 = front[1]
+            opp = {'north': 'south', 'south': 'north', 'east': 'west', 'west': 'east'}[f2]
+            if can_take(opp): shape = 'outer_left' if f2 == CCW[f] else 'outer_right'
+        if shape == 'straight':
+            back = stair(y, z - dz, x - dx)
+            if back and back[2] == half and D[back[1]][0] * dx + D[back[1]][1] * dz == 0:
+                f2 = back[1]
+                if can_take(f2): shape = 'inner_left' if f2 == CCW[f] else 'inner_right'
+        if shape != pr['shape']:
+            pr2 = dict(pr); pr2['shape'] = shape
+            new.append((y, z, x, f'{base}[' + ','.join(f'{k}={v}' for k, v in sorted(pr2.items())) + ']'))
+    for y, z, x, s in new:
+        states[y, z, x] = sid(s); n += 1
+    print(f'stair corners: {n} of {len(ys)} stairs reshaped')
 
 def apply_fixes(states, kinds, PAL, PIDX, path, X0, Z0, Y0):
     """Hand-made changes in fixes.json, in game block coordinates, applied last: 'fill' sets a box to one block, 'ladder'
@@ -1079,6 +1146,7 @@ def main():
     light_rooms(states, kinds, PAL, PIDX)
     if a.lamps: place_lamps(states, kinds, PAL, PIDX, json.load(open(a.lamps)), X0, Z0, Y0)
     if a.fixes: apply_fixes(states, kinds, PAL, PIDX, a.fixes, X0, Z0, Y0)
+    stair_shapes(states, PAL, PIDX)
     ents_by_chunk = {}
     for (x, y, z), e in ents.items(): ents_by_chunk.setdefault((x >> 4, z >> 4), []).append(e)
     print(f'chosen blocks in {time.time() - t0:.1f}s: {int((states > 0).sum())} non-air blocks, {len(PAL)} block states, box {X0} {X1} {Z0} {Z1} {Y0} {Y1}')
