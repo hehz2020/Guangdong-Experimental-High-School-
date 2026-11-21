@@ -6,6 +6,18 @@ z（向南），高度 h 米对应 y = floor(h) + 64（地面顶在 y 64）。�
 每一版的存档在 `minecraft/releases/gdsy-minecraft-vN.zip`：解压后把 `gdsy-campus` 文件夹放进 `.minecraft/saves`，
 压缩包里的“说明.txt”有传送点。
 
+## 预览
+
+下面是用 `preview.mjs` 画的方块预览（纯色方块，没有游戏的贴图和光照；不是游戏截图）。
+
+![东南方向鸟瞰](previews/aerial-east.jpg)
+
+![足球场俯视](previews/field-top.jpg)
+
+八个传送点的视角：网架广场、钟楼顶、体育馆内、二层教室、楼梯塔敞廊、图书馆、圆顶楼、宿舍区。
+
+![传送点](previews/teleport-points.jpg)
+
 ## 版本计划（To do）
 
 做完一项就打勾；每完成一个版本就出一版存档、提交到这里。
