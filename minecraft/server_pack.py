@@ -54,6 +54,7 @@ def main():
     ap.add_argument('server'); ap.add_argument('src'); ap.add_argument('out')
     ap.add_argument('--box', required=True); ap.add_argument('--spawn', default='262,64,-20')
     ap.add_argument('--java', default='/usr/lib/jvm/java-25-openjdk-amd64/bin/java'); ap.add_argument('--name', default='广东实验中学（荔湾校区）')
+    ap.add_argument('--commands', default=None, help='a file of server commands run once the map is loaded (e.g. lettering.py summons)')
     a = ap.parse_args()
     x0, x1, z0, z1 = (int(float(v)) for v in a.box.split(','))
     sd = os.path.abspath(a.server); wname = 'world'
@@ -90,6 +91,16 @@ def main():
             out = s.cmd(f'gamerule {name} {rule[2] if not name.startswith("fire_spread") else "0"}', r'.', 30)
             print('gamerule', name, '->', out.split(']: ')[-1][:100])
             if not re.search(r'(?i)unknown|incorrect|invalid|expected', out): break
+    if a.commands:
+        ok = 0
+        for line in open(a.commands, encoding='utf-8'):
+            line = line.strip()
+            if not line or line.startswith('#'): continue
+            out = s.cmd(line, r'.', 30); msg = out.split(']: ')[-1]
+            good = not re.search(r'(?i)unknown|incorrect|invalid|expected|error|unable|failed', msg)
+            ok += good
+            if not good: print('   command failed:', line[:80], '->', msg[:200])
+        print('commands run:', ok, 'ok')
     time.sleep(5)
     s.cmd('forceload remove all', r'.', 60)
     s.cmd('save-all flush', r'(?i)saved', 600)

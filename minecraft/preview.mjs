@@ -2,7 +2,8 @@
 // cubes, so the result can be looked at without the game. Not what Minecraft shows (no textures, no game lighting);
 // only for checking shapes, colours and what is missing.
 //
-// usage: node minecraft/preview.mjs <site origin, e.g. http://127.0.0.1:8800> <blocks.bin> <outDir> name,x,y,z,yawDeg,pitchDeg[,fov] ...
+// usage: node minecraft/preview.mjs <site origin, e.g. http://127.0.0.1:8800> <blocks.bin> <outDir> name,x,y,z,yawDeg,pitchDeg[,fov[,cut]] ...
+//   cut: draw only what lies below this height in metres (a floor plan seen from above)
 //   x, y, z: camera position in world metres (y = metres above the ground); yaw 0 = looking north, 90 = east... (as in the site)
 import { createRequire } from 'node:module';
 import fs from 'node:fs';
@@ -40,7 +41,8 @@ for (let i = 0; i < n; i++) {
 }
 ims.forEach(m => { m.instanceMatrix.needsUpdate = true; if (m.instanceColor) m.instanceColor.needsUpdate = true; });
 const cam = new THREE.PerspectiveCamera(60, 1280 / 720, 0.1, 2000);
-window.shoot = (x, y, z, yaw, pitch, fov) => { cam.fov = fov || 60; cam.updateProjectionMatrix(); cam.position.set(x, y, z);
+renderer.localClippingEnabled = true; const clip = new THREE.Plane(new THREE.Vector3(0, -1, 0), 1e6); mats.forEach(m => { m.clippingPlanes = [clip]; });
+window.shoot = (x, y, z, yaw, pitch, fov, cut) => { clip.constant = cut ? cut : 1e6; cam.fov = fov || 60; cam.updateProjectionMatrix(); cam.position.set(x, y, z);
   cam.rotation.set(0, 0, 0); cam.rotation.order = 'YXZ'; cam.rotation.y = -yaw * Math.PI / 180; cam.rotation.x = pitch * Math.PI / 180; renderer.render(scene, cam); return true; };
 window.ready = true;
 </script></body></html>`;
@@ -52,8 +54,8 @@ const errs = []; page.on('pageerror', e => errs.push(e.message)); page.on('conso
 await page.goto(origin + '/__preview.html');
 await page.waitForFunction(() => window.ready, null, { timeout: 300000 });
 for (const v of views) {
-  const [name, x, y, z, yaw, pitch, fov] = v.split(',');
-  await page.evaluate(a => window.shoot(...a), [+x, +y, +z, +yaw, +pitch, +(fov || 60)]);
+  const [name, x, y, z, yaw, pitch, fov, cut] = v.split(',');
+  await page.evaluate(a => window.shoot(...a), [+x, +y, +z, +yaw, +pitch, +(fov || 60), +(cut || 0)]);
   await page.screenshot({ path: path.join(outDir, name + '.jpg'), type: 'jpeg', quality: 85 });
   console.log('shot', name);
 }
