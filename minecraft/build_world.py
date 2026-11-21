@@ -346,6 +346,8 @@ def apply_surfaces(states, kinds, PAL, PIDX, files, X0, Z0, Y0):
                 if pas[col[k]]: continue
                 if 'glass' in p or 'pane' in p: ok = False; break
                 if '[' not in p and kinds[k, z, x] == 4 and wide < 2 and floorlike(cx, cz, float(h)) and not (wide >= 1 and near_step(cx, cz, float(h))): ok = False; break
+            # under water (the canal's bed, the pool's floor): nothing to rebuild, and the water stays
+            if any(PAL[col[k]].startswith('water') for k in (sup + 1, sup + 2) if 0 <= k < NY): continue
             if dbg: print('DEBUG spot', cx, cz, h, 'wide', wide, 't', t, 'sup', sup, 'ok', ok, 'floorlike', floorlike(cx, cz, float(h)), 'near_step', near_step(cx, cz, float(h)), [PAL[col[k]] for k in (sup, sup + 1, sup + 2)])
             if not ok: continue
             for k in (sup + 1, sup + 2): clears[(k, z, x)] = 1
@@ -356,6 +358,7 @@ def apply_surfaces(states, kinds, PAL, PIDX, files, X0, Z0, Y0):
             supports[(sup, z, x)] = f'{slab_of[mat]}[type=bottom,waterlogged=false]' if half else mat
             if not floorlike(cx, cz, float(h)): stair_cells.add((sup, z, x))
     for c in clears:
+        if PAL[states[c]].startswith('water'): continue          # water is never cleared
         states[c] = 0; kinds[c] = 0
     for c, st in supports.items():
         states[c] = sid(st); kinds[c] = 6 if '_slab' in st else 4

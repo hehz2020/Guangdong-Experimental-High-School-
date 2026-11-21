@@ -25,6 +25,7 @@ python3 minecraft/build_world.py "$W"/full/vox_*.json --out "$W/world_$V" --name
   --blocks "$W/blocks_$V.npz" --open "$W/open.json" --surfaces "$W/surf_a.json,$W/surf_b.json" --fixes minecraft/fixes.json | tee "$W/build_$V.log"
 python3 minecraft/check_world.py "$W/world_$V" | tail -1
 python3 minecraft/walk_check.py "$W/blocks_$V.npz" 262,-20 minecraft/targets.json | tee "$W/walk_$V.log"
+python3 minecraft/metrics.py "$W/blocks_$V.npz" | tee "$W/metrics_$V.log" || echo "== $V: SOME COUNTS ARE LOW (see above)"
 echo "== $V: through the official server"
 python3 minecraft/lettering.py minecraft/lettering.json "$W/blocks_$V.npz" "$W/commands_$V.txt"
 python3 minecraft/server_pack.py "$SRV" "$W/world_$V" "$W/out_$V/gdsy-campus" --box=$BOX --commands "$W/commands_$V.txt" | tail -16
