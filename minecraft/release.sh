@@ -25,6 +25,8 @@ echo "== $V: the 3D campus trees"
 [ -f "$W/trees.json" ] || node minecraft/trees.mjs "$URL" "$W/trees.json"
 echo "== $V: the words on the 3D classrooms' boards"
 [ -f "$W/boards.json" ] || node minecraft/boards.mjs "$URL" "$W/boards.json"
+echo "== $V: the basketball backboards"
+[ -f "$W/hoops.json" ] || node minecraft/hoops.mjs "$URL" "$W/hoops.json"
 echo "== $V: the canal's balustrade"
 [ -f "$W/balustrade.json" ] || node minecraft/groupcells.mjs "$URL" "$W/balustrade.json" '^canal-balustrade$'
 echo "== $V: the world"
@@ -45,6 +47,7 @@ python3 minecraft/lettering.py minecraft/lettering.json "$W/blocks_$V.npz" "$W/c
 python3 minecraft/doorplates.py "$W/doors.json" "$W/commands_$V.txt"
 python3 minecraft/boards.py "$W/boards.json" "$W/blocks_$V.npz" "$W/commands_$V.txt"
 python3 minecraft/mapart.py frames "$W/blocks_$V.npz" "$W/commands_$V.txt"
+python3 minecraft/hoops.py "$W/hoops.json" "$W/blocks_$V.npz" "$W/commands_$V.txt"
 python3 minecraft/server_pack.py "$SRV" "$W/world_$V" "$W/out_$V/gdsy-campus" --box=$BOX --commands "$W/commands_$V.txt" --maps "$W/blocks_$V.npz" > "$W/server_$V.log" 2>&1
 grep -E "commands run|command failed|ERROR|error|campus map|saved data" "$W/server_$V.log" | grep -v "Block-attached" | head -20; tail -6 "$W/server_$V.log"
 echo "== $V: zip"
