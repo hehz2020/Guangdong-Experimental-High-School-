@@ -469,6 +469,38 @@ def fill_crowns(states, kinds, PAL, max_gap=6):
                 states[a + 1:b, z, x] = states[b, z, x]; kinds[a + 1:b, z, x] = 5; n += b - a - 1
     print(f'tree crowns filled: {n} leaf blocks')
 
+
+def lower_slab_floors(states, kinds, PAL, PIDX, min_cells=12):
+    """Indoor floors that came out as bottom slabs right over solid ground (ground floors raised 0.3 m in the 3D campus)
+    are lowered half a block: the slab goes and the block under it is the floor. Furniture is set into the block above
+    a floor, so on a slab it would float half a block; lowered, it stands on the floor, the doors are level with the
+    ground outside, and a stair's first half step still leads up. Only where the block under the slab is solid (the
+    ground), so no room below loses head room."""
+    NY, NZ, NX = states.shape
+    slab = np.array(['_slab[type=bottom' in p for p in PAL])
+    solid = np.array([p != 'air' and '[' not in p and not p.startswith(('water', 'light')) for p in PAL])
+    from collections import deque
+    changed = 0
+    for y in range(1, NY - 1):
+        cand = slab[states[y]] & (states[y + 1] == 0) & solid[states[y - 1]]
+        seen = np.zeros((NZ, NX), bool)
+        roof = np.zeros((NZ, NX), bool)
+        for k in range(2, 9):
+            if y + k < NY: roof |= (states[y + k] != 0)
+        for z0, x0 in zip(*np.nonzero(cand)):
+            if seen[z0, x0]: continue
+            reg, q = [], deque([(z0, x0)]); seen[z0, x0] = True
+            while q:
+                z, x = q.popleft(); reg.append((z, x))
+                for dz, dx in ((1, 0), (-1, 0), (0, 1), (0, -1)):
+                    zz, xx = z + dz, x + dx
+                    if 0 <= zz < NZ and 0 <= xx < NX and cand[zz, xx] and not seen[zz, xx]:
+                        seen[zz, xx] = True; q.append((zz, xx))
+            if len(reg) < min_cells or sum(roof[z, x] for z, x in reg) < 0.7 * len(reg): continue
+            for z, x in reg:
+                states[y, z, x] = 0; kinds[y, z, x] = 0; changed += 1
+    print(f'indoor slab floors lowered onto the ground: {changed}')
+
 # ---------------------------------------------------------------------------------------------------------- furniture
 BED_COLOURS = ['white', 'light_blue', 'light_gray', 'blue', 'pink', 'yellow', 'lime', 'cyan', 'orange', 'purple']
 WOOL = {'white': (234, 236, 237), 'light_gray': (142, 142, 135), 'gray': (63, 68, 72), 'black': (21, 21, 26), 'red': (161, 39, 35),
@@ -721,6 +753,7 @@ def main():
     stair_cells = set()
     if a.surfaces:
         stair_cells = apply_surfaces(states, kinds, PAL, PIDX, a.surfaces.split(','), X0, Z0, Y0)
+    lower_slab_floors(states, kinds, PAL, PIDX)
     raise_slab_floors(states, kinds, PAL, PIDX, keep=stair_cells)
     furniture = [f for v in voxes for f in v.get('furniture', [])]
     ents = place_furniture(states, kinds, PAL, PIDX, furniture, X0, Z0, Y0) if furniture else {}
