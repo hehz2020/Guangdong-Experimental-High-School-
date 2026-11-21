@@ -15,6 +15,7 @@ CHECKS = [
     ('beds (blocks, two per bed)', lambda p: p.split('[')[0].endswith('_bed'), None, 900),
     ('doors (blocks, two per door)', lambda p: p.split('[')[0].endswith('_door'), None, 400),
     ('invisible lights', lambda p: p.startswith('light['), None, 1000),
+    ('classroom chairs (oak stairs)', lambda p: p.startswith('oak_stairs['), None, 600),
     ('ladders', lambda p: p.startswith('ladder'), None, 30),
     ('carpets (seats)', lambda p: p.split('[')[0].endswith('_carpet'), None, 500),
     ('leaves', lambda p: '_leaves' in p, None, 20000),

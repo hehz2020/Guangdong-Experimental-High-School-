@@ -875,6 +875,46 @@ WOOL = {'white': (234, 236, 237), 'light_gray': (142, 142, 135), 'gray': (63, 68
         'light_blue': (58, 175, 217), 'blue': (53, 57, 157), 'purple': (121, 42, 172), 'magenta': (189, 68, 179), 'pink': (237, 141, 172),
         'brown': (114, 71, 40)}
 
+DESK_CELLS, CHAIR_CELLS = [], []                      # where place_furniture set desks and chairs (for classroom_rows)
+
+def classroom_rows(states, kinds, PAL, PIDX, cards, X0, Z0, Y0):
+    """Rows of desks and chairs in the classrooms. The 3D classrooms' desks stand about 1.2 m apart, so at one metre
+    nearly every block of the room's middle held a desk: one table top, and in the two teaching slabs no chairs at all
+    (their desks and chairs are one piece in the 3D campus). In front of each lesson board (boards.mjs: where the board
+    is and the way it faces) the desks of that storey are sorted into rows by their distance from the board; the rows
+    nearest the board stay desks and every second row behind them becomes chairs (stairs with the back away from the
+    board), as classrooms are built in the game. Rooms that have chairs of their own (the west slab) stay as they are.
+    CHOSEN: one row of desks, one of chairs; up to 12 m from the board and 6 m to either side."""
+    def sid(s):
+        if s not in PIDX: PIDX[s] = len(PAL); PAL.append(s)
+        return PIDX[s]
+    desks = set(c for c in DESK_CELLS if '_slab[type=top' in PAL[states[c]])
+    chairs = set(CHAIR_CELLS)
+    used, rooms, n_ch = set(), 0, 0
+    for card in cards:
+        if not card['key'].startswith('board'): continue
+        cx, cy, cz = card['c']; nx, _, nz = card['n']
+        if abs(nx) > abs(nz): nx, nz, face = (1 if nx > 0 else -1), 0, ('east' if nx > 0 else 'west')
+        else: nx, nz, face = 0, (1 if nz > 0 else -1), ('south' if nz > 0 else 'north')
+        y_lo, y_hi = int(math.floor(cy - card['h'] / 2 - 2.2 - Y0)), int(math.floor(cy - card['h'] / 2 + 0.3 - Y0))
+        def here(c):
+            y, z, x = c
+            if not (y_lo <= y <= y_hi): return None
+            px, pz = x + X0 + 0.5 - cx, z + Z0 + 0.5 - cz
+            t, s_ = px * nx + pz * nz, px * nz - pz * nx
+            return t if 0.5 < t < 12 and abs(s_) < 6 else None
+        mine = [(c, here(c)) for c in desks - used]
+        mine = [(c, t) for c, t in mine if t is not None]
+        if len(mine) < 6: continue
+        if sum(1 for c in chairs if here(c) is not None) > len(mine) * 0.3: used.update(c for c, _ in mine); continue
+        t0 = min(round(t) for _, t in mine)
+        for c, t in mine:
+            used.add(c)
+            if (round(t) - t0) % 2 == 1:
+                states[c] = sid(f'oak_stairs[facing={face},half=bottom,shape=straight,waterlogged=false]'); kinds[c] = 6; n_ch += 1
+        rooms += 1
+    print(f'classrooms in rows: {rooms} rooms, {n_ch} desks turned into chairs')
+
 def place_furniture(states, kinds, PAL, PIDX, furniture, X0, Z0, Y0):
     """Sets down a Minecraft piece for each named furniture instance of voxelize.mjs (imagined translations):
     desk -> a top slab of the nearest plank colour at the desk top; chair -> a stairs block whose back faces away from the
@@ -923,6 +963,7 @@ def place_furniture(states, kinds, PAL, PIDX, furniture, X0, Z0, Y0):
             c = free(cell(f['x'], f['top'] - 0.05, f['z']))
             if c:
                 b = nearest(f['rgb'], PLANKS); states[c] = sid(f'{PLANKS[b][3]}[type=top,waterlogged=false]'); kinds[c] = 6; placed[k] += 1
+                DESK_CELLS.append(c)
         elif k == 'chair':
             d = nearest_desk(f)
             if d: dx, dz = f['x'] - d['x'], f['z'] - d['z']
@@ -936,6 +977,7 @@ def place_furniture(states, kinds, PAL, PIDX, furniture, X0, Z0, Y0):
             if not c: continue
             b = nearest(f['rgb'], stairs_tbl)
             states[c] = sid(f'{stairs_tbl[b][4]}[facing={facing},half=bottom,shape=straight,waterlogged=false]'); kinds[c] = 6; placed[k] += 1
+            CHAIR_CELLS.append(c)
         elif k == 'seat':
             c = cell(f['x'], f['y'] + 0.1, f['z'])
             if inside(c) and '_slab[type=bottom' in PAL[states[c]]: c = (c[0] + 1, c[1], c[2])     # the seat on a step tier
@@ -1104,6 +1146,7 @@ def main():
     ap.add_argument('--lamps', default=None, help='lamps.mjs output: the 3D campus lamps, set as lanterns and lamp posts')
     ap.add_argument('--trees', default=None, help='trees.mjs output: the 3D campus trees, grown again as Minecraft trees')
     ap.add_argument('--balustrades', default=None, help="groupcells.mjs output for the canal's balustrade: set as wall blocks")
+    ap.add_argument('--boards', default=None, help="boards.mjs output: where the lesson boards are, for the classrooms' rows of desks and chairs")
     a = ap.parse_args()
     t0 = time.time()
     voxes = [json.load(open(f)) for f in a.vox]
@@ -1142,6 +1185,7 @@ def main():
         hung = hang_doors(states, kinds, PAL, PIDX, opened, X0, Z0, Y0)
         json.dump(hung, open(os.path.join(os.path.dirname(os.path.abspath(a.out)), 'doors.json'), 'w'))
     if a.balustrades: place_balustrades(states, kinds, PAL, PIDX, json.load(open(a.balustrades)), X0, Z0, Y0)
+    if a.boards: classroom_rows(states, kinds, PAL, PIDX, json.load(open(a.boards, encoding='utf-8'))['cards'], X0, Z0, Y0)
     if a.trees: place_trees(states, kinds, PAL, PIDX, json.load(open(a.trees)), X0, Z0, Y0)
     light_rooms(states, kinds, PAL, PIDX)
     if a.lamps: place_lamps(states, kinds, PAL, PIDX, json.load(open(a.lamps)), X0, Z0, Y0)
