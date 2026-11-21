@@ -110,6 +110,15 @@ RULES = [
     (r'timber|boards|laminate|wood|benchwood|dado|cork|oak|desk(?!-steel)|seat|door', 'wood'),
 ]
 
+# A curated palette: near-identical blocks (calcite, diorite, quartz bricks, stone, andesite, tuff...) make a wall
+# patchy where the 3D material's colour wavers a little; walls read cleaner with fewer, distinct blocks.
+CURATED = ['smooth_quartz', 'white_concrete', 'smooth_stone', 'light_gray_concrete', 'polished_andesite', 'polished_deepslate',
+           'gray_concrete', 'black_concrete', 'smooth_sandstone', 'white_terracotta', 'terracotta', 'light_gray_terracotta',
+           'brown_terracotta', 'red_terracotta', 'orange_terracotta', 'yellow_terracotta', 'cyan_terracotta', 'green_terracotta',
+           'bricks', 'polished_granite', 'red_concrete', 'orange_concrete', 'yellow_concrete', 'lime_concrete', 'green_concrete',
+           'cyan_concrete', 'light_blue_concrete', 'blue_concrete', 'brown_concrete', 'pink_concrete', 'gray_terracotta', 'polished_tuff', 'polished_diorite', 'andesite']
+SOLID_CURATED = {k: SOLID[k] for k in CURATED}
+
 def category(name, mtype):
     if mtype in ('MeshBasicMaterial', 'ShaderMaterial', 'PointsMaterial', 'SpriteMaterial') and not re.search(r'MirrorShader|lamp|letters|sign', name):
         return 'skip'
@@ -121,7 +130,10 @@ def category(name, mtype):
 def nearest(rgb, table):
     best, bd = None, 1e18
     for k, v in table.items():
-        d = (rgb[0] - v[0]) ** 2 * 0.3 + (rgb[1] - v[1]) ** 2 * 0.59 + (rgb[2] - v[2]) ** 2 * 0.11
+        # "redmean": a cheap distance that keeps hue apart better than one weighted by luminance (a grey must not
+        # turn into a pinkish or brownish terracotta)
+        rm = (rgb[0] + v[0]) / 2
+        d = (2 + rm / 256) * (rgb[0] - v[0]) ** 2 + 4 * (rgb[1] - v[1]) ** 2 + (2 + (255 - rm) / 256) * (rgb[2] - v[2]) ** 2
         if d < bd:
             best, bd = k, d
     return best
@@ -167,7 +179,9 @@ def block_for(mat):
         return cat, 'grass_block'
     if cat == 'pave':
         if re.search('asphalt', name): return cat, nearest(rgb, {k: SOLID[k] for k in ('gray_concrete', 'polished_deepslate', 'tuff', 'polished_andesite', 'andesite')})
-        return 'solid', nearest(rgb, SOLID)
+        pave = {k: SOLID[k] for k in ('polished_diorite', 'smooth_stone', 'polished_andesite', 'andesite', 'light_gray_concrete', 'gray_concrete',
+                                     'polished_deepslate', 'terracotta', 'red_terracotta', 'bricks', 'smooth_sandstone', 'stone_bricks')}
+        return 'solid', nearest(rgb, pave)                  # paving: stone and brick only (no pinkish terracotta)
     if cat == 'wood':
         return cat, nearest(rgb, PLANKS)
     if cat == 'flowers':
@@ -185,7 +199,7 @@ def block_for(mat):
         return cat, nearest(rgb, reds)
     if re.search('brick', name) and rgb[0] > rgb[2] + 40:
         return cat, 'bricks' if rgb[0] < 160 else 'red_terracotta'
-    return cat, nearest(rgb, SOLID)
+    return cat, nearest(rgb, SOLID_CURATED)
 
 def shaped(base, kind):
     """The slab or stairs id of a base block, or None."""
