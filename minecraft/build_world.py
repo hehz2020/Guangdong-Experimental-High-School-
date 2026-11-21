@@ -74,10 +74,12 @@ def choose(vox):
     s2 = np.zeros(len(uniq), np.uint8); np.bitwise_or.at(s2, inv, sub)
     blk2, kid2 = (uniq // K).astype(np.int64), (uniq % K).astype(np.int64)
     hy2 = h2 / np.maximum(a2, 1e-6)
+    # layers stacked in one place (earth, lawn and fine lawn under a path) must not add up past one surface's worth
+    w2 = np.minimum(w2, 1.0)
     cat = np.array([CAT_WEIGHT.get(c, 0.0) if b else 0.0 for c, b in info], dtype=np.float32)
-    cat[[i for i, (c, b) in enumerate(info) if c == 'line']] = 0.0
+    cat[[i for i, (c, b) in enumerate(info) if c in ('line', 'roadline')]] = 0.0
     score = w2 * cat[kid2] * (0.6 + hy2 / 255.0 * 0.8)
-    keep = (score > 0) | np.array([info[k][0] == 'line' for k in kid2], bool)
+    keep = (score > 0) | np.array([info[k][0] in ('line', 'roadline') or info[k][1] == 'bookshelf' for k in kid2], bool)
     blk2, kid2, a2, s2, score = blk2[keep], kid2[keep], a2[keep], s2[keep], score[keep]
     order = np.lexsort((-score, blk2))
     blk2, kid2, a2, s2 = blk2[order], kid2[order], a2[order], s2[order]
@@ -90,10 +92,9 @@ def choose(vox):
     garea = np.zeros(NX * NY * NZ, np.float32)
     grid[blk2[first]] = kid2[first]; garea[blk2[first]] = a2[first]
     # painted lines (pitch, roads, the gym floor): they cover a few hundredths of a block and never win; kept apart
-    is_line = np.array([c == 'line' or (c == 'named' and b == 'bookshelf') for c, b in info])
+    is_line = np.array([c in ('line', 'roadline') or (c == 'named' and b == 'bookshelf') for c, b in info])
     # thin pitch and court lines count from 3 hundredths of a block; road markings (broad stripes, closely spaced) from a quarter
-    lmin = np.array([0.25 if (c == 'line' and b in ('white_concrete', 'yellow_concrete') and any(re.search(r'road', mats[i]['name']) for i in range(len(mats)) if mkey[i] == k)) else 0.08 if b == 'bookshelf' else 0.03
-                     for k, (c, b) in enumerate(info)], np.float32)
+    lmin = np.array([0.25 if c == 'roadline' else 0.08 if b == 'bookshelf' else 0.03 for c, b in info], np.float32)
     lsel = is_line[kid2] & (a2 >= lmin[kid2])
     lgrid = np.full(NX * NY * NZ, -1, np.int32)
     lgrid[blk2[lsel]] = kid2[lsel]
@@ -432,6 +433,22 @@ def apply_fixes(states, kinds, PAL, PIDX, path, X0, Z0, Y0):
                         states[c] = sid(f"ladder[facing={op['facing']},waterlogged=false]"); kinds[c] = 6; n += 1
     print(f'hand-made fixes: {n} blocks')
 
+
+def fill_crowns(states, kinds, PAL, max_gap=6):
+    """Tree crowns came out as shells (only their surface is sampled): in each column, air between two leaf blocks of a
+    crown, at most max_gap blocks, becomes leaves of the kind above, so a crown seen from below is not hollow."""
+    NY, NZ, NX = states.shape
+    leaf = np.array(['_leaves[' in p for p in PAL])
+    L = leaf[states]
+    n = 0
+    zs, xs = np.nonzero(L.any(axis=0))
+    for z, x in zip(zs, xs):
+        ys = np.nonzero(L[:, z, x])[0]
+        for a, b in zip(ys[:-1], ys[1:]):
+            if 1 < b - a <= max_gap + 1 and not states[a + 1:b, z, x].any():
+                states[a + 1:b, z, x] = states[b, z, x]; kinds[a + 1:b, z, x] = 5; n += b - a - 1
+    print(f'tree crowns filled: {n} leaf blocks')
+
 # ---------------------------------------------------------------------------------------------------------- furniture
 BED_COLOURS = ['white', 'light_blue', 'light_gray', 'blue', 'pink', 'yellow', 'lime', 'cyan', 'orange', 'purple']
 WOOL = {'white': (234, 236, 237), 'light_gray': (142, 142, 135), 'gray': (63, 68, 72), 'black': (21, 21, 26), 'red': (161, 39, 35),
@@ -680,6 +697,7 @@ def main():
                     states[by + k, bz, bx] = 0; kinds[by + k, bz, bx] = 0; n += 1
         print(f'doorways opened: {n} blocks cleared')
     states = post_pass(states, kinds, union, PAL, PIDX)
+    fill_crowns(states, kinds, PAL)
     stair_cells = set()
     if a.surfaces:
         stair_cells = apply_surfaces(states, kinds, PAL, PIDX, a.surfaces.split(','), X0, Z0, Y0)

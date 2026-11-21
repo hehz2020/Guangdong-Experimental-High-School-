@@ -53,6 +53,7 @@ def main():
     ap = argparse.ArgumentParser()
     ap.add_argument('server'); ap.add_argument('src'); ap.add_argument('out')
     ap.add_argument('--box', required=True); ap.add_argument('--spawn', default='262,64,-20')
+    ap.add_argument('--yaw', default='90', help='the way a new player faces at the spawn (90 = west)')
     ap.add_argument('--java', default='/usr/lib/jvm/java-25-openjdk-amd64/bin/java'); ap.add_argument('--name', default='广东实验中学（荔湾校区）')
     ap.add_argument('--commands', default=None, help='a file of server commands run once the map is loaded (e.g. lettering.py summons)')
     a = ap.parse_args()
@@ -82,7 +83,7 @@ def main():
             print('forceload', bx0, bz0, bx1, bz1, '->', out.split(']: ')[-1][:90])
     time.sleep(90)                       # let the forced chunks load (and upgrade) before saving
     sx, sy, sz = (int(v) for v in a.spawn.split(','))
-    for c in (f'setworldspawn {sx} {sy} {sz}', 'time set noon', 'weather clear', 'difficulty peaceful', 'defaultgamemode creative'):
+    for c in (f'setworldspawn {sx} {sy} {sz} {a.yaw} 0', 'time set noon', 'weather clear', 'difficulty peaceful', 'defaultgamemode creative'):
         out = s.cmd(c, r'.', 30); print(c, '->', out.split(']: ')[-1][:100])
     # game rules: names changed over versions; try both spellings and print what the server says
     for rule in (('advance_time', 'doDaylightCycle', 'false'), ('advance_weather', 'doWeatherCycle', 'false'), ('spawn_mobs', 'doMobSpawning', 'false'),

@@ -71,7 +71,6 @@ PLANKS = {
     'jungle_planks': (160, 115, 81, 'jungle_slab', 'jungle_stairs'),
     'acacia_planks': (168, 90, 50, 'acacia_slab', 'acacia_stairs'),
     'dark_oak_planks': (67, 43, 20, 'dark_oak_slab', 'dark_oak_stairs'),
-    'cherry_planks': (227, 179, 173, 'cherry_slab', 'cherry_stairs'),
     'bamboo_planks': (194, 173, 80, 'bamboo_slab', 'bamboo_stairs'),
 }
 GLASS = {
@@ -100,7 +99,8 @@ RULES = [
     (r'bark|trunk', 'log'),
     (r'lamp|lantern-light|highbay-lens|beacon|lite-inner|bulb', 'lamp'),
     (r'glass|pane|window|clere|skyPanel|skyTop|frosted|mirror|lite\b|glaze', 'glass'),
-    (r'linepaint|roadpaint|roadyellow|lanenumbers|gym-in-paint-(white|maroon)', 'line'),
+    (r'roadpaint|roadyellow', 'roadline'),
+    (r'linepaint|lanenumbers|gym-in-paint-(white|maroon)', 'line'),
     (r'gym-in-paint-(green|blue|dark)', 'skip'),
     (r'turf', 'turf'),
     (r'^earth$|lawn|grass|soil|farground', 'ground'),
@@ -168,7 +168,7 @@ def block_for(mat):
         return cat, 'sea_lantern' if rgb[2] >= rgb[0] - 10 else 'glowstone'
     if cat == 'glass':
         return cat, nearest(rgb, GLASS)
-    if cat == 'line':
+    if cat in ('line', 'roadline'):
         lines = {k: SOLID[k] for k in ('white_concrete', 'yellow_concrete', 'green_concrete', 'blue_concrete', 'red_concrete', 'gray_concrete', 'lime_concrete', 'light_blue_concrete')}
         return cat, nearest(rgb, lines)
     if cat == 'turf':
