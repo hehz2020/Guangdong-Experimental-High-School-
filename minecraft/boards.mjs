@@ -1,6 +1,7 @@
 // Writes the lettered cards of the 3D teaching blocks (the day's lesson on every chalkboard, the class's chalk drawing
-// and the slogan on the back wall) to a JSON file, for boards.py, which puts their words into the map as text displays.
-// At one metre a chalkboard is four dark blocks; the words on it are what makes it a classroom.
+// and the slogan on the back wall, room and floor plates, exit signs, the flag and clock over the board, timetables,
+// rosters, certificates, posters, mottos...) to a JSON file, for boards.py, which puts their words into the map as text
+// displays. At one metre a chalkboard is four dark blocks; the words on it are what makes it a classroom.
 //
 // usage: node minecraft/boards.mjs <page url> <boards.json>
 //
@@ -9,8 +10,9 @@
 // exported, so this script serves the page a copy of slab-wide.js and teaching-slab.js that hands them (and the texts
 // behind the keys) to window; the files in the repository are not changed. A card's key is the atlas rectangle that
 // holds its top left texture corner.
-// Record: { key, sheet: 'west' | 'east', c: centre [x, y, z], n: facing [x, y, z], w, h } in world metres; plus the texts:
-// { lessons: { west: [...], east: [...] }, slogans: [...], art: [...] }.
+// Record: { key, sheet: 'west-boards' | 'west-prints' | 'east', c: centre [x, y, z], n: facing [x, y, z], w, h } in
+// world metres; plus the texts: { plates: { 'sheet:key': [number, name, building] }, lessons: { west: [...], east: [...] },
+// slogans: [...], art: [...], posters: [[title, colour]...] }.
 import { createRequire } from 'node:module';
 import fs from 'node:fs';
 const require = createRequire(import.meta.url);
@@ -25,11 +27,12 @@ const patch = (re, edits) => page.route(re, async route => {
 });
 await patch(/\/slab-wide\.js(\?.*)?$/, [
   ['this.x = 0; this.y = 0; this.row = 0; this.uv = {};', 'this.x = 0; this.y = 0; this.row = 0; this.uv = {}; (window.__atlases ||= []).push(this);'],
-  ['export { Atlas,', 'window.__texts = { LESSONS, SLOGANS, ART };\nexport { Atlas,'],
+  ['export { Atlas,', 'window.__texts = { LESSONS, SLOGANS, ART, POSTERS, WEST_ROOMS, BUILDING };\nexport { Atlas,'],
+  ["names = Array.from({ length: FLOORS }, (_, k) => p.rooms.map((r, i) => roomName(r, i, k)));", "names = Array.from({ length: FLOORS }, (_, k) => p.rooms.map((r, i) => roomName(r, i, k))); window.__westNames = names;"],
 ]);
 await patch(/\/teaching-slab\.js(\?.*)?$/, [
   ['const uv = {}; let x = 0, y = 0, row = 0;', 'const uv = {}; window.__east = { uv, c }; let x = 0, y = 0, row = 0;'],
-  ['let EAST = null;', 'let EAST = null; setTimeout(() => { window.__eastLessons = EAST_LESSONS; });'],
+  ['let EAST = null;', 'let EAST = null; setTimeout(() => { window.__eastLessons = EAST_LESSONS; window.__plateName = plateName; window.__slabName = SLAB_NAME; });'],
 ]);
 const sep = url.includes('?') ? '&' : '?';
 await page.goto(url + sep + 'lightdebug=1&ui=0&shadows=0&post=0&aa=0&time=12&quality=high', { waitUntil: 'load' });
@@ -39,9 +42,11 @@ const res = await page.evaluate(() => {
   for (const d of E.details) d.obj.visible = true;
   root.updateMatrixWorld(true);
   const sheets = [];
-  for (const a of window.__atlases || []) sheets.push({ canvas: a.c, uv: a.uv, sheet: 'west' });
+  for (const a of window.__atlases || []) sheets.push({ canvas: a.c, uv: a.uv, sheet: 'west-' + a.name });
   if (window.__east) sheets.push({ canvas: window.__east.c, uv: window.__east.uv, sheet: 'east' });
   const cards = [];
+  // pictures without words worth carrying over at one metre (lockers, book spines, switches, screens, drawings...)
+  const SKIP = /^(ac|locker|spines|switch|screen|drawing|warn|aid|hose|keys|whiteboard|slide|periodic|cell|bones|directory|nameplate|calendar)\d*$/;
   let V = null;
   root.traverse(o => {
     if (!o.isMesh || o.isInstancedMesh) return;
@@ -58,16 +63,26 @@ const res = await page.evaluate(() => {
       const u0 = uv.getX(q), v1 = uv.getY(q + 2), tu = u0 + 0.0005, tv = v1 - 0.0005;
       let key = null;
       for (const [k, r] of Object.entries(sh.uv)) if (tu >= r[0] && tu <= r[2] && tv >= r[1] && tv <= r[3]) { key = k; break; }
-      if (!key || !/^(board|slogan|art)\d+$/.test(key)) continue;
+      if (!key || SKIP.test(key)) continue;
       const c = P.reduce((s, p) => s.add(p), new V()).multiplyScalar(0.25);
       cards.push({ key, sheet: sh.sheet, c: [c.x, c.y, c.z].map(v => +v.toFixed(3)), n: [n.x, n.y, n.z].map(v => +v.toFixed(3)),
         w: +P[0].distanceTo(P[1]).toFixed(3), h: +P[0].distanceTo(P[3]).toFixed(3) });
     }
   });
   const T = window.__texts || {};
-  return { cards, lessons: { west: T.LESSONS || [], east: window.__eastLessons || [] }, slogans: T.SLOGANS || [], art: (T.ART || []).map(a => a[0]) };
+  // the words on the room and floor plates: the west slab's from its room names, the east slabs' from plateName()
+  const plates = {};
+  for (const c of cards) {
+    let m;
+    if (c.sheet === 'east' && (m = c.key.match(/^plate:([^:]+):(\d+):(\d+)$/))) { const [id, f, i] = [m[1], +m[2], +m[3]]; plates[c.sheet + ':' + c.key] = [`${f + 1}0${i + 1}`, window.__plateName(id, i, f), window.__slabName[id]]; }
+    else if (c.sheet === 'east' && (m = c.key.match(/^store:([^:]+):(\d+):(\d+)$/))) { const [id, f, i] = [m[1], +m[2], +m[3]]; plates[c.sheet + ':' + c.key] = [`${f + 1}${i ? '08' : '07'}`, ['储物间', '清洁间'][i], window.__slabName[id]]; }
+    else if (c.sheet === 'east' && (m = c.key.match(/^floor:([^:]+):(\d+)$/))) plates[c.sheet + ':' + c.key] = [m[2], null, window.__slabName[m[1]]];
+    else if ((m = c.key.match(/^plate(\d+)_(\d+|w)$/))) { const k = +m[1]; plates[c.sheet + ':' + c.key] = m[2] === 'w' ? [`${k + 1}00`, T.WEST_ROOMS[k], T.BUILDING] : [`${k + 1}0${+m[2] + 1}`, (window.__westNames || [])[k][+m[2]], T.BUILDING]; }
+    else if ((m = c.key.match(/^floor(\d+)$/))) plates[c.sheet + ':' + c.key] = [m[1], null, T.BUILDING];
+  }
+  return { cards, plates, lessons: { west: T.LESSONS || [], east: window.__eastLessons || [] }, slogans: T.SLOGANS || [], art: (T.ART || []).map(a => a[0]), posters: T.POSTERS || [] };
 });
 fs.writeFileSync(out, JSON.stringify(res));
-const n = {}; for (const c of res.cards) { const k = c.sheet + ':' + c.key.replace(/\d+$/, ''); n[k] = (n[k] || 0) + 1; }
+const n = {}; for (const c of res.cards) { const k = c.sheet + ':' + c.key.replace(/[:\d_].*$/, ''); n[k] = (n[k] || 0) + 1; }
 console.log(res.cards.length, 'cards', JSON.stringify(n), 'lessons', res.lessons.west.length, '+', res.lessons.east.length);
 await browser.close();

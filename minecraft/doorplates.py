@@ -1,7 +1,8 @@
 #!/usr/bin/env python3
-"""Door plates over the doors build_world.py hung in the teaching buildings, as small text displays (imagined: the
-numbering follows the 3D site's invented scheme, storey then a two-digit number in order along the corridor; the
-building names are the 3D site's: 北教学楼, 南教学楼, 实验楼, 求实楼).
+"""Door plates over the doors build_world.py hung in 求实楼, as small text displays (imagined: the numbering follows
+the 3D site's invented scheme, storey then a two-digit number in order along the corridor). Since v19 the other
+teaching buildings (北教学楼, 南教学楼, 实验楼) carry the 3D site's own room plates instead (boards.py), so only 求实楼,
+which has none in the 3D site, gets these; its box overlaps the north block, whose doors are left out here.
 
 usage: python minecraft/doorplates.py <doors.json> <commands.txt>   (appends to commands.txt)
 A plate hangs half a block above the door, on both faces of the wall, facing out of each.
@@ -16,11 +17,16 @@ BUILDINGS = [
     ('求实楼', (64, 250, -171, -94), [64, 68, 72, 76, 80]),
 ]
 
+PLATED = ('求实楼',)                 # buildings without plates of their own in the 3D site
+
 def main():
     doors, out = json.load(open(sys.argv[1])), sys.argv[2]
     cmds, n = [], 0
+    others = [b for nm, b, _ in BUILDINGS if nm not in PLATED]
     for name, (x0, x1, z0, z1), floors in BUILDINGS:
-        inside = [d for d in doors if x0 <= d['x'] <= x1 and z0 <= d['z'] <= z1]
+        if name not in PLATED: continue
+        inside = [d for d in doors if x0 <= d['x'] <= x1 and z0 <= d['z'] <= z1
+                  and not any(a <= d['x'] <= b and c <= d['z'] <= e for a, b, c, e in others)]
         for fi, fy in enumerate(floors):
             row = sorted([d for d in inside if abs(d['y'] - fy) <= 1], key=lambda d: (d['x'], d['z']))
             for k, d in enumerate(row):
