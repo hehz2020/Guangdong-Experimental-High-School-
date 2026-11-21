@@ -428,6 +428,82 @@ def light_rooms(states, kinds, PAL, PIDX, step=6, level=13):
     print(f'invisible lights under ceilings: {n}')
 
 
+def place_lamps(states, kinds, PAL, PIDX, lamps, X0, Z0, Y0):
+    """The 3D campus's lamps (lamps.mjs: LIT of src/street.js, every street, garden, canopy, corridor and room lamp the
+    modules draw, as [x, z, radius of its pool, height, has a height of its own]) as the game's lamps. Their poles (0.14 m)
+    and heads (0.3 m) are far too thin for a 1 m block, so the map had none of them.
+      - under a ceiling (a block within two above the lamp's height): a lantern hanging from the ceiling, flush under it;
+        a ceiling that is the upper half of its block (a top slab, upside-down stairs) is made a full block there, as a
+        small housing, so the lantern hangs from its face (the floor above is unchanged). Needs two free blocks below it;
+      - in the open: a lamp post, a pole of iron bars from the ground (through tree crowns) up to the lamp's height and a
+        lantern on it; the big floodlights of the courts and roads (a pool of 10 m or more) get a sea lantern instead;
+      - left out: lamps that already have a light-giving block within a block (big fittings the voxels kept), very small
+        lights (a pool under 1.5 m: beacons, plaques), and lamps outside the map.
+    CHOSEN: the lantern for every fitting (the game's hanging lamp; the 3D site's tubes and panels have no thin
+    counterpart in the game), the pole of iron bars, the 10 m floodlight threshold."""
+    from blocks import SOLID, PLANKS
+    NY, NZ, NX = states.shape
+    def sid(s):
+        if s not in PIDX: PIDX[s] = len(PAL); PAL.append(s)
+        return PIDX[s]
+    full_of = {}
+    for t in (SOLID, PLANKS):
+        for k, v in t.items():
+            if v[3]: full_of[v[3]] = k
+            if v[4]: full_of[v[4]] = k
+    g0 = -int(math.floor(Y0))                           # row of y 64; air below it becomes ground when the world is written
+    def free(i): p = PAL[i]; return p == 'air' or p.startswith('light[')
+    WOODS = ('oak', 'spruce', 'birch', 'jungle', 'acacia', 'dark_oak', 'bamboo', 'mangrove', 'cherry')
+    def furn(p):                                        # a desk, chair, seat or bed of place_furniture
+        b = p.split('[')[0]
+        return b.endswith(('_carpet', '_bed')) or (b.endswith(('_slab', '_stairs')) and b.rsplit('_', 1)[0] in WOODS)
+    hang, stand, pole, flood = (sid('lantern[hanging=true,waterlogged=false]'), sid('lantern[hanging=false,waterlogged=false]'),
+                                sid('iron_bars[east=false,north=false,south=false,waterlogged=false,west=false]'), sid('sea_lantern'))
+    lit = {i for i, p in enumerate(PAL) if p.split('[')[0] in ('sea_lantern', 'glowstone', 'shroomlight', 'lantern')}
+    n = {'hanging': 0, 'posts': 0, 'floodlights': 0, 'housings': 0, 'already lit': 0, 'small': 0, 'outside': 0, 'no room': 0}
+    for x, z, r, y, own in lamps:
+        bx, bz = int(math.floor(x - X0)), int(math.floor(z - Z0))
+        hb = int(math.floor(y - Y0))
+        if not (0 <= bx < NX and 0 <= bz < NZ and g0 <= hb < NY - 1): n['outside'] += 1; continue
+        if r < 1.5: n['small'] += 1; continue
+        near = states[max(0, hb - 1):hb + 2, max(0, bz - 1):bz + 2, max(0, bx - 1):bx + 2]
+        if np.isin(near, list(lit)).any(): n['already lit'] += 1; continue
+        col = states[:, bz, bx]
+        up = next((k for k in range(hb, min(NY, hb + 3)) if not free(col[k])), None)
+        if up is not None:
+            # the lamp's block, or the nearest of its eight neighbours, where a lantern hangs from the ceiling and a
+            # player still has two blocks under it (furniture under it does not count: nobody stands on a desk)
+            spot = None
+            for dx, dz in ((0, 0), (1, 0), (-1, 0), (0, 1), (0, -1), (1, 1), (1, -1), (-1, 1), (-1, -1)):
+                cx_, cz_ = bx + dx, bz + dz
+                if not (0 <= cx_ < NX and 0 <= cz_ < NZ): continue
+                c2 = states[:, cz_, cx_]
+                u = next((k for k in range(hb, min(NY, hb + 3)) if not free(c2[k])), None)
+                if u is None or u - 1 < g0 + 2: continue
+                p = PAL[c2[u]]; b = p.split('[')[0]
+                if '_leaves' in p or '_door' in b or 'trapdoor' in b or b.endswith(('_carpet', '_bed')) or not free(c2[u - 1]): continue
+                if ('type=top' in p or ('_stairs' in b and 'half=top' in p)) and b not in full_of: continue
+                f = u - 2
+                while f >= 0 and free(c2[f]): f -= 1
+                if f >= 0 and furn(PAL[c2[f]]): f -= 1
+                if u - 1 - f < 3: continue                     # a floor, the player's two blocks, then the lantern
+                spot = (cx_, cz_, u, p, b); break
+            if spot is None: n['no room'] += 1; continue
+            cx_, cz_, u, p, b = spot
+            if 'type=top' in p or ('_stairs' in b and 'half=top' in p):
+                states[u, cz_, cx_] = sid(full_of[b]); kinds[u, cz_, cx_] = 4; n['housings'] += 1
+            states[u - 1, cz_, cx_] = hang; kinds[u - 1, cz_, cx_] = 6; n['hanging'] += 1
+            continue
+        g = hb - 1
+        while g >= g0 and (free(col[g]) or '_leaves' in PAL[col[g]]): g -= 1
+        if hb - g > 14: n['no room'] += 1; continue
+        for k in range(g + 1, hb):
+            states[k, bz, bx] = pole; kinds[k, bz, bx] = 7
+        big = r >= 10
+        states[hb, bz, bx] = flood if big else stand; kinds[hb, bz, bx] = 4 if big else 6
+        n['floodlights' if big else 'posts'] += 1
+    print('lamps: ' + ', '.join(f'{k} {v}' for k, v in n.items()))
+
 def apply_fixes(states, kinds, PAL, PIDX, path, X0, Z0, Y0):
     """Hand-made changes in fixes.json, in game block coordinates, applied last: 'fill' sets a box to one block, 'ladder'
     puts ladders up a column (facing: the way the ladder faces, away from the wall it hangs on)."""
@@ -726,6 +802,7 @@ def main():
     ap.add_argument('--open', default=None, help='doorways.py open.json: cells to clear, two blocks high')
     ap.add_argument('--fixes', default=None, help='fixes.json: hand-made changes applied last')
     ap.add_argument('--surfaces', default=None, help='surfaces.mjs outputs, comma separated: steps rebuilt from the 3D standing heights')
+    ap.add_argument('--lamps', default=None, help='lamps.mjs output: the 3D campus lamps, set as lanterns and lamp posts')
     a = ap.parse_args()
     t0 = time.time()
     voxes = [json.load(open(f)) for f in a.vox]
@@ -763,6 +840,7 @@ def main():
         hung = hang_doors(states, kinds, PAL, PIDX, opened, X0, Z0, Y0)
         json.dump(hung, open(os.path.join(os.path.dirname(os.path.abspath(a.out)), 'doors.json'), 'w'))
     light_rooms(states, kinds, PAL, PIDX)
+    if a.lamps: place_lamps(states, kinds, PAL, PIDX, json.load(open(a.lamps)), X0, Z0, Y0)
     if a.fixes: apply_fixes(states, kinds, PAL, PIDX, a.fixes, X0, Z0, Y0)
     ents_by_chunk = {}
     for (x, y, z), e in ents.items(): ents_by_chunk.setdefault((x >> 4, z >> 4), []).append(e)

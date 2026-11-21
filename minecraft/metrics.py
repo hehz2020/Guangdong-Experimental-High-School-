@@ -20,6 +20,8 @@ CHECKS = [
     ('leaves', lambda p: '_leaves' in p, None, 20000),
     ('water', lambda p: p.startswith('water'), None, 1000),
     ('glass and panes', lambda p: 'glass' in p, None, 9000),
+    ('lanterns (lamp posts and hanging lamps)', lambda p: p.startswith('lantern['), None, 250),
+    ('lamp posts (iron bars under a standing lantern or floodlight, blocks)', lambda p: p == 'iron_bars[east=false,north=false,south=false,waterlogged=false,west=false]', None, 250),
     ('sea lanterns and glowstone (lamps)', lambda p: p in ('sea_lantern', 'glowstone', 'shroomlight'), None, 300),
 ]
 

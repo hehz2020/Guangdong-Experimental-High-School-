@@ -224,7 +224,7 @@ def color_of(block):
         if block in t: return t[block][:3]
     extra = {'water': (50, 90, 170), 'grass_block': (110, 160, 80), 'dirt': (134, 96, 67), 'coarse_dirt': (119, 85, 59),
              'podzol': (91, 63, 24), 'stone': (126, 126, 126), 'bedrock': (85, 85, 85), 'sea_lantern': (172, 199, 190),
-             'glowstone': (171, 131, 84), 'shroomlight': (240, 146, 70), 'spruce_log': (58, 37, 16), 'oak_log': (109, 85, 50),
+             'glowstone': (171, 131, 84), 'lantern': (250, 200, 110), 'shroomlight': (240, 146, 70), 'spruce_log': (58, 37, 16), 'oak_log': (109, 85, 50),
              'jungle_log': (85, 67, 25), 'stripped_birch_log': (196, 176, 118), 'iron_bars': (136, 139, 135),
              'glass_pane': (190, 215, 220), 'red_tulip': (180, 60, 50), 'poppy': (190, 40, 30), 'oxeye_daisy': (220, 225, 210),
              'azure_bluet': (200, 210, 225), 'dandelion': (230, 200, 40)}
