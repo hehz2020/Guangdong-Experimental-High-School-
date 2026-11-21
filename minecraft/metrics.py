@@ -12,7 +12,7 @@ CHECKS = [
     # name, test on the block state, box (x0, x1, z0, z1, y0, y1 in game blocks) or None, at least
     ('pitch lines (white on the field)', lambda p: p == 'white_concrete', (-35, 35, -60, 60, 63, 63), 500),
     ('bookshelves', lambda p: p == 'bookshelf', None, 400),
-    ('beds (blocks, two per bed)', lambda p: p.split('[')[0].endswith('_bed'), None, 800),
+    ('beds (blocks, two per bed)', lambda p: p.split('[')[0].endswith('_bed'), None, 900),
     ('doors (blocks, two per door)', lambda p: p.split('[')[0].endswith('_door'), None, 400),
     ('invisible lights', lambda p: p.startswith('light['), None, 1000),
     ('ladders', lambda p: p.startswith('ladder'), None, 30),

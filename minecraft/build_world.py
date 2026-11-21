@@ -890,7 +890,17 @@ def place_furniture(states, kinds, PAL, PIDX, furniture, X0, Z0, Y0):
             if a == b or not (inside(a) and inside(b)): continue
             # a bed replaces whatever the frame and bedding became, but never glass
             over = lambda c: c if inside(c) and 'glass' not in PAL[states[c]] and 'pane' not in PAL[states[c]] else None
-            fa, fb = (free(a) or over(a)), (free(b) or over(b))
+            # first choice: the mattress's own row or the one above, where both ends stand on something (a floor, or the
+            # lower bunk) and are not part of a floor themselves (solid all round); what is in the two blocks (the
+            # bunk's frame and slats, bedding) gives way. A lower bunk's mattress (0.4 m over a floor that the blocks
+            # put at the next whole metre) falls in the floor block: it goes on the floor, not into it, and the row of
+            # stone the upper bunk's frame became there is no longer in its way.
+            def floorish(c): return solid(c) and all(solid((c[0], c[1] + dz, c[2] + dx)) for dx, dz in ((1, 0), (-1, 0), (0, 1), (0, -1)))
+            def open_(c): return inside(c) and not any(t in PAL[states[c]] for t in ('glass', 'pane', '_door', '_bed', 'ladder')) and not floorish(c)
+            def holds(c): d_ = (c[0] - 1, c[1], c[2]); return inside(d_) and (solid(d_) or '_bed' in PAL[states[d_]])
+            on = next(((ca, cb) for r in (a[0], a[0] + 1) for ca, cb in [((r, a[1], a[2]), (r, b[1], b[2]))]
+                       if open_(ca) and open_(cb) and holds(ca) and holds(cb)), None)
+            fa, fb = on if on else ((free(a) or over(a)), (free(b) or over(b)))
             if not fa or not fb or fa[0] != fb[0]: continue
             for c in (fa, fb):
                 up = (c[0] + 1, c[1], c[2])
