@@ -140,7 +140,7 @@ export function createCulling({ root, details, indoors = [], lowPower = false, s
     const tex = water.material.uniforms.mirrorSampler.value; mirror.target = tex && tex.renderTarget ? tex.renderTarget : null;
     const rim = [];                                      // points round the pool's rim, local to the water mesh (a flat disc)
     { const sp = water.geometry.boundingSphere; for (let i = 0; i < 16; i++) { const a = i / 16 * Math.PI * 2; rim.push(new THREE.Vector3(sp.center.x + Math.cos(a) * sp.radius, sp.center.y + Math.sin(a) * sp.radius, sp.center.z)); } }
-    let lastFrame = -1, hidden = [], gl = null, query = null, pending = false, active = false, occluded = false, queriedAt = -10;
+    let lastFrame = -1, hidden = [], gl = null, query = null, pending = false, active = false, occluded = false, seenAt = -10;
     water.onBeforeRender = function (renderer, scene, camera, ...rest) {
       // the pass that asks first decides for the whole frame (the occlusion pass asks again: the gate's own wrapper ignores it)
       if (mirror.frame === lastFrame) return; lastFrame = mirror.frame;
@@ -148,7 +148,7 @@ export function createCulling({ root, details, indoors = [], lowPower = false, s
       // Was the water seen at all last time (an occlusion query around its own draw, read a frame or two later)? Behind
       // the buildings, as from the plaza, its mirror is not drawn. A result older than the last frame counts as "seen".
       if (pending && gl.getQueryParameter(query, gl.QUERY_RESULT_AVAILABLE)) { occluded = !gl.getQueryParameter(query, gl.QUERY_RESULT); pending = false; }
-      const stale = mirror.frame - queriedAt > 3;
+      const stale = mirror.frame - seenAt > 3; seenAt = mirror.frame;     // the water was not drawn for a while: its last result says nothing
       water.getWorldPosition(centre);
       const r = water.geometry.boundingSphere.radius * water.matrixWorld.getMaxScaleOnAxis(), d = Math.max(0.5, tmp.setFromMatrixPosition(camera.matrixWorld).distanceTo(centre));
       renderer.getDrawingBufferSize(buf); const W = buf.x, H = buf.y, f = camera.isPerspectiveCamera ? H / 2 / Math.tan(camera.fov * Math.PI / 360) : H;
@@ -161,7 +161,9 @@ export function createCulling({ root, details, indoors = [], lowPower = false, s
         for (const q of rim) { tmp.copy(q).applyMatrix4(water.matrixWorld).applyMatrix4(camera.matrixWorldInverse); if (tmp.z > -camera.near) { behind = true; break; } tmp.applyMatrix4(camera.projectionMatrix); x0 = Math.min(x0, tmp.x); x1 = Math.max(x1, tmp.x); y0 = Math.min(y0, tmp.y); y1 = Math.max(y1, tmp.y); }
         if (!behind && (x1 < -1 || x0 > 1 || y1 < -1 || y0 > 1)) draw = false;
       }
-      if (!draw) { mirror.skipped++; return; }
+      // the query is started on every frame the water is drawn, mirror or not, so that "hidden" stays up to date
+      const startQuery = () => { if (query && !pending) { gl.beginQuery(gl.ANY_SAMPLES_PASSED_CONSERVATIVE, query); active = true; } };
+      if (!draw) { mirror.skipped++; startQuery(); return; }
       let cam = camera, tw = 512, th = 512;
       const max = mirror.level >= 2 ? 512 : 256;
       if (camera.isPerspectiveCamera && !behind && !camera.view) {
@@ -180,7 +182,7 @@ export function createCulling({ root, details, indoors = [], lowPower = false, s
       for (const q of list) if (q.on && Math.hypot(q.d.x - centre.x, q.d.z - centre.z) - Math.hypot(q.e - q.w, q.s - q.n) / 2 > MIRROR_REACH) { q.d.obj.visible = false; hidden.push(q); }
       try { base.call(this, renderer, scene, cam, ...rest); mirror.drawn++; }
       finally { for (const q of hidden) q.d.obj.visible = true; }
-      if (query && !pending) { gl.beginQuery(gl.ANY_SAMPLES_PASSED_CONSERVATIVE, query); active = true; queriedAt = mirror.frame; }
+      startQuery();
     };
     // The query spans exactly the water's own draw, which three.js makes between onBeforeRender and onAfterRender. Opaque
     // things are drawn sorted by material before distance, so the water is put after the other opaque things (render

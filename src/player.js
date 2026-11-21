@@ -2,79 +2,8 @@
 // (so floors, stairs and upper storeys work), gravity and a small jump.
 import * as THREE from 'three';
 import { PointerLockControls } from 'three/addons/controls/PointerLockControls.js';
-import { Octree } from 'three/addons/math/Octree.js';
 import { Capsule } from 'three/addons/math/Capsule.js';
-
-// three's Octree tests every triangle against all eight children at every level with a full separating-axis test (and
-// allocates arrays for each test). For this campus that took 11 to 16 s of the load (measured in the software renderer
-// here, 2026-11-21, on a machine shared with other jobs). The subclass below builds the same tree faster (see build()).
-// For a triangle that does need the per-child test, a child whose box its bounding box misses is skipped (the full
-// test's box-face axes would reject it), a child that holds its bounding box entirely takes it without the full test.
-const EPS = 1e-6;
-export class FastOctree extends Octree {
-  // The same triangles in the same order as Octree.fromGraphNode, read straight from the index and the positions instead of
-  // first copying every attribute of every geometry (normals, texture coordinates, colours) through toNonIndexed().
-  fromGraphNode(group) {
-    group.updateWorldMatrix(true, true);
-    group.traverse(obj => {
-      if (obj.isMesh !== true || !this.layers.test(obj.layers)) return;
-      const pos = obj.geometry.getAttribute('position'), index = obj.geometry.index, m = obj.matrixWorld;
-      if (!pos) return;
-      const n = index ? index.count : pos.count;
-      for (let i = 0; i < n; i += 3) {
-        const t = new THREE.Triangle();
-        t.a.fromBufferAttribute(pos, index ? index.getX(i) : i).applyMatrix4(m);
-        t.b.fromBufferAttribute(pos, index ? index.getX(i + 1) : i + 1).applyMatrix4(m);
-        t.c.fromBufferAttribute(pos, index ? index.getX(i + 2) : i + 2).applyMatrix4(m);
-        this.addTriangle(t);
-      }
-    });
-    this.build();
-    return this;
-  }
-  // The same tree as Octree.build(): the same boxes, the same children in the same order, the same triangles in the
-  // same order in every leaf. Each triangle's bounding box is computed once; a triangle that lies clearly on one side of
-  // all three middle planes of a box goes straight to its one child (it meets the box, so it meets that child, and no
-  // other); only triangles that cross or touch a middle plane are tested against the children one by one as before.
-  build() {
-    this.calcBox();
-    const tris = this.triangles, n = tris.length, bb = new Float64Array(n * 6);
-    for (let i = 0; i < n; i++) {
-      const { a, b, c } = tris[i], o = i * 6;
-      bb[o] = Math.min(a.x, b.x, c.x); bb[o + 1] = Math.min(a.y, b.y, c.y); bb[o + 2] = Math.min(a.z, b.z, c.z);
-      bb[o + 3] = Math.max(a.x, b.x, c.x); bb[o + 4] = Math.max(a.y, b.y, c.y); bb[o + 5] = Math.max(a.z, b.z, c.z);
-    }
-    const all = new Int32Array(n); for (let i = 0; i < n; i++) all[i] = i;
-    this.triangles = [];
-    FastOctree.splitNode(this, all, 0, tris, bb);
-    return this;
-  }
-  static splitNode(node, list, level, tris, bb) {
-    const lo = node.box.min, hx = (node.box.max.x - lo.x) * 0.5, hy = (node.box.max.y - lo.y) * 0.5, hz = (node.box.max.z - lo.z) * 0.5;
-    const mx = lo.x + hx, my = lo.y + hy, mz = lo.z + hz, subs = [], lists = [[], [], [], [], [], [], [], []];
-    for (let x = 0; x < 2; x++) for (let y = 0; y < 2; y++) for (let z = 0; z < 2; z++) {
-      const box = new THREE.Box3();
-      box.min.set(lo.x + x * hx, lo.y + y * hy, lo.z + z * hz); box.max.set(box.min.x + hx, box.min.y + hy, box.min.z + hz);
-      const sub = new FastOctree(box); sub.trianglesPerLeaf = node.trianglesPerLeaf; sub.maxLevel = node.maxLevel; subs.push(sub);
-    }
-    for (let k = list.length - 1; k >= 0; k--) {          // Octree.split pops the parent's triangles from the end
-      const i = list[k], o = i * 6, x0 = bb[o], y0 = bb[o + 1], z0 = bb[o + 2], x1 = bb[o + 3], y1 = bb[o + 4], z1 = bb[o + 5];
-      const sx = x1 < mx - EPS ? 0 : x0 > mx + EPS ? 1 : -1, sy = y1 < my - EPS ? 0 : y0 > my + EPS ? 1 : -1, sz = z1 < mz - EPS ? 0 : z0 > mz + EPS ? 1 : -1;
-      if (sx >= 0 && sy >= 0 && sz >= 0) { lists[sx * 4 + sy * 2 + sz].push(i); continue; }
-      for (let c = 0; c < 8; c++) {
-        const m = subs[c].box.min, M = subs[c].box.max;
-        if (x0 > M.x || x1 < m.x || y0 > M.y || y1 < m.y || z0 > M.z || z1 < m.z) continue;
-        if ((x0 >= m.x + EPS && x1 <= M.x - EPS && y0 >= m.y + EPS && y1 <= M.y - EPS && z0 >= m.z + EPS && z1 <= M.z - EPS) || subs[c].box.intersectsTriangle(tris[i])) lists[c].push(i);
-      }
-    }
-    for (let c = 0; c < 8; c++) {
-      const sub = subs[c], l = lists[c];
-      if (l.length > node.trianglesPerLeaf && level < node.maxLevel) FastOctree.splitNode(sub, l, level + 1, tris, bb);
-      else sub.triangles = l.map(i => tris[i]);
-      if (l.length !== 0) node.subTrees.push(sub);
-    }
-  }
-}
+import { FastOctree } from './octree.js';
 
 export const PLAYER = { radius: 0.35, eye: 1.6, walk: 3.2, run: 8.0, gravity: 30, jump: 6.5, response: 10, fly: 14, flyFast: 40 };
 const SUB = 1 / 120;                                   // fixed physics step, seconds

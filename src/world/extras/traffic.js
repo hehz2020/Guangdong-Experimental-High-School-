@@ -197,7 +197,7 @@ export function build(ctx) {
   // fill the lanes as if traffic had been running
   function prime() {
     for (const L of lanes) { L.cars = []; let s = L.len - 5; const gap = L.mix === 'campus' || L.mix === 'bike' ? 120 : L.mix === 'street' ? 60 : 28;
-      while (s > 0) { const c = newVehicle(L, s, L.v0 * 0.8); L.cars.unshift(c); s -= c.len + gap * (0.5 + R()) * busy(); }
+      while (s > 0) { const c = newVehicle(L, s, L.v0 * 0.8); L.cars.unshift(c); s -= c.len + gap * (0.5 + R()) / busy() / (low ? 0.45 : 1); }   // denser in the rush hours, sparser on phones
       L.cars.sort((a, b) => b.s - a.s); }
   }
   // how busy the roads are by the hour: rush hours, quiet at night (imagined)
@@ -238,8 +238,8 @@ export function build(ctx) {
       }
       while (L.cars.length && L.cars[0].s > L.len) L.cars.shift();
     }
-    // draw: everything within 360 m in view
-    const cx = cam.x, cz = cam.z, Rm = low ? 220 : 360; env.camera.updateMatrixWorld(); PV.multiplyMatrices(env.camera.projectionMatrix, env.camera.matrixWorldInverse); frustum.setFromProjectionMatrix(PV);
+    // draw: everything within 260 m in view (farther, a car is a few pixels and usually behind trees or buildings)
+    const cx = cam.x, cz = cam.z, Rm = low ? 180 : 260; env.camera.updateMatrixWorld(); PV.multiplyMatrices(env.camera.projectionMatrix, env.camera.matrixWorldInverse); frustum.setFromProjectionMatrix(PV);
     const n = { car: 0, suv: 0, bus: 0, scooter: 0, bike: 0 }; let ns = 0;
     for (const L of lanes) for (const c of L.cars) {
       if (!L.name.startsWith('main') && (c.s < 22 || c.s > L.len - 22)) continue;   // the ends of the short lanes: nobody sees a car appear

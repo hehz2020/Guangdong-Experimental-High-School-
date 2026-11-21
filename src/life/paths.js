@@ -1,4 +1,5 @@
-// Where people walk: a small network of paths of the campus, its galleries and the pavements outside the gate, laid by
+// Where people walk (imagined: no record of how people really move about this campus): a small network of paths of the
+// campus, its galleries and the pavements outside the gate, laid by
 // hand over the paving, roads and corridors that the grounds and the builders draw (landscape.js ROADS, gate.js, the
 // teaching slabs' south galleries). Each path is a polyline with a half-width people spread over and a floor height;
 // paths meet at shared end points. Places where people appear or vanish (doors, the far ends of the pavements) are named

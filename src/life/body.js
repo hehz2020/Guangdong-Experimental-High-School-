@@ -183,8 +183,8 @@ function onShirt(P, y, a, dr = 0) {
 // ---- the body ----------------------------------------------------------------------------------------------------------
 const LODS = [
   { torso: 12, limb: 9, fore: 8, leg: 10, shin: 9, head: [14, 10], hair: [14, 6], hand: 1, foot: 8, neck: 9, face: true, ears: true, extras: true },
-  { torso: 7, limb: 5, fore: 5, leg: 6, shin: 5, head: [7, 5], hair: [7, 2], hand: 0, foot: 5, neck: 5, face: false, ears: false, extras: false },
-  { torso: 5, limb: 4, fore: 3, leg: 4, shin: 4, head: [5, 3], hair: [5, 1], hand: -1, foot: 4, neck: 4, face: false, ears: false, extras: false },
+  { torso: 7, limb: 5, fore: 5, leg: 6, shin: 5, head: [7, 5], hair: [7, 4], hand: 0, foot: 5, neck: 5, face: false, ears: false, extras: false },
+  { torso: 4, limb: 3, fore: 3, leg: 3, shin: 3, head: [5, 3], hair: [5, 2], hand: -1, foot: 3, neck: 3, face: false, ears: false, extras: false },
 ];
 
 function buildBody(P, lod) {
@@ -364,7 +364,7 @@ function face(S, P) {
 function hair(S, P, lod) {
   const [na, nt] = LODS[lod].hair, k = bind(B.head), Jh = P.J[B.head], Cn = headCentre(P);
   // hairline: polar angle of the edge by azimuth (0 forward): forehead, temples, above the ears, nape
-  const edge = ph => { const c = Math.cos(ph), a = Math.abs(Math.sin(ph)); return 0.92 + 0.5 * (1 - c) / 2 + 0.36 * a * a * (c > 0 ? 1 : 0.5) + (c < -0.3 ? 0.75 * (-c - 0.3) : 0); };   // down to the nape at the back
+  const edge = ph => { const c = Math.cos(ph), a = Math.abs(Math.sin(ph)); return 0.92 + 0.5 * (1 - c) / 2 + 0.36 * a * a * (c > 0 ? 1 : 0.5) + (c < -0.3 ? 1.3 * (-c - 0.3) : 0); };   // down to the nape at the back
   // volume: thickest on the crown, a few clumps, thinning to the edge and tucked under the skin at it
   const thick = (ph, t) => {
     const side = Math.abs(Math.sin(ph)), v = (0.008 + 0.022 * Math.pow(Math.max(0, Math.cos(t * 1.35)), 1.3) + 0.004 * Math.max(0, -Math.cos(ph)) - 0.002 * side * t) * (1 + (lod ? 0 : 0.22 * Math.sin(ph * 7 + t * 9) * Math.sin(ph * 3 - 2)));
@@ -380,7 +380,7 @@ function hair(S, P, lod) {
   }
   if (lod === 2) return;
   // nape for short cuts: from the base edge down at the back, close cropped
-  patch(S, (u, v) => { const ph = Math.PI * (0.42 + 1.16 * u), e = edge(ph), th = e + (0.28 * Math.max(0, -Math.cos(ph)) + 0.08) * v; return headPoint(P, ph, th - 0.06, 0.006 * (1 - v) - 0.0015 * v * v); }, lod ? 4 : 9, lod ? 1 : 2,
+  patch(S, (u, v) => { const ph = Math.PI * (0.42 + 1.16 * u), e = edge(ph), th = e - 0.24 + (0.16 * Math.max(0, -Math.cos(ph)) + 0.06) * v; return headPoint(P, ph, th, 0.0055 * (1 - v) + 0.0006); }, lod ? 4 : 9, lod ? 1 : 2,
     { k, slot: SLOT.hair, vr: V.nape, ao: () => 0.88, out: () => Cn });
   // fringe: a thick lock swept over the forehead, its edge cut in points
   patch(S, (u, v) => { const ph = (u - 0.5) * 2.1, jag = lod ? 0 : 0.06 * Math.abs(Math.sin(u * 17)) * (0.4 + 0.6 * v), slant = 0.12 * (u - 0.5), th = 0.3 + (edge(0) + 0.3 + jag + slant - 0.3) * v;

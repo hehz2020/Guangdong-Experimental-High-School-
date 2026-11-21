@@ -90,7 +90,7 @@ const visibleChain = o => { for (let q = o; q; q = q.parent) if (!q.visible) ret
 
 export function build(ctx) {
   const low = !!ctx.lowPower, safe = !!ctx.safe, campus = ctx.campus;
-  const caps = low ? [6, 24, 60] : [12, 46, 140];
+  const caps = low ? [6, 24, 60, 16] : [10, 40, 124, 40];        // near, middle, far; stand-ins in the occlusion pass (crowd.js)
   const crowd = createCrowd({ safe, caps }); ctx.add(crowd.group);
   const shadows = contactShadows(caps[0] + caps[1]); ctx.add(shadows.mesh);
   const net = network(campus), G = graph(net), node = name => (net.ends[name] ? nearestNode(G, net.ends[name][0], net.ends[name][1], net.ends[name][2] || 0) : -1);
@@ -195,7 +195,7 @@ export function build(ctx) {
   }
 
   // ---- streams of walkers ------------------------------------------------------------------------------------------------
-  let state = null, lastHour = -1, period = '', acc = [], seedN = 1;
+  let state = null, lastHour = -1, still = 0, wantState = false, period = '', acc = [], seedN = 1;
   const pickEnd = (g, r) => { const l = GROUPS[g] || []; return l[Math.floor(r() * l.length)]; };
   function spawn(s, r, warm) {
     let a = pickEnd(s.from, r), b = pickEnd(s.to, r); if (a === undefined || b === undefined) return 0;
@@ -223,10 +223,18 @@ export function build(ctx) {
   }
 
   const sunDir = new THREE.Vector3(0.3, 0.8, 0.2), camLocal = { x: 0, y: 0, z: 0 };
+  // parts of a frame, timed apart for checks (window.__lifeMs(): people.walk, people.sport, people.draw, people.shadows)
+  const tWalk = timed('people.walk', (dt, c) => pop.update(dt, c)), tSport = timed('people.sport', (dt, t) => sport.update(dt, t));
+  let vis = []; const tDraw = timed('people.draw', (env, dt) => { vis = pop.draw(env, dt); }), tShadows = timed('people.shadows', (v, d, k) => shadows.update(v, d, k));
   ctx.animate(timed('people', (dt, seconds, env) => {
     if (!env || !env.camera) return;
     const L = env.lighting, hour = L && L.getTime ? L.getTime() : 10;
-    if (!state || Math.abs(hour - lastHour) > 0.2 || stateAt(hour).period !== period) setState(hour);
+    // a new state of the day (a few hundred people set down at once, up to ~0.2 s on a slow machine) once the time has
+    // stayed put for a moment, so that dragging the time slider across the day does not rebuild it on every frame
+    const step = Math.abs(hour - lastHour);
+    if (step > Math.max(1e-4, dt * 0.05)) still = 0; else still += dt;          // dragged (a running clock is far slower)
+    if (step > 0.2 || stateAt(hour).period !== period) wantState = true;
+    if (!state || (wantState && still > 0.25)) { setState(hour); wantState = false; }
     lastHour = hour; pop.night = L && L.night ? L.night() > 0.5 : false;
     // new walkers
     const maxW = low ? 120 : 380;
@@ -235,15 +243,15 @@ export function build(ctx) {
     while (DROPS.length) { const d = DROPS.shift(), a = node('gate'), b = pickEnd('TEACH', rs); if (a >= 0 && b !== undefined && pop.walkers.length < maxW) pop.walkFrom(d.x, d.z, a, b, Math.floor(rs() * 1e9), d.n); }
     // along the upper galleries at breaks: from one classroom door to another
     if (state.galleries) { gacc += state.galleries * 4 * (low ? 0.4 : 1) * dt / 60;
-      while (gacc >= 1) { gacc -= 1; const gl = galleries[Math.floor(rs() * galleries.length)]; if (!gl || pop.walkers.length >= maxW) break; const E = G.edges[gl], a = 2 + rs() * (E.len - 4), b = 2 + rs() * (E.len - 4); if (Math.abs(a - b) > 4) pop.walkSpan(gl, a, b, Math.floor(rs() * 1e9), rs() < 0.5 ? 1 : 2); } }
+      while (gacc >= 1) { gacc -= 1; const gl = galleries[Math.floor(rs() * galleries.length)]; if (gl === undefined || pop.walkers.length >= maxW) break; const E = G.edges[gl], a = 2 + rs() * (E.len - 4), b = 2 + rs() * (E.len - 4); if (Math.abs(a - b) > 4) pop.walkSpan(gl, a, b, Math.floor(rs() * 1e9), rs() < 0.5 ? 1 : 2); } }
     const cam = env.camera.position; camLocal.x = cam.x; camLocal.y = cam.y; camLocal.z = cam.z;
-    pop.update(dt, camLocal);
-    sport.update(dt, pop.time);
-    const vis = pop.draw(env, dt);
+    tWalk(dt, camLocal);
+    tSport(dt, pop.time);
+    tDraw(env, dt);
     // contact shadows: stretched away from the sun, fading at dusk
     const sun = L && (L.suns ? L.suns[0] : L.sun);
     if (sun) { sunDir.copy(sun.position).sub(sun.target.position).normalize(); if (sunDir.y < 0.05) sunDir.set(0, 1, 0); }
-    shadows.update(vis, sunDir, L && L.night ? 1 - L.night() * 0.85 : 1);
+    tShadows(vis, sunDir, L && L.night ? 1 - L.night() * 0.85 : 1);
   }));
   if (typeof window !== 'undefined') window.__life = { pop, stats: () => ({ ...pop.stats, crowd: crowd.stats, sport: sport.stats(), period, mode: crowd.mode }) };
 }

@@ -1,6 +1,7 @@
 // Poses of the people, computed from a phase and a few parameters (no motion data): walking and running with planted
 // feet (the legs are solved so that a foot on the ground does not slide), standing with the weight on one leg, sitting,
 // writing at a desk, eating, dribbling and shooting a basketball, sweeping, holding things. Conventions in rig.js.
+// Every movement is made up here (no motion capture), as are the people who make them.
 // Every curve here is chosen by eye.
 import { B, OFF, legIK } from './rig.js';
 

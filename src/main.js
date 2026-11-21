@@ -259,7 +259,8 @@ if (lighting && lighting.prepare && params.get('precompile') !== '0') {
   step('正在编译着色器'); await breathe();
   const t0 = performance.now(), intoBuffer = lighting.prepare(camera), prev = renderer.getRenderTarget(), probe = intoBuffer ? new THREE.WebGLRenderTarget(1, 1, { type: THREE.HalfFloatType }) : null;
   let compiling = null;
-  try { if (probe) renderer.setRenderTarget(probe); compiling = renderer.compileAsync(scene, camera); }
+  // (compileAsync warns where the extension is missing: there the plain compile queues the same work)
+  try { if (probe) renderer.setRenderTarget(probe); if (renderer.extensions.has('KHR_parallel_shader_compile')) compiling = renderer.compileAsync(scene, camera); else renderer.compile(scene, camera); }
   catch (err) { console.warn('precompile skipped:', err && err.message); }
   finally { renderer.setRenderTarget(prev); }
   if (compiling) await Promise.race([compiling, new Promise(done => setTimeout(done, 180000))]);

@@ -1,5 +1,6 @@
-// The signalled crossing on the main road (traffic.js draws it and drives the cars; people.js lets people wait at the
-// kerb and cross on green). Both read the same clock: the page's elapsed seconds handed to every per-frame function.
+// The signalled crossing on the main road (traffic.js draws it and drives the cars). The walk phase is kept, but nobody
+// crosses yet: the road's planted median has no gap at this point. The clock is the page's elapsed seconds handed to every
+// per-frame function. DROPS: pupils set down by cars at the gate (traffic.js pushes, people.js walks them in).
 // IMAGINED: the crossing, its place (the point of the main road nearest the middle of the campus) and its timings.
 import { ROAD_LINES } from '../world/extras/landscape.js';
 

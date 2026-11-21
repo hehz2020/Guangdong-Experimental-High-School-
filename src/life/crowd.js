@@ -1,5 +1,5 @@
 // Draws the people: every frame the simulation hands over the people in view with a level of detail, a pose and a
-// palette, and this module turns them into a handful of draw calls.
+// palette, and this module turns them into a handful of draw calls. (The people themselves are imagined; see people.js.)
 //
 // Normal mode: one InstancedMesh per level of detail (near, middle, far) plus one for carried things, all sharing a
 // float texture with one row per drawn person: 18 skin matrices (3 texels each) and 24 packed colours (6 texels). The
@@ -52,25 +52,32 @@ const VERT_SKIN = /* glsl */`
 	vLifeRough = LIFE_ROUGH[ lifeSlot ];
 `;
 
-function peopleMaterial(tex, name) {
+// The occlusion pass of post.js (three's GTAOPass) redraws the scene into a normal and depth buffer with a material of its
+// own (scene.overrideMaterial, a MeshNormalMaterial) that knows nothing of the skinning here: drawn by it, everyone stood in
+// the rest pose and left a grey ghost; left out of it (post.js skips cut-out materials, so the bodies are marked as such:
+// alphaTest, though nothing is ever cut), the people took on the occlusion of whatever is behind them (desks printed on the
+// pupils). So that pass gets a stand-in of its own: the middle level of detail, a centimetre fatter so that it covers the
+// finer bodies' outline, skinned like them, writing its view-space normal as MeshNormalMaterial does. It refuses the
+// override (allowOverride = false) and is shown only while that pass draws (a hook on the scene's onBeforeRender, which
+// three calls before it gathers what to draw). Only the nearest people get it (caps[3]): farther on, a person is a few
+// pixels across the occlusion radius.
+function peopleMaterial(tex, name, ao = false) {
   const m = new THREE.MeshStandardMaterial({ vertexColors: true, roughness: 0.7, metalness: 0, envMapIntensity: 0.85 });
   m.name = name; m.userData.noGrain = true;
-  // The occlusion pass of post.js redraws the scene with a material of its own, which knows nothing of the skinning
-  // here: it saw everyone in the rest pose and left a grey ghost beside each moving person. It leaves out cut-out
-  // materials, so these are marked as such (nothing is ever cut: every alpha is 1).
-  m.alphaTest = 0.01;
+  if (ao) m.allowOverride = false; else m.alphaTest = 0.01;
   m.onBeforeCompile = sh => {
     sh.uniforms.uLifeTex = { value: tex };
     sh.vertexShader = sh.vertexShader
       .replace('#include <common>', '#include <common>\n' + VERT_HEAD)
       .replace('#include <color_vertex>', '#include <color_vertex>\n' + VERT_SKIN)
       .replace('#include <beginnormal_vertex>', 'vec3 objectNormal = normalize( mat3( lifeM ) * mix( normal, aNorF, lifeSex ) );\n#ifdef USE_TANGENT\n\tvec3 objectTangent = vec3( tangent.xyz );\n#endif')
-      .replace('#include <begin_vertex>', 'vec3 transformed = lifeOn ? ( lifeM * vec4( mix( position, aPosF, lifeSex ), 1.0 ) ).xyz : vec3( 0.0, -40.0, 0.0 );');
+      .replace('#include <begin_vertex>', 'vec3 transformed = lifeOn ? ( lifeM * vec4( mix( position, aPosF, lifeSex ), 1.0 ) ).xyz' + (ao ? ' + objectNormal * 0.012' : '') + ' : vec3( 0.0, -40.0, 0.0 );');
     sh.fragmentShader = sh.fragmentShader
       .replace('#include <common>', '#include <common>\nvarying float vLifeRough;')
-      .replace('#include <roughnessmap_fragment>', 'float roughnessFactor = vLifeRough;');
+      .replace('#include <roughnessmap_fragment>', 'float roughnessFactor = vLifeRough;')
+      .replace('#include <dithering_fragment>', '#include <dithering_fragment>' + (ao ? '\n\tgl_FragColor = vec4( normalize( normal ) * 0.5 + 0.5, 1.0 );' : ''));
   };
-  m.customProgramCacheKey = () => 'life-people-skin';
+  m.customProgramCacheKey = () => ao ? 'life-people-ao' : 'life-people-skin';
   return m;
 }
 
@@ -100,21 +107,31 @@ function shaderCrowd(caps) {
   tex.magFilter = tex.minFilter = THREE.NearestFilter; tex.generateMipmaps = false; tex.needsUpdate = true;
   const group = new THREE.Group(); group.name = 'people';
   const meshes = [];
-  const make = (geo, n, name) => {
-    const im = new THREE.InstancedMesh(geo, peopleMaterial(tex, 'life-' + name), n);
+  const make = (geo, n, name, ao = false) => {
+    const im = new THREE.InstancedMesh(geo, peopleMaterial(tex, 'life-' + name, ao), n);
     im.geometry = geo.clone();                                                   // own instanced attribute per mesh
     im.geometry.setAttribute('aInfo', new THREE.InstancedBufferAttribute(new Float32Array(n * 4), 4));
     im.instanceMatrix.setUsage(THREE.DynamicDrawUsage); im.geometry.attributes.aInfo.setUsage(THREE.DynamicDrawUsage);
-    im.count = 0; im.frustumCulled = false; im.castShadow = false; im.receiveShadow = true; im.name = 'people-' + name;
+    im.count = 0; im.frustumCulled = false; im.castShadow = false; im.receiveShadow = true; im.name = 'people-' + name; im.onBeforeRender = hook;
     group.add(im); meshes.push(im); return im;
   };
   const lods = [make(bodyGeometry(0), caps[0], 'near'), make(bodyGeometry(1), caps[1], 'middle'), make(bodyGeometry(2), caps[2], 'far')];
   const carry = make(carriedGeometry(), caps[0], 'carried');
+  const aoCap = caps[3] ?? 48, aoMesh = make(bodyGeometry(1), aoCap, 'ao-stand-in', true); aoMesh.visible = false; aoMesh.receiveShadow = false;
+  // shown only while the occlusion pass draws: decided as each render call starts (the scene's onBeforeRender), chained
+  // to whatever the scene already does there
+  let hooked = null;
+  function hook(renderer, scene) {
+    if (!scene || !scene.isScene || hooked === scene) return;
+    hooked = scene; const prev = scene.onBeforeRender;
+    scene.onBeforeRender = function (r, sc, cam, rt) { const o = sc.overrideMaterial; aoMesh.visible = !!(o && o.isMeshNormalMaterial) && aoMesh.count > 0; return prev.call(this, r, sc, cam, rt); };
+  }
   let row = 0;
   const counts = [0, 0, 0];
-  const stats = { drawn: [0, 0, 0], carried: 0, rows: 0 };
-  function begin() { row = 0; counts[0] = counts[1] = counts[2] = 0; carry.count = 0; }
-  function draw(p, lod) {
+  const stats = { drawn: [0, 0, 0], carried: 0, rows: 0, ao: 0 };
+  function begin() { row = 0; counts[0] = counts[1] = counts[2] = 0; carry.count = 0; aoMesh.count = 0; }
+  /** ao: also give this person a stand-in in the occlusion pass (the caller hands people over nearest first). */
+  function draw(p, lod, ao = false) {
     if (counts[lod] >= caps[lod] || row >= rows) return false;
     const r = row++, base = r * ROW * 4;
     data.set(p.mats, base);
@@ -126,11 +143,15 @@ function shaderCrowd(caps) {
       const c = carry.count++; carry.instanceMatrix.array.set(im.instanceMatrix.array.subarray(i * 16, i * 16 + 16), c * 16);
       const ci = carry.geometry.attributes.aInfo.array; ci[c * 4] = r; ci[c * 4 + 1] = p.sex; ci[c * 4 + 2] = p.carry; ci[c * 4 + 3] = 0;
     }
+    if (ao && aoMesh.count < aoCap) {
+      const c = aoMesh.count++; aoMesh.instanceMatrix.array.set(im.instanceMatrix.array.subarray(i * 16, i * 16 + 16), c * 16);
+      const ai = aoMesh.geometry.attributes.aInfo.array; ai[c * 4] = r; ai[c * 4 + 1] = p.sex; ai[c * 4 + 2] = p.mask; ai[c * 4 + 3] = 0;
+    }
     return true;
   }
   function end() {
     for (let k = 0; k < 3; k++) { lods[k].count = counts[k]; stats.drawn[k] = counts[k]; }
-    stats.carried = carry.count; stats.rows = row;
+    stats.carried = carry.count; stats.rows = row; stats.ao = aoMesh.count;
     for (const im of meshes) { if (!im.count) continue; im.instanceMatrix.needsUpdate = true; im.geometry.attributes.aInfo.needsUpdate = true; }
     if (row) tex.needsUpdate = true;
   }

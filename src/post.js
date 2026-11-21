@@ -4,6 +4,7 @@
 //         -> [GTAOPass: ground-truth ambient occlusion, denoised, multiplied onto the image]
 //         -> [UnrealBloomPass: only what is brighter than white after exposure: sun disc, glints, lamps, lit windows;
 //             its input is capped so that a mirror-like glint of the sun or moon on glass cannot flare over half a facade]
+//         -> [night: some saturation taken out outdoors after dusk (NightShader below)]
 //         -> [OutputPass: tone mapping with the renderer's exposure, sRGB]
 //
 // lighting.js loads this file only when post-processing is wanted (never on phones unless ?post=1), so the addon files
@@ -25,6 +26,16 @@ import { RenderPass } from 'three/addons/postprocessing/RenderPass.js';
 import { GTAOPass } from 'three/addons/postprocessing/GTAOPass.js';
 import { UnrealBloomPass } from 'three/addons/postprocessing/UnrealBloomPass.js';
 import { OutputPass } from 'three/addons/postprocessing/OutputPass.js';
+import { ShaderPass } from 'three/addons/postprocessing/ShaderPass.js';
+
+// Colours fade in the dark (the eye's night vision does not see them): at night, outdoors, the image loses some of its
+// saturation before tone mapping. Without it the neutral tone curve kept red paving and green-tinted lit glass as
+// saturated at night as by day. CHOSEN by eye: 35 % less saturation at full night, none indoors or by day.
+const NightShader = {
+  uniforms: { tDiffuse: { value: null }, sat: { value: 1 } },
+  vertexShader: 'varying vec2 vUv;\nvoid main() { vUv = uv; gl_Position = projectionMatrix * modelViewMatrix * vec4( position, 1.0 ); }',
+  fragmentShader: 'uniform sampler2D tDiffuse; uniform float sat; varying vec2 vUv;\nvoid main() { vec4 c = texture2D( tDiffuse, vUv ); float l = dot( c.rgb, vec3( 0.2126, 0.7152, 0.0722 ) ); gl_FragColor = vec4( mix( vec3( l ), c.rgb, sat ), c.a ); }',
+};
 
 export function createPost(renderer, opts = {}) {
   const gl = renderer.getContext();
@@ -35,7 +46,7 @@ export function createPost(renderer, opts = {}) {
   const samples = opts.antialias === false ? 0 : Math.min(4, gl.getParameter(gl.MAX_SAMPLES) || 0);
   let aoScale = 1;                                             // occlusion at full resolution: at half size thin legs and rails came out blotchy
   let aoMode = 'full', bloomOn = true;                                         // 'full', 'half' (the quality governor's first step) or 'off'
-  let composer = null, renderPass = null, gtao = null, bloom = null, forCamera = null, broken = false, frames = 0, aoFar = 0;
+  let composer = null, renderPass = null, gtao = null, bloom = null, grade = null, forCamera = null, broken = false, frames = 0, aoFar = 0;
   const size = new THREE.Vector2(), bloomCap = { value: 8 }, aoBox = new THREE.Box3(), AO_RADIUS = 0.7;
 
   function build(scene, camera) {
@@ -82,7 +93,8 @@ export function createPost(renderer, opts = {}) {
       hp.needsUpdate = true;
     }
     bloom.enabled = bloomOn;
-    composer.addPass(renderPass); composer.addPass(gtao); composer.addPass(bloom); composer.addPass(new OutputPass());
+    grade = new ShaderPass(NightShader); grade.enabled = false;
+    composer.addPass(renderPass); composer.addPass(gtao); composer.addPass(bloom); composer.addPass(grade); composer.addPass(new OutputPass());
     composer.setSize(size.x, size.y);
     forCamera = camera;
   }
@@ -111,6 +123,8 @@ export function createPost(renderer, opts = {}) {
         bloom.threshold = (1.3 + 0.5 * night) / exposure;      // "brighter than white" in scene units
         bloomCap.value = 3.5 * bloom.threshold;
         bloom.strength = 0.22 + 0.06 * night;
+        const sat = 1 - 0.35 * night * (1 - (state.indoor || 0));
+        grade.uniforms.sat.value = sat; grade.enabled = sat < 0.995;
         composer.render();
         frames++;
         return true;

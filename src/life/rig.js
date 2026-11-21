@@ -1,5 +1,6 @@
 // Skeleton of the people (src/world/extras/people.js): 18 bones, forward kinematics into skin matrices and a two-bone
 // leg solver. Pure arithmetic on typed arrays, no three.js objects, so that a few hundred people cost little per frame.
+// The two reference bodies are generic proportions, not measurements of anyone; every person here is imagined.
 //
 // Person space: x to the person's LEFT, y up, z FORWARD, metres, feet on y = 0. Rest pose: standing, arms hanging a
 // little away from the body, palms toward the thighs. Every bone's rest frame is the person frame (no rest rotation).

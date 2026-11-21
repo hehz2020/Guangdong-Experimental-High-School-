@@ -8,7 +8,7 @@ import * as THREE from 'three';
 import { newPose, fk, NB } from './rig.js';
 import * as AN from './anim.js';
 import { dress, rng } from './dress.js';
-import { A, bit } from './body.js';
+import { A, V, SLOT, bit } from './body.js';
 import { route } from './paths.js';
 
 const TAU = Math.PI * 2;
@@ -17,6 +17,9 @@ let NEXT_ID = 1;
 /** A person: appearance from dress(), plus the fields the renderer reads. */
 export function person(role, seed, kind) {
   const d = dress(role, seed);
+  // seated in a skirt: the thighs rise into the skirt's flare, which is skinned to the hips and only partly to the legs, and
+  // the knees came through it; the lower thighs take the skirt's colour, so it reads as a skirt drawn over the knees
+  if (kind === 'sit' && (d.mask & bit(V.skirt))) d.pal[SLOT.thighLow] = d.pal[SLOT.skirt];
   return { id: NEXT_ID++, kind, role, seed, pal: d.pal, mask: d.mask, carry: d.carry, sex: d.sex, scale: d.scale, girth: d.girth, sk: d.sk, extras: d.extras,
     x: 0, y: 0, z: 0, yaw: 0, pose: newPose(), mats: new Float32Array(NB * 12), poseAt: -99, lookY: 0, lookP: 0, lookT: 0, lookTY: 0, lookTP: 0, r: rng(seed * 31 + 7) };
 }
@@ -195,22 +198,25 @@ export class Population {
       if (p.hidden && p.hidden()) continue;
       const dx = p.x - cx, dz = p.z - cz, d2 = dx * dx + dz * dz; if (d2 > R2) continue;
       this.sphere.center.set(p.x, p.y + 0.9, p.z); if (!this.frustum.intersectsSphere(this.sphere)) continue;
-      p.d2 = d2 + (p.y - cy + 1.6) * (p.y - cy + 1.6) * 2 + (p.indoor ? 900 : 0); vis.push(p);
+      p.d2 = d2 + (p.y - cy + 1.6) * (p.y - cy + 1.6) * 2 + (p.indoor && d2 > 144 ? 900 : 0); vis.push(p);   // people indoors come after those outside, unless close
     } };
     consider(this.walkers); consider(this.still); consider(this.extra);
     vis.sort((a, b) => a.d2 - b.d2);
-    const camP = { x: cx, y: cy, z: cz }, caps = this.caps, n = [0, 0, 0], every = [1, 2, 4];
+    const camP = { x: cx, y: cy, z: cz }, caps = this.caps, n = [0, 0, 0], every = [1, 2, 4]; let posed = 0;
     crowd.begin();
     for (const p of vis) {
       const d = Math.sqrt(p.d2);
       let lod = d < 24 && n[0] < caps[0] ? 0 : d < 80 && n[1] < caps[1] ? 1 : n[2] < caps[2] ? 2 : -1;
       if (lod < 0) break;
-      if (this.frame - p.poseAt >= every[lod] || p.lod !== lod) { this.pose(p, dt * (this.frame - p.poseAt), d < 12 ? camP : null); fk(p.sk, p.pose, p.mats, 0); p.poseAt = this.frame; }
+      const ev = every[lod], since = this.frame - p.poseAt;                       // far people are re-posed every 2nd or 4th frame,
+      if (p.lod !== lod || since >= 2 * ev || (since >= ev && ((this.frame + p.id) & (ev - 1)) === 0)) {   // staggered by id
+        this.pose(p, dt * since, d < 12 ? camP : null); fk(p.sk, p.pose, p.mats, 0); p.poseAt = this.frame; posed++;
+      }
       p.lod = lod;
-      if (crowd.draw(p, lod)) n[lod]++;
+      if (crowd.draw(p, lod, d < 50)) n[lod]++;
     }
     crowd.end();
-    this.stats.drawn = n; this.stats.visible = vis.length;
+    this.stats.drawn = n; this.stats.visible = vis.length; this.stats.posed = posed;
     return vis;
   }
 }
