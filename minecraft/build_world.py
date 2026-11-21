@@ -57,14 +57,31 @@ def choose(vox):
     blk, mid, area, sub, hy = dec(vox['blk'], np.int32), dec(vox['mid'], np.uint16), dec(vox['area'], np.float32), dec(vox['sub'], np.uint8), dec(vox['hy'], np.uint8)
     minfo = [block_for(m) for m in mats]
     keys, info, mkey = {}, [], []
-    for c, b in minfo:
-        k = (c, b)
+    def key_of(k):
         if k not in keys: keys[k] = len(info); info.append(k)
-        mkey.append(keys[k])
+        return keys[k]
+    for c, b in minfo:
+        mkey.append(key_of((c, b)))
     mkey = np.array(mkey, np.int64)
     # base layers under a finished surface (the infield's apron under the turf): they only win where nothing lies on them
     wmat = np.array([0.4 if re.search(r'apron', m['name']) else 1.0 for m in mats], np.float32)
     kid = mkey[mid]
+    # textured materials: the block follows each block's own mean colour (read from the texture), so lines on a court
+    # or a facade's window grid painted in a texture come through; colours are binned (32 levels) to keep this quick
+    if 'rgb' in vox:
+        rgb = dec(vox['rgb'], np.uint8).reshape(-1, 3)
+        textured = np.array([bool(m.get('map')) for m in mats])
+        sel = np.nonzero(textured[mid])[0]
+        if len(sel):
+            q = (rgb[sel] >> 3).astype(np.int64)
+            code = mid[sel].astype(np.int64) * 32768 + (q[:, 0] << 10) + (q[:, 1] << 5) + q[:, 2]
+            uq, inv_ = np.unique(code, return_inverse=True)
+            kmap = np.empty(len(uq), np.int64)
+            for i, cde in enumerate(uq):
+                m_ = int(cde // 32768); qq = int(cde % 32768)
+                col = [((qq >> 10) & 31) * 8 + 4, ((qq >> 5) & 31) * 8 + 4, (qq & 31) * 8 + 4]
+                kmap[i] = key_of(block_for({**mats[m_], 'rgb': col}))
+            kid = kid.copy(); kid[sel] = kmap[inv_]
     K = len(info)
     comb = blk.astype(np.int64) * K + kid
     uniq, inv = np.unique(comb, return_inverse=True)

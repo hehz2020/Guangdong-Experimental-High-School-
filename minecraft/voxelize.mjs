@@ -9,7 +9,9 @@
 // mesh under the campus root is sampled: points spread over each triangle (about every 0.3 m), each pushed 0.1 m into
 // the solid the face bounds (along the reversed face normal), so that a floor's top at 3.9 m lands in the block below
 // 3.9 and a wall face lands in the wall. Per block the script keeps, for each material, the sampled area, the mean
-// height of the samples within the block (0..255) and which of the block's eight 0.5 m sub-cells were hit; build_world.py later picks a Minecraft block and its shape from that.
+// height of the samples within the block (0..255), the mean colour of its samples (read from the texture at each
+// sample's texture coordinates, so lines and window grids painted in textures survive) and which of the block's eight
+// 0.5 m sub-cells were hit; build_world.py later picks a Minecraft block and its shape from that.
 //
 // What counts as "the campus": everything under the world root except the moving people, vehicles and birds, the
 // invisible collision-only meshes, and things the page hides on purpose (see HIDDEN_OK). Groups the engine shows only
@@ -91,18 +93,45 @@ const setup = await page.evaluate(({ listHidden }) => {
     } catch (e) { m = null; }
     texMean.set(tex, m); return m;
   };
+  // textures as pixels (at most 256 across), for the colour at each sample: lines on courts, window grids on facades
+  const texPix = new Map();
+  const pixOf = tex => {
+    if (!tex || !tex.image) return null;
+    if (texPix.has(tex)) return texPix.get(tex);
+    let r = null;
+    try {
+      const im = tex.image;
+      if (im.data && im.width && (im.data instanceof Uint8Array || im.data instanceof Uint8ClampedArray)) {
+        const ch = im.data.length / (im.width * im.height);
+        r = { w: im.width, h: im.height, d: im.data, ch, flip: !!tex.flipY };
+      } else if (im.width && im.height) {
+        const W = Math.min(256, im.width), H = Math.min(256, im.height), cv = document.createElement('canvas'); cv.width = W; cv.height = H;
+        const g2 = cv.getContext('2d'); g2.drawImage(im, 0, 0, W, H);
+        r = { w: W, h: H, d: g2.getImageData(0, 0, W, H).data, ch: 4, flip: tex.flipY !== false };
+      }
+      if (r) { tex.updateMatrix(); r.m = tex.matrix.elements.slice(); r.rs = tex.wrapS === 1000; r.rt = tex.wrapT === 1000; }
+    } catch (e) { r = null; }
+    texPix.set(tex, r); return r;
+  };
+  const texel = (T, u, v, out) => {
+    const m = T.m, uu = m[0] * u + m[3] * v + m[6], vv = m[1] * u + m[4] * v + m[7];
+    let x = T.rs ? uu - Math.floor(uu) : Math.min(1, Math.max(0, uu)), y = T.rt ? vv - Math.floor(vv) : Math.min(1, Math.max(0, vv));
+    const px = Math.min(T.w - 1, Math.floor(x * T.w)), py = Math.min(T.h - 1, Math.floor((T.flip ? 1 - y : y) * T.h)), i = (py * T.w + px) * T.ch;
+    out[0] = T.d[i]; out[1] = T.d[i + 1]; out[2] = T.d[i + 2];
+  };
   const matId = (m, vc) => {
     const col = m.color ? m.color.getHex() : 0xffffff, key = m.uuid + (vc ? '|' + vc : '');
     if (matIndex.has(key)) return matIndex.get(key);
     let rgb = [(col >> 16) & 255, (col >> 8) & 255, col & 255];
     if (vc) rgb = rgb.map((c, i) => c * ((vc >> (16 - 8 * i)) & 255) / 255);
+    const baseRgb = rgb.slice();
     const tm = meanOf(m.map);
     if (tm) rgb = rgb.map((c, i) => c * tm[i] / 255);
     const em = m.emissive ? m.emissive.getHex() : 0;
     const info = { name: m.name || '', type: m.type, rgb: rgb.map(Math.round), map: !!m.map, mapAlpha: tm && tm[3] !== undefined ? +tm[3].toFixed(2) : null,
       opacity: m.opacity, transparent: !!m.transparent, alphaTest: m.alphaTest || 0, metal: m.metalness ?? null, rough: m.roughness ?? null,
       emissive: [(em >> 16) & 255, (em >> 8) & 255, em & 255], emissiveIntensity: m.emissiveIntensity ?? 0, emissiveMap: !!m.emissiveMap, area: 0 };
-    const id = mats.length; mats.push(info); matIndex.set(key, id); return id;
+    const id = mats.length; mats.push(info); matIndex.set(key, id); matBase[id] = baseRgb; matTex[id] = pixOf(m.map); return id;
   };
   const visibleChain = o => { for (let p = o; p; p = p.parent) { if (!p.visible) return false; if (p === root) return true; } return true; };
   const skipChain = o => { for (let p = o; p && p !== root; p = p.parent) if (SKIP_GROUPS.test(p.name || '') || SKIP_NAMES.test(p.name || '')) return true; return false; };
@@ -112,6 +141,8 @@ const setup = await page.evaluate(({ listHidden }) => {
   const mul = (A, B) => { const R = new Float64Array(16); for (let i = 0; i < 4; i++) for (let j = 0; j < 4; j++) { let s = 0; for (let k = 0; k < 4; k++) s += A[k * 4 + j] * B[i * 4 + k]; R[i * 4 + j] = s; } return R; };
   const xf = (e, p, i, o) => { const x = p.getX(i), y = p.getY(i), z = p.getZ(i); o[0] = e[0] * x + e[4] * y + e[8] * z + e[12]; o[1] = e[1] * x + e[5] * y + e[9] * z + e[13]; o[2] = e[2] * x + e[6] * y + e[10] * z + e[14]; };
   let tris = 0, samples = 0, meshes = 0;
+  const matBase = [], matTex = [], tc = [0, 0, 0];
+  let UV = null;                     // for the triangle being sampled: [ua, va, ub, vb, uc, vc] or null
   const furniture = [];
   const addTri = (mid) => {
     const minx = Math.min(a[0], b[0], c[0]), maxx = Math.max(a[0], b[0], c[0]), miny = Math.min(a[1], b[1], c[1]), maxy = Math.max(a[1], b[1], c[1]);
@@ -122,11 +153,12 @@ const setup = await page.evaluate(({ listHidden }) => {
     const area = n2 / 2; nx /= n2; ny /= n2; nz /= n2; tris++;
     const L = Math.max(Math.hypot(ux, uy, uz), Math.hypot(vx, vy, vz), Math.hypot(b[0] - c[0], b[1] - c[1], b[2] - c[2]));
     const n = Math.max(1, Math.ceil(L / SP)); let cnt = 0;
-    const pts = [];
+    const pts = [], st_ = [];
     for (let i = 0; i <= n; i++) for (let j = 0; j <= n - i; j++) {
       const s = (i + (n === 1 ? 1 / 3 : 0)) / n, t = (j + (n === 1 ? 1 / 3 : 0)) / n; if (s + t > 1.0001) continue;
-      pts.push(a[0] + ux * s + vx * t - nx * PUSH, a[1] + uy * s + vy * t - ny * PUSH, a[2] + uz * s + vz * t - nz * PUSH); cnt++;
+      pts.push(a[0] + ux * s + vx * t - nx * PUSH, a[1] + uy * s + vy * t - ny * PUSH, a[2] + uz * s + vz * t - nz * PUSH); st_.push(s, t); cnt++;
     }
+    const T = UV ? matTex[mid] : null, B = matBase[mid];
     const w = area / cnt; mats[mid].area += area;
     for (let k = 0; k < pts.length; k += 3) {
       const px = pts[k] - X0, py = pts[k + 1] - Y0, pz = pts[k + 2] - Z0;
@@ -134,8 +166,11 @@ const setup = await page.evaluate(({ listHidden }) => {
       const bx = Math.floor(px), by = Math.floor(py), bz = Math.floor(pz);
       const sub = ((px - bx) >= 0.5 ? 1 : 0) | ((pz - bz) >= 0.5 ? 2 : 0) | ((py - by) >= 0.5 ? 4 : 0);
       const key = ((by * NZ + bz) * NX + bx) * 4096 + mid;
-      let e = cell.get(key); if (!e) { e = [0, 0, 0]; cell.set(key, e); }
+      let e = cell.get(key); if (!e) { e = [0, 0, 0, 0, 0, 0]; cell.set(key, e); }
       e[0] += w; e[1] |= 1 << sub; e[2] += w * (py - by); samples++;
+      if (T) { const s = st_[k / 3 * 2], t = st_[k / 3 * 2 + 1]; texel(T, UV[0] + (UV[2] - UV[0]) * s + (UV[4] - UV[0]) * t, UV[1] + (UV[3] - UV[1]) * s + (UV[5] - UV[1]) * t, tc);
+        e[3] += w * B[0] * tc[0] / 255; e[4] += w * B[1] * tc[1] / 255; e[5] += w * B[2] * tc[2] / 255; }
+      else { const r = mats[mid].rgb; e[3] += w * r[0]; e[4] += w * r[1]; e[5] += w * r[2]; }
     }
   };
   root.traverse(o => {
@@ -143,7 +178,7 @@ const setup = await page.evaluate(({ listHidden }) => {
     if (!visibleChain(o) || skipChain(o)) return;
     const g = o.geometry, pos = g.attributes.position, idx = g.index, mlist = [].concat(o.material);
     if (mlist.some(m => !m || m.visible === false || m.colorWrite === false)) return;
-    const vcol = g.attributes.color && mlist[0].vertexColors ? g.attributes.color : null;
+    const vcol = g.attributes.color && mlist[0].vertexColors ? g.attributes.color : null, uva = g.attributes.uv || null;
     const groups = g.groups && g.groups.length ? g.groups : [{ start: 0, count: idx ? idx.count : pos.count, materialIndex: 0 }];
     const inst = o.isInstancedMesh ? o.count : 1, base = o.matrixWorld.elements;
     meshes++;
@@ -186,17 +221,20 @@ const setup = await page.evaluate(({ listHidden }) => {
           xf(e, pos, i0, a); xf(e, pos, i1, b); xf(e, pos, i2, c);
           let vc = 0;
           if (vcol) { const q8 = v => Math.min(15, Math.floor(v * 16)) * 17; const r = (vcol.getX(i0) + vcol.getX(i1) + vcol.getX(i2)) / 3, gg = (vcol.getY(i0) + vcol.getY(i1) + vcol.getY(i2)) / 3, bb = (vcol.getZ(i0) + vcol.getZ(i1) + vcol.getZ(i2)) / 3; vc = (q8(r) << 16) | (q8(gg) << 8) | q8(bb); }
-          addTri(matId(m, vc));
+          const id_ = matId(m, vc);
+          UV = (uva && matTex[id_]) ? [uva.getX(i0), uva.getY(i0), uva.getX(i1), uva.getY(i1), uva.getX(i2), uva.getY(i2)] : null;
+          addTri(id_);
         }
       }
     }
   });
   // pack: one row per (block, material)
-  const n = cell.size, blk = new Int32Array(n), mid = new Uint16Array(n), area = new Float32Array(n), sub = new Uint8Array(n), hy = new Uint8Array(n); let k = 0;
-  for (const [key, e] of cell) { blk[k] = Math.floor(key / 4096); mid[k] = key % 4096; area[k] = e[0]; sub[k] = e[1]; hy[k] = Math.min(255, Math.round(e[2] / e[0] * 255)); k++; }
+  const n = cell.size, blk = new Int32Array(n), mid = new Uint16Array(n), area = new Float32Array(n), sub = new Uint8Array(n), hy = new Uint8Array(n), rgb = new Uint8Array(n * 3); let k = 0;
+  for (const [key, e] of cell) { blk[k] = Math.floor(key / 4096); mid[k] = key % 4096; area[k] = e[0]; sub[k] = e[1]; hy[k] = Math.min(255, Math.round(e[2] / e[0] * 255));
+    rgb[k * 3] = Math.min(255, Math.round(e[3] / e[0])); rgb[k * 3 + 1] = Math.min(255, Math.round(e[4] / e[0])); rgb[k * 3 + 2] = Math.min(255, Math.round(e[5] / e[0])); k++; }
   const b64 = arr => { const u = new Uint8Array(arr.buffer); let s = ''; for (let i = 0; i < u.length; i += 0x8000) s += String.fromCharCode.apply(null, u.subarray(i, i + 0x8000)); return btoa(s); };
   // the outlines of the items in the box, for naming in the report
-  return { box, size: [NX, NY, NZ], stats: { meshes, tris, samples, rows: n, furniture: furniture.length }, furniture, mats, blk: b64(blk), mid: b64(mid), area: b64(area), sub: b64(sub), hy: b64(hy) };
+  return { box, size: [NX, NY, NZ], stats: { meshes, tris, samples, rows: n, furniture: furniture.length }, furniture, mats, blk: b64(blk), mid: b64(mid), area: b64(area), sub: b64(sub), hy: b64(hy), rgb: b64(rgb) };
   };
   return { ok: true };
 }, { listHidden });
