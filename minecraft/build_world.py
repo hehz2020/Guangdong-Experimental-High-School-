@@ -399,6 +399,34 @@ def light_rooms(states, kinds, PAL, PIDX, step=6, level=13):
                 y += 1
     print(f'invisible lights under ceilings: {n}')
 
+
+def apply_fixes(states, kinds, PAL, PIDX, path, X0, Z0, Y0):
+    """Hand-made changes in fixes.json, in game block coordinates, applied last: 'fill' sets a box to one block, 'ladder'
+    puts ladders up a column (facing: the way the ladder faces, away from the wall it hangs on)."""
+    def sid(s):
+        if s not in PIDX: PIDX[s] = len(PAL); PAL.append(s)
+        return PIDX[s]
+    NY, NZ, NX = states.shape
+    yb = int(math.floor(Y0)) + 64
+    n = 0
+    for group in json.load(open(path, encoding='utf-8')):
+        for op in group['ops']:
+            if op['op'] == 'fill':
+                (ax, ay, az), (bx_, by_, bz_) = op['from'], op['to']
+                for y in range(min(ay, by_), max(ay, by_) + 1):
+                    for z in range(min(az, bz_), max(az, bz_) + 1):
+                        for x in range(min(ax, bx_), max(ax, bx_) + 1):
+                            c = (y - yb, z - int(Z0), x - int(X0))
+                            if 0 <= c[0] < NY and 0 <= c[1] < NZ and 0 <= c[2] < NX:
+                                states[c] = 0 if op['block'] == 'air' else sid(op['block'])
+                                kinds[c] = 0 if op['block'] == 'air' else 4; n += 1
+            elif op['op'] == 'ladder':
+                for y in range(op['y0'], op['y1'] + 1):
+                    c = (y - yb, op['z'] - int(Z0), op['x'] - int(X0))
+                    if 0 <= c[0] < NY and 0 <= c[1] < NZ and 0 <= c[2] < NX:
+                        states[c] = sid(f"ladder[facing={op['facing']},waterlogged=false]"); kinds[c] = 6; n += 1
+    print(f'hand-made fixes: {n} blocks')
+
 # ---------------------------------------------------------------------------------------------------------- furniture
 BED_COLOURS = ['white', 'light_blue', 'light_gray', 'blue', 'pink', 'yellow', 'lime', 'cyan', 'orange', 'purple']
 WOOL = {'white': (234, 236, 237), 'light_gray': (142, 142, 135), 'gray': (63, 68, 72), 'black': (21, 21, 26), 'red': (161, 39, 35),
@@ -620,6 +648,7 @@ def main():
     ap.add_argument('--spawn', default=None, help='x,z,yaw in world metres / Minecraft yaw (90 = facing west)')
     ap.add_argument('--blocks', default=None, help='also save the block grid (npz) for previews')
     ap.add_argument('--open', default=None, help='doorways.py open.json: cells to clear, two blocks high')
+    ap.add_argument('--fixes', default=None, help='fixes.json: hand-made changes applied last')
     ap.add_argument('--surfaces', default=None, help='surfaces.mjs outputs, comma separated: steps rebuilt from the 3D standing heights')
     a = ap.parse_args()
     t0 = time.time()
@@ -654,6 +683,7 @@ def main():
     ents = place_furniture(states, kinds, PAL, PIDX, furniture, X0, Z0, Y0) if furniture else {}
     if a.open: hang_doors(states, kinds, PAL, PIDX, opened, X0, Z0, Y0)
     light_rooms(states, kinds, PAL, PIDX)
+    if a.fixes: apply_fixes(states, kinds, PAL, PIDX, a.fixes, X0, Z0, Y0)
     ents_by_chunk = {}
     for (x, y, z), e in ents.items(): ents_by_chunk.setdefault((x >> 4, z >> 4), []).append(e)
     print(f'chosen blocks in {time.time() - t0:.1f}s: {int((states > 0).sum())} non-air blocks, {len(PAL)} block states, box {X0} {X1} {Z0} {Z1} {Y0} {Y1}')

@@ -16,7 +16,7 @@ from collections import deque
 import numpy as np
 
 PASS_PREFIX = ('air', 'water', 'light[')
-PASS_SUFFIX = ('_carpet', '_door', 'tulip', 'poppy', 'daisy', 'bluet', 'dandelion', 'torch', 'button', 'sign', 'banner')
+PASS_SUFFIX = ('_carpet', '_door', 'ladder', 'tulip', 'poppy', 'daisy', 'bluet', 'dandelion', 'torch', 'button', 'sign', 'banner')
 
 def main():
     src, spawn, targets = sys.argv[1], sys.argv[2], json.load(open(sys.argv[3]))
@@ -36,6 +36,9 @@ def reach(src, spawn):
     below = np.concatenate([np.ones((1, NZ, NX), bool), S[:-1]], axis=0)
     above = np.concatenate([P[1:], np.ones((1, NZ, NX), bool)], axis=0)
     stand = P & above & below
+    # ladders: a player holds on anywhere up a ladder and climbs it
+    L = np.array([p.startswith('ladder') for p in pal])[st]
+    stand |= L
     # the height a player stands at in a cell: half a block lower over a bottom slab (stairs count as a half step too)
     half_pal = np.array(['_slab[type=bottom' in p or '_stairs[' in p for p in pal])
     lowered = np.concatenate([np.zeros((1, NZ, NX), bool), half_pal[st][:-1]], axis=0)
@@ -47,6 +50,9 @@ def reach(src, spawn):
     seen = np.zeros_like(stand); q = deque([(by0, bz, bx)]); seen[by0, bz, bx] = True
     while q:
         y, z, x = q.popleft()
+        for ny in (y + 1, y - 1):                                    # up or down a ladder
+            if 0 <= ny < NY and (L[y, z, x] or L[ny, z, x]) and stand[ny, z, x] and not seen[ny, z, x]:
+                seen[ny, z, x] = True; q.append((ny, z, x))
         for dz, dx in ((1, 0), (-1, 0), (0, 1), (0, -1)):
             nz, nx = z + dz, x + dx
             if not (0 <= nz < NZ and 0 <= nx < NX): continue

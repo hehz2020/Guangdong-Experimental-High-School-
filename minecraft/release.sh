@@ -22,7 +22,7 @@ echo "== $V: standing heights of the 3D campus (for stairs)"
 echo "== $V: the world"
 rm -rf "$W/world_$V"
 python3 minecraft/build_world.py "$W"/full/vox_*.json --out "$W/world_$V" --name "广东实验中学（荔湾校区）" --spawn 262,-20,90 \
-  --blocks "$W/blocks_$V.npz" --open "$W/open.json" --surfaces "$W/surf_a.json,$W/surf_b.json" | tee "$W/build_$V.log"
+  --blocks "$W/blocks_$V.npz" --open "$W/open.json" --surfaces "$W/surf_a.json,$W/surf_b.json" --fixes minecraft/fixes.json | tee "$W/build_$V.log"
 python3 minecraft/check_world.py "$W/world_$V" | tail -1
 python3 minecraft/walk_check.py "$W/blocks_$V.npz" 262,-20 minecraft/targets.json | tee "$W/walk_$V.log"
 echo "== $V: through the official server"
