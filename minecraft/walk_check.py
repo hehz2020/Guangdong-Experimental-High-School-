@@ -5,8 +5,8 @@ usage: python minecraft/walk_check.py <blocks.npz> <spawn x,z> <targets.json>
 targets.json: [[name, x, h, z], ...] in world metres (h = height of the floor the place stands on).
 
 Model: a player stands in a cell whose block and the block above it let a body through, over a block that holds it
-up. From there it may walk to a side cell at the same height, step or jump up one block (stairs, slabs and full
-blocks alike: the game lets a player jump one block), or drop down up to four blocks. Doors, carpets, flowers, beds
+up (half a block lower over a bottom slab or stairs). From there it may walk to a side cell, stepping up to 0.6 of a
+block, jump up to 1.25 if there is room above its head, or drop down up to four blocks. Doors, carpets, flowers, beds
 and open trapdoors let a body through; water counts as passable (the player can swim). The check ignores the half
 heights of slabs and the space a jump needs above the head, so it is generous: a "yes" here can still need a careful
 jump in the game, but a "no" means there is no way in at all.
@@ -20,6 +20,11 @@ PASS_SUFFIX = ('_carpet', '_door', 'tulip', 'poppy', 'daisy', 'bluet', 'dandelio
 
 def main():
     src, spawn, targets = sys.argv[1], sys.argv[2], json.load(open(sys.argv[3]))
+    seen, stand, (X0, X1, Z0, Z1, Y0, Y1) = reach(src, spawn)
+    NY, NZ, NX = seen.shape
+    report(seen, stand, targets, X0, Z0, Y0, NY, NZ, NX)
+
+def reach(src, spawn):
     d = np.load(src)
     st, pal, box = d['states'], [str(p) for p in d['pal']], d['box']
     X0, X1, Z0, Z1, Y0, Y1 = box
@@ -31,6 +36,9 @@ def main():
     below = np.concatenate([np.ones((1, NZ, NX), bool), S[:-1]], axis=0)
     above = np.concatenate([P[1:], np.ones((1, NZ, NX), bool)], axis=0)
     stand = P & above & below
+    # the height a player stands at in a cell: half a block lower over a bottom slab (stairs count as a half step too)
+    half_pal = np.array(['_slab[type=bottom' in p or '_stairs[' in p for p in pal])
+    lowered = np.concatenate([np.zeros((1, NZ, NX), bool), half_pal[st][:-1]], axis=0)
     sx, sz = (float(v) for v in spawn.split(','))
     bx, bz = int(sx - X0), int(sz - Z0)
     ys = np.nonzero(stand[:, bz, bx])[0]
@@ -44,10 +52,15 @@ def main():
             if not (0 <= nz < NZ and 0 <= nx < NX): continue
             for ny in (y, y + 1, y - 1, y - 2, y - 3, y - 4):
                 if not (0 <= ny < NY) or not stand[ny, nz, nx]: continue
-                if ny == y + 1 and not (y + 2 < NY and P[y + 2, z, x]): continue   # head room for the jump
+                rise = (ny - 0.5 * lowered[ny, nz, nx]) - (y - 0.5 * lowered[y, z, x])
+                if rise > 1.25: continue
+                if rise > 0.6 and not (y + 2 < NY and P[y + 2, z, x]): continue     # a jump needs head room
                 if ny < y and not all(P[k, nz, nx] for k in range(ny, y + 1)): continue
                 if not seen[ny, nz, nx]: seen[ny, nz, nx] = True; q.append((ny, nz, nx))
                 break
+    return seen, stand, (X0, X1, Z0, Z1, Y0, Y1)
+
+def report(seen, stand, targets, X0, Z0, Y0, NY, NZ, NX):
     print(f'reachable standing cells: {int(seen.sum())} of {int(stand.sum())}')
     ok = 0
     for name, x, h, z in targets:

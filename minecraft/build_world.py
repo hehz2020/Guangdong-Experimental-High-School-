@@ -181,7 +181,7 @@ def post_pass(states, kinds, union, PAL, PIDX):
 
 
 
-def raise_slab_floors(states, kinds, PAL, PIDX, min_cells=12):
+def raise_slab_floors(states, kinds, PAL, PIDX, min_cells=12, keep=()):
     """Indoor floors that came out as bottom slabs (floors 0.1-0.5 m above a block line, e.g. ground floors raised
     0.3 m) become whole blocks: furniture is set into the block above a floor, so on a slab it would float half a
     block. A region counts as a floor if it has at least min_cells slabs side by side and most of it is under a roof
@@ -202,6 +202,8 @@ def raise_slab_floors(states, kinds, PAL, PIDX, min_cells=12):
     changed = 0
     for y in range(1, NY - 1):
         cand = slab_ids[states[y]] & (states[y + 1] == 0)
+        for (ky, kz, kx) in keep:
+            if ky == y: cand[kz, kx] = False      # a stair's half steps stay half steps
         seen = np.zeros((NZ, NX), bool)
         roof = np.zeros((NZ, NX), bool)
         for k in range(2, 9):
@@ -216,6 +218,8 @@ def raise_slab_floors(states, kinds, PAL, PIDX, min_cells=12):
                     if 0 <= zz < NZ and 0 <= xx < NX and cand[zz, xx] and not seen[zz, xx]:
                         seen[zz, xx] = True; q.append((zz, xx))
             if len(reg) < min_cells or sum(roof[z, x] for z, x in reg) < 0.7 * len(reg): continue
+            # a floor a stair comes up to keeps its height: raised, it would leave the top step a block and a half below
+            if keep and any((yy, z + dz, x + dx) in keep for z, x in reg for dz, dx in ((1, 0), (-1, 0), (0, 1), (0, -1)) for yy in (y, y - 1)): continue
             for z, x in reg:
                 f = full_of.get(int(states[y, z, x]))
                 if f: states[y, z, x] = f; kinds[y, z, x] = 4; changed += 1
@@ -226,7 +230,7 @@ def apply_surfaces(states, kinds, PAL, PIDX, files, X0, Z0, Y0):
     """Rebuilds steps where a person can stand in the 3D campus but not in the blocks (surfaces.mjs spots): the
     standing height is rounded to half a block; a whole-number height gets a whole block under it, a half one a bottom
     slab; the two blocks above are cleared, except glass (a window), and a whole block only where no wall comes within
-    0.45 m of the column's middle in the 3D campus. Spots the blocks already serve (a standing place within 0.55 m)
+    0.45 m of the column's middle in the 3D campus. Spots the blocks already serve (a standing place within 0.3 m)
     are left alone. Clearing is done first, then the blocks to stand on, so a flight above keeps its steps."""
     from blocks import SOLID, PLANKS
     import base64
@@ -240,7 +244,7 @@ def apply_surfaces(states, kinds, PAL, PIDX, files, X0, Z0, Y0):
         p = PAL[i]
         return p == 'air' or p.startswith(('water', 'light[')) or p.split('[')[0].endswith(('_carpet', '_door', 'tulip', 'poppy', 'daisy', 'bluet', 'dandelion'))
     pas = np.array([passable(i) for i in range(len(PAL))] + [False] * 4096)
-    clears, supports = {}, {}
+    clears, supports, stair_cells = {}, {}, set()
     n_spots = n_ok = 0
     allsp = np.concatenate([np.frombuffer(base64.b64decode(json.load(open(f))['spots']), dtype=np.float32).reshape(-1, 4) for f in files])
     # floors: many spots at the same height around; stairs and landings: few. On stairs and landings a whole block in
@@ -255,24 +259,39 @@ def apply_surfaces(states, kinds, PAL, PIDX, files, X0, Z0, Y0):
             for j in range(-3, 4):
                 n += sum(1 for hh in byc.get((x + i, z + j), ()) if abs(hh - h) < 0.3)
         return n >= 20
+    def near_step(cx, cz, h):
+        """A stair's head: a column within two of this one holds a spot 0.3-1.2 m higher or lower."""
+        x, z = int(math.floor(cx)), int(math.floor(cz))
+        return any(0.3 <= abs(hh - h) <= 1.2 for i in range(-2, 3) for j in range(-2, 3) if i or j for hh in byc.get((x + i, z + j), ()))
     if True:
         sp = allsp
         for cx, cz, h, wide in sp:
             n_spots += 1
             x, z = int(math.floor(cx - X0)), int(math.floor(cz - Z0))
             if not (0 <= x < NX and 0 <= z < NZ): continue
-            t = round(float(h) * 2) / 2
-            half = (t * 2) % 2 == 1
-            sup = int(math.floor(t) - Y0) if half else int(t - 1 - Y0)
-            if not (1 <= sup < NY - 3): continue
             col = states[:, z, x]
-            # already served: a standing place whose floor top lies within 0.55 of t
-            served = False
-            for s_ in range(max(1, sup - 1), min(NY - 2, sup + 3)):
-                if pas[col[s_]] and pas[col[s_ + 1]] and not pas[col[s_ - 1]]:
-                    top = s_ + Y0 - (0.5 if '_slab[type=bottom' in PAL[col[s_ - 1]] else 0)
-                    if abs(top - t) <= 0.55: served = True; break
-            if served: n_ok += 1; continue
+            dbg = os.environ.get('MC_DEBUG_COL') == f'{int(math.floor(cx))},{int(math.floor(cz))}'
+            def served_at(t):
+                half = (t * 2) % 2 == 1
+                sup = int(math.floor(t) - Y0) if half else int(t - 1 - Y0)
+                if not (1 <= sup < NY - 3): return None, half, True
+                for s_ in range(max(1, sup - 1), min(NY - 2, sup + 3)):
+                    if pas[col[s_]] and pas[col[s_ + 1]] and not pas[col[s_ - 1]]:
+                        top = s_ + Y0 - (0.5 if '_slab[type=bottom' in PAL[col[s_ - 1]] else 0)
+                        if abs(top - t) <= 0.3: return sup, half, True
+                return sup, half, False
+            # floors keep their height rounded to the nearest half block; on stairs and landings the height is rounded
+            # a little downward, so that a flight of 0.54 m per block becomes even half-block steps (rounding each
+            # block to the nearest would give a whole-block step now and then, which needs a jump the headroom of a
+            # stair rarely allows)
+            t = round(float(h) * 2) / 2
+            sup, half, ok_ = served_at(t)
+            if ok_: n_ok += 1; continue
+            if not floorlike(cx, cz, float(h)):
+                t = math.floor(float(h) * 2 + 0.2) / 2
+                sup, half, ok_ = served_at(t)
+                if ok_: n_ok += 1; continue
+            if sup is None: continue
             # the material: what the stair or floor is made of at or below the support
             mat = None
             for k in (sup, sup - 1, sup + 1):
@@ -286,15 +305,22 @@ def apply_surfaces(states, kinds, PAL, PIDX, files, X0, Z0, Y0):
                 p = PAL[col[k]]
                 if pas[col[k]]: continue
                 if 'glass' in p or 'pane' in p: ok = False; break
-                if '[' not in p and kinds[k, z, x] == 4 and wide < 2 and floorlike(cx, cz, float(h)): ok = False; break
+                if '[' not in p and kinds[k, z, x] == 4 and wide < 2 and floorlike(cx, cz, float(h)) and not (wide >= 1 and near_step(cx, cz, float(h))): ok = False; break
+            if dbg: print('DEBUG spot', cx, cz, h, 'wide', wide, 't', t, 'sup', sup, 'ok', ok, 'floorlike', floorlike(cx, cz, float(h)), 'near_step', near_step(cx, cz, float(h)), [PAL[col[k]] for k in (sup, sup + 1, sup + 2)])
             if not ok: continue
             for k in (sup + 1, sup + 2): clears[(k, z, x)] = 1
+            # on a stair a third block of head room, so that a whole-block step (rounding) can be jumped; the steps of
+            # a flight above are set after the clearing and win
+            stairish = not floorlike(cx, cz, float(h)) or near_step(cx, cz, float(h))
+            if stairish and sup + 3 < NY and 'glass' not in PAL[col[sup + 3]] and 'pane' not in PAL[col[sup + 3]]: clears[(sup + 3, z, x)] = 1
             supports[(sup, z, x)] = f'{slab_of[mat]}[type=bottom,waterlogged=false]' if half else mat
+            if not floorlike(cx, cz, float(h)): stair_cells.add((sup, z, x))
     for c in clears:
         states[c] = 0; kinds[c] = 0
     for c, st in supports.items():
         states[c] = sid(st); kinds[c] = 6 if '_slab' in st else 4
     print(f'standing spots: {n_spots}, already served {n_ok}, rebuilt {len(supports)} (cleared {len(clears)} blocks above)')
+    return stair_cells
 
 
 def hang_doors(states, kinds, PAL, PIDX, opened, X0, Z0, Y0):
@@ -603,9 +629,10 @@ def main():
                     states[by + k, bz, bx] = 0; kinds[by + k, bz, bx] = 0; n += 1
         print(f'doorways opened: {n} blocks cleared')
     states = post_pass(states, kinds, union, PAL, PIDX)
+    stair_cells = set()
     if a.surfaces:
-        apply_surfaces(states, kinds, PAL, PIDX, a.surfaces.split(','), X0, Z0, Y0)
-    raise_slab_floors(states, kinds, PAL, PIDX)
+        stair_cells = apply_surfaces(states, kinds, PAL, PIDX, a.surfaces.split(','), X0, Z0, Y0)
+    raise_slab_floors(states, kinds, PAL, PIDX, keep=stair_cells)
     furniture = [f for v in voxes for f in v.get('furniture', [])]
     ents = place_furniture(states, kinds, PAL, PIDX, furniture, X0, Z0, Y0) if furniture else {}
     if a.open: hang_doors(states, kinds, PAL, PIDX, opened, X0, Z0, Y0)
