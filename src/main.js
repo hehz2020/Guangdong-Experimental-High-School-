@@ -52,7 +52,7 @@ const only = params.get('only') ? new Set(params.get('only').split(',')) : null;
 const tryBuilders = Object.fromEntries((params.get('try') || '').split(',').filter(Boolean).map(s => { const i = s.indexOf(':'); return [s.slice(0, i), './builders/' + s.slice(i + 1)]; }));
 const tryExtras = (params.get('tryx') || '').split(',').filter(Boolean).map(f => './extras/' + f);
 setTextureQuality({ anisotropy: renderer.capabilities.getMaxAnisotropy() });
-const { root, colliders, report, details, updaters, places } = await buildWorld(CAMPUS, only, tryBuilders, tryExtras, { lowPower, extras: params.get('extras') === '1', safe,
+const { root, colliders, report, details, updaters, places, indoors } = await buildWorld(CAMPUS, only, tryBuilders, tryExtras, { lowPower, extras: params.get('extras') === '1', safe,
   progress: async (what, i, n) => { step(`${what === 'item' ? '正在搭建楼宇' : '正在布置场地和周边'} ${i} / ${n}`); await breathe(); } });
 scene.add(root);
 step('正在处理材质'); await breathe();
@@ -72,7 +72,7 @@ if (flatCheck) {
 } else {
   // post: true/false when ?post=1/0 is given, otherwise undefined so the lighting module picks its default (it should be cheaper when lowPower is set)
   lighting = createLighting(scene, renderer, { shadows: params.get('shadows') !== '0', shadowRes: num('shadowres', lowPower ? 1024 : 2048), lowPower, plain: safe,
-    post: params.has('post') ? params.get('post') !== '0' : undefined, antialias: params.get('aa') !== '0', camera: null });
+    post: params.has('post') ? params.get('post') !== '0' : undefined, antialias: params.get('aa') !== '0', camera: null, indoors });
   lighting.setTime(num('time', 9.2));                 // morning: the sun is in the east and lights the front of the gate, where the walk starts
 }
 

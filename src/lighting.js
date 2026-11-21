@@ -35,7 +35,8 @@
 //   - Indoor light: there are no real room lights. One lamp follows the viewer under a roof (1.25 m above the eye, 2 m
 //     in the new teaching building), and in the gymnasium a lamp hangs in the middle of the hall. Colour and strength
 //     are chosen by eye. "Under a roof" means inside the outline of a solid item of campus-data.js and below its height,
-//     so open galleries count as indoors and the plaza canopy and covered walkways do not.
+//     so open galleries count as indoors and the plaza canopy and covered walkways do not; builders can add covered
+//     places of their own (ctx.indoor in world/index.js), which are checked first.
 //   - Glass is recognised by material name (glass, teal, clere, curtain, ribbon, pane, window) or, for materials the
 //     builders left unnamed, by being smooth (roughness up to 0.3); lamps by a strong, nearly white emissive colour.
 //   - Exposure per time of day and the indoor boost are chosen by eye.
@@ -228,8 +229,14 @@ function makeSky(uniforms, octaves) {
 
 // ---------------------------------------------------------------------------------------------------------------------
 // roofs: where the viewer is under cover (outlines and heights of campus-data.js)
-function makeRoofs() {
+function makeRoofs(extra = []) {
   const roofs = [];
+  // covered places the builders declared (ctx.indoor in world/index.js): checked before the data outlines
+  for (const d of extra) {
+    let w = Infinity, e = -Infinity, n = Infinity, s = -Infinity;
+    for (const [x, z] of d.pts) { w = Math.min(w, x); e = Math.max(e, x); n = Math.min(n, z); s = Math.max(s, z); }
+    roofs.push({ pts: d.pts, w, e, n, s, height: d.top - 0.3, bottom: d.bottom, hall: null, tall: false });
+  }
   for (const it of CAMPUS.items) {
     if (!it.solid || !(it.height > 3)) continue;
     const pts = it.shape === 'circle' ? Array.from({ length: 24 }, (_, i) => [it.cx + it.radius * Math.cos(i / 24 * 2 * Math.PI), it.cz + it.radius * Math.sin(i / 24 * 2 * Math.PI)]) : it.points;
@@ -320,7 +327,7 @@ export function createLighting(scene, renderer, opts = {}) {
   const K = [], S = [], tmpC = new THREE.Color(), tmpV = new THREE.Vector3(), fwd = new THREE.Vector3(), focus = new THREE.Vector3();
   let hours = 15, elDeg = 0, day = 1, night = 0, exposureTime = 0.7, sunPower = 0, depthMin = -800, depthMax = 800, bounds = null;
   let frame = 0, lastNow = 0, scale = 1, basisVersion = 0, viewer = null, indoor = 0, indoorTarget = 0, roofNow = null, lampPower = 0;
-  const roofs = makeRoofs();
+  const roofs = makeRoofs(opts.indoors || []);
   scene.fog = new THREE.Fog(0xffffff, 300, 3200);
 
   // ---- materials found in the scene
@@ -504,7 +511,7 @@ export function createLighting(scene, renderer, opts = {}) {
     const p = viewer || camera.position;
     if (viewer && frame % 6 === 1) {
       roofNow = null;
-      for (const r of roofs) if (p.x > r.w && p.x < r.e && p.z > r.n && p.z < r.s && p.y < r.height + 0.3 && inside(r.pts, p.x, p.z)) { roofNow = r; break; }
+      for (const r of roofs) if (p.x > r.w && p.x < r.e && p.z > r.n && p.z < r.s && p.y < r.height + 0.3 && !(p.y < r.bottom) && inside(r.pts, p.x, p.z)) { roofNow = r; break; }
       indoorTarget = roofNow ? 1 : 0;
     }
     indoor += (indoorTarget - indoor) * (1 - Math.exp(-dt * 3.5));

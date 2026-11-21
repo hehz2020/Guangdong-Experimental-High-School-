@@ -95,6 +95,8 @@ export async function buildWorld(campus, only = null, tryBuilders = {}, tryExtra
   const updaters = [];       // functions (dt, seconds, { camera, lighting, renderer }) called every frame: water, fountains, leaves
   const places = [];         // extra entries for the places menu, offered by extras: { name, x, z, yaw, y, fly, pitch }
   const detail = (obj, x, z, range) => { details.push({ obj, x, z, range }); return obj; };
+  const indoors = [];        // { pts, top, bottom }: covered places the builders declare (the lighting module treats them as under a roof)
+  const indoor = (outline, top, bottom = -1) => { if (outline && outline.length > 2 && top > bottom) indoors.push({ pts: outline, top, bottom }); };
   const occupied = [];       // outlines [[x, z]...] of solid parts that builders put outside their item's outline (the extras keep trees and lamps off them)
 
   // ground
@@ -123,6 +125,10 @@ export async function buildWorld(campus, only = null, tryBuilders = {}, tryExtra
       animate: fn => { updaters.push(fn); },
       // tell the grounds about a solid part that stands outside item.points: outline [[x, z]...] in world coordinates
       occupy: outline => { occupied.push(outline); },
+      // declare a covered place the lighting should treat as indoors (lamp near the viewer, windows dimmed): outline in world
+      // coordinates, from y = bottom up to y = top. Items' own outlines (campus-data.js) already count; use this for the parts
+      // outside them (a corridor beyond the data band, a covered porch, a room in an extras building).
+      indoor,
       add: obj => { group.add(obj); return obj; },
       // register a mesh (in world coordinates) that the player cannot walk through
       // Call after ctx.add (the mesh needs its parents to know where it is). For an invisible barrier, add a mesh and set visible = false.
@@ -148,6 +154,7 @@ export async function buildWorld(campus, only = null, tryBuilders = {}, tryExtra
     const ctx = {
       campus, detail, occupied, lowPower: !!env.lowPower, safe: !!env.safe,
       occupy: outline => { occupied.push(outline); },       // as for builders; only modules that run before the grounds are heeded
+      indoor,
       add: obj => { group.add(obj); return obj; },
       collide: mesh => { mesh.updateWorldMatrix(true, false); const c = new THREE.Mesh(mesh.geometry); c.matrixAutoUpdate = false; c.matrix.copy(mesh.matrixWorld); colliders.add(c); return mesh; },
       animate: fn => { updaters.push(fn); },
@@ -158,5 +165,5 @@ export async function buildWorld(campus, only = null, tryBuilders = {}, tryExtra
   }
   // pools of light under every lamp the modules recorded, after dusk (not in safe mode: it is a custom shader)
   if (!env.safe) { const pools = lightPools(); if (pools) { root.add(pools.mesh); updaters.push((dt, t, e) => pools.update(e)); } }
-  return { root, colliders, report, details, updaters, places };
+  return { root, colliders, report, details, updaters, places, indoors };
 }
