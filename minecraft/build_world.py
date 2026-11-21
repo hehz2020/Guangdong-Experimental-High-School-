@@ -200,6 +200,81 @@ def raise_slab_floors(states, kinds, PAL, PIDX, min_cells=12):
                 if f: states[y, z, x] = f; kinds[y, z, x] = 4; changed += 1
     print(f'indoor slab floors raised to whole blocks: {changed}')
 
+
+def apply_surfaces(states, kinds, PAL, PIDX, files, X0, Z0, Y0):
+    """Rebuilds steps where a person can stand in the 3D campus but not in the blocks (surfaces.mjs spots): the
+    standing height is rounded to half a block; a whole-number height gets a whole block under it, a half one a bottom
+    slab; the two blocks above are cleared, except glass (a window), and a whole block only where no wall comes within
+    0.45 m of the column's middle in the 3D campus. Spots the blocks already serve (a standing place within 0.55 m)
+    are left alone. Clearing is done first, then the blocks to stand on, so a flight above keeps its steps."""
+    from blocks import SOLID, PLANKS
+    import base64
+    def sid(s):
+        if s not in PIDX: PIDX[s] = len(PAL); PAL.append(s)
+        return PIDX[s]
+    NY, NZ, NX = states.shape
+    slab_of = {k: v[3] for t in (SOLID, PLANKS) for k, v in t.items() if v[3]}
+    base_of = {v[3]: k for t in (SOLID, PLANKS) for k, v in t.items() if v[3]}
+    def passable(i):
+        p = PAL[i]
+        return p == 'air' or p.startswith('water') or p.split('[')[0].endswith(('_carpet', '_door', 'tulip', 'poppy', 'daisy', 'bluet', 'dandelion'))
+    pas = np.array([passable(i) for i in range(len(PAL))] + [False] * 4096)
+    clears, supports = {}, {}
+    n_spots = n_ok = 0
+    allsp = np.concatenate([np.frombuffer(base64.b64decode(json.load(open(f))['spots']), dtype=np.float32).reshape(-1, 4) for f in files])
+    # floors: many spots at the same height around; stairs and landings: few. On stairs and landings a whole block in
+    # the way goes (a wall's end jutting into a landing; the 3D walker fits there); on floors only where the 3D campus
+    # has no wall within 0.45 m of the column's middle.
+    import collections
+    byc = collections.defaultdict(list)
+    for cx, cz, h, w in allsp: byc[(int(math.floor(cx)), int(math.floor(cz)))].append(float(h))
+    def floorlike(cx, cz, h):
+        x, z, n = int(math.floor(cx)), int(math.floor(cz)), 0
+        for i in range(-3, 4):
+            for j in range(-3, 4):
+                n += sum(1 for hh in byc.get((x + i, z + j), ()) if abs(hh - h) < 0.3)
+        return n >= 20
+    if True:
+        sp = allsp
+        for cx, cz, h, wide in sp:
+            n_spots += 1
+            x, z = int(math.floor(cx - X0)), int(math.floor(cz - Z0))
+            if not (0 <= x < NX and 0 <= z < NZ): continue
+            t = round(float(h) * 2) / 2
+            half = (t * 2) % 2 == 1
+            sup = int(math.floor(t) - Y0) if half else int(t - 1 - Y0)
+            if not (1 <= sup < NY - 3): continue
+            col = states[:, z, x]
+            # already served: a standing place whose floor top lies within 0.55 of t
+            served = False
+            for s_ in range(max(1, sup - 1), min(NY - 2, sup + 3)):
+                if pas[col[s_]] and pas[col[s_ + 1]] and not pas[col[s_ - 1]]:
+                    top = s_ + Y0 - (0.5 if '_slab[type=bottom' in PAL[col[s_ - 1]] else 0)
+                    if abs(top - t) <= 0.55: served = True; break
+            if served: n_ok += 1; continue
+            # the material: what the stair or floor is made of at or below the support
+            mat = None
+            for k in (sup, sup - 1, sup + 1):
+                if 0 <= k < NY:
+                    b = PAL[col[k]].split('[')[0]
+                    b = base_of.get(b, b)
+                    if b in slab_of: mat = b; break
+            mat = mat or 'smooth_stone'
+            ok = True
+            for k in (sup + 1, sup + 2):
+                p = PAL[col[k]]
+                if pas[col[k]]: continue
+                if 'glass' in p or 'pane' in p: ok = False; break
+                if '[' not in p and kinds[k, z, x] == 4 and wide < 2 and floorlike(cx, cz, float(h)): ok = False; break
+            if not ok: continue
+            for k in (sup + 1, sup + 2): clears[(k, z, x)] = 1
+            supports[(sup, z, x)] = f'{slab_of[mat]}[type=bottom,waterlogged=false]' if half else mat
+    for c in clears:
+        states[c] = 0; kinds[c] = 0
+    for c, st in supports.items():
+        states[c] = sid(st); kinds[c] = 6 if '_slab' in st else 4
+    print(f'standing spots: {n_spots}, already served {n_ok}, rebuilt {len(supports)} (cleared {len(clears)} blocks above)')
+
 # ---------------------------------------------------------------------------------------------------------- furniture
 BED_COLOURS = ['white', 'light_blue', 'light_gray', 'blue', 'pink', 'yellow', 'lime', 'cyan', 'orange', 'purple']
 WOOL = {'white': (234, 236, 237), 'light_gray': (142, 142, 135), 'gray': (63, 68, 72), 'black': (21, 21, 26), 'red': (161, 39, 35),
@@ -421,6 +496,7 @@ def main():
     ap.add_argument('--spawn', default=None, help='x,z,yaw in world metres / Minecraft yaw (90 = facing west)')
     ap.add_argument('--blocks', default=None, help='also save the block grid (npz) for previews')
     ap.add_argument('--open', default=None, help='doorways.py open.json: cells to clear, two blocks high')
+    ap.add_argument('--surfaces', default=None, help='surfaces.mjs outputs, comma separated: steps rebuilt from the 3D standing heights')
     a = ap.parse_args()
     t0 = time.time()
     voxes = [json.load(open(f)) for f in a.vox]
@@ -444,6 +520,8 @@ def main():
                     states[by + k, bz, bx] = 0; kinds[by + k, bz, bx] = 0; n += 1
         print(f'doorways opened: {n} blocks cleared')
     states = post_pass(states, kinds, union, PAL, PIDX)
+    if a.surfaces:
+        apply_surfaces(states, kinds, PAL, PIDX, a.surfaces.split(','), X0, Z0, Y0)
     raise_slab_floors(states, kinds, PAL, PIDX)
     furniture = [f for v in voxes for f in v.get('furniture', [])]
     ents = place_furniture(states, kinds, PAL, PIDX, furniture, X0, Z0, Y0) if furniture else {}
