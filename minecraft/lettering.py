@@ -26,6 +26,16 @@ def main():
         return 0 <= bx < NX and 0 <= by < NY and 0 <= bz < NZ and bool(S[by, bz, bx])
     cmds = []
     for e in json.load(open(spec)):
+        if 'pos' in e:                     # a board set by hand: position, facing (yaw) and scale given
+            px_, py_, pz_ = e['pos']; bg = e.get('background'); a_ = e.get('alpha', 255)
+            bgv = ((a_ << 24) | int(bg[1:], 16)) if bg else 0
+            if bgv >= 1 << 31: bgv -= 1 << 32
+            text = e['text'].replace('\\', '\\\\').replace('"', '\\"').replace('\n', '\\n')
+            s = e['scale']
+            cmds.append(f'summon minecraft:text_display {px_:.3f} {py_:.3f} {pz_:.3f} {{text:{{text:"{text}",color:"{e["color"]}"}},background:{bgv},billboard:"fixed",shadow:0b,line_width:400,'
+                        f'Rotation:[{e["yaw"]:.1f}f,0f],transformation:{{left_rotation:[0f,0f,0f,1f],right_rotation:[0f,0f,0f,1f],translation:[0f,0f,0f],scale:[{s:.3f}f,{s:.3f}f,{s:.3f}f]}}}}')
+            print(f"{e['where']}: at {px_:.2f} {py_:.2f} {pz_:.2f}, yaw {e['yaw']}, scale {s}")
+            continue
         x0, y0, z0, x1, y1, z1 = e['box']
         nx, _, nz = e['n']; L = math.hypot(nx, nz); nx, nz = nx / L, nz / L
         cx, cz, H = (x0 + x1) / 2, (z0 + z1) / 2, y1 - y0
