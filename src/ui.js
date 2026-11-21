@@ -79,6 +79,7 @@ export function initUI({ player, lighting, campus, camera, renderer, view, place
     const can = boxOf('plaza-canopy'), tw = boxOf('clock-tower');
     if (can) add('网架广场', can.cx, can.s - 8, tw ? toward(can.cx, can.s - 8, tw.cx, tw.cz) : 90, 0, false, 0.42);   // looking up at the space frame
     if (tw) add('钟楼下', tw.cx - 4, tw.cz + 18, toward(tw.cx - 4, tw.cz + 18, tw.cx, tw.cz), 0, false, 0.55);              // looking up the tower
+    if (tw) add('钟楼顶', tw.cx - 2.6, tw.cz - 1.65, 255, 32.1, false, -0.16);                                                   // the platform at 32.1 m (clock-tower.js)
     const sn = campus.items.find(i => i.id === 'slab-north');
     if (sn && sn.mainBar) { const b = sn.mainBar; add('教学楼二层外廊', b.w + 14, b.s - 1.7, 90, 3.9); add('二层教室', b.w + 6.2, b.n + 4.8, 90, 3.9); }
     const arc = boxOf('arc-building'); if (arc && can) add('弧形楼前', can.cx - 5, can.n - 8, 0);
