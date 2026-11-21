@@ -1,7 +1,8 @@
 #!/usr/bin/env python3
 """Builds a Minecraft Java Edition world (1.21 format) from the voxels of voxelize.mjs.
 
-usage: python minecraft/build_world.py <vox.json> <world dir> [--name NAME] [--spawn x,z,yaw] [--blocks out.npz]
+usage: python minecraft/build_world.py <vox.json> [<vox.json> ...] --out <world dir> [--name NAME] [--spawn x,z,yaw] [--blocks out.npz]
+       (several files: the tiles of one box, written by voxelize.mjs --tile)
 
 Scale 1:1: one block is one metre. World x and z are the campus's x (east) and z (south), so block coordinates in the
 game are the same numbers as in the 3D campus; height h in metres becomes block y = floor(h) + 64 (the ground's top is
@@ -67,12 +68,12 @@ def choose(vox):
     grid[blk[first]] = mid[first]; garea[blk[first]] = area[first]
     return grid.reshape(NY, NZ, NX), garea.reshape(NY, NZ, NX), union.reshape(NY, NZ, NX), info
 
-def build_states(vox):
+def build_states(vox, PAL, PIDX):
+    """Blocks of one voxel file, as indices into the shared palette PAL (0 = air)."""
     X0, X1, Z0, Z1, Y0, Y1 = vox['box']
     NX, NY, NZ = vox['size']
     grid, garea, union, info = choose(vox)
     states = np.zeros((NY, NZ, NX), np.int32)       # index into PAL; 0 = air
-    PAL, PIDX = ['air'], {'air': 0}
     def sid(s):
         if s not in PIDX: PIDX[s] = len(PAL); PAL.append(s)
         return PIDX[s]
@@ -125,6 +126,14 @@ def build_states(vox):
                         facing = {0b0101: 'west', 0b1010: 'east', 0b0011: 'north', 0b1100: 'south'}[upper]
                         states[by, bz, bx] = sid(f'{st}[facing={facing},half=bottom,shape=straight,waterlogged=false]'); kinds[by, bz, bx] = 6; continue
                 states[by, bz, bx] = sid(base); kinds[by, bz, bx] = 4
+    return states, kinds, union
+
+def post_pass(states, kinds, union, PAL, PIDX):
+    """Over the whole grid: water filled down, pane and bar connections."""
+    NY, NZ, NX = states.shape
+    def sid(s):
+        if s not in PIDX: PIDX[s] = len(PAL); PAL.append(s)
+        return PIDX[s]
     # water: fill down from each water block to the first block that is not air
     water = sid('water[level=0]')
     for by in range(NY - 1, 0, -1):
@@ -147,7 +156,7 @@ def build_states(vox):
         base = PAL[states[by, bz, bx]]
         conn[(by, bz, bx)] = sid(f'{base}[east={str(e).lower()},north={str(n).lower()},south={str(s).lower()},waterlogged=false,west={str(w).lower()}]')
     for k, v in conn.items(): states[k] = v
-    return states, PAL, kinds
+    return states
 
 # ---------------------------------------------------------------------------------------------------------- writing
 def parse_state(s):
@@ -256,25 +265,40 @@ def level_dat(world, name, spawn):
 
 def main():
     ap = argparse.ArgumentParser()
-    ap.add_argument('vox'); ap.add_argument('world')
+    ap.add_argument('vox', nargs='+', help='one or more voxel files of voxelize.mjs (tiles of one box)')
+    ap.add_argument('--out', required=True, help='world folder to write')
     ap.add_argument('--name', default='广东实验中学')
     ap.add_argument('--spawn', default=None, help='x,z,yaw in world metres / Minecraft yaw (90 = facing west)')
     ap.add_argument('--blocks', default=None, help='also save the block grid (npz) for previews')
     a = ap.parse_args()
     t0 = time.time()
-    vox = json.load(open(a.vox))
-    X0, X1, Z0, Z1, Y0, Y1 = vox['box']; NX, NY, NZ = vox['size']
-    states, PAL, kinds = build_states(vox)
-    print(f'chosen blocks in {time.time() - t0:.1f}s: {int((states > 0).sum())} non-air blocks, {len(PAL)} block states')
+    voxes = [json.load(open(f)) for f in a.vox]
+    X0 = min(v['box'][0] for v in voxes); X1 = max(v['box'][1] for v in voxes)
+    Z0 = min(v['box'][2] for v in voxes); Z1 = max(v['box'][3] for v in voxes)
+    Y0, Y1 = voxes[0]['box'][4], voxes[0]['box'][5]
+    NX, NY, NZ = int(X1 - X0), int(Y1 - Y0), int(Z1 - Z0)
+    PAL, PIDX = ['air'], {'air': 0}
+    states = np.zeros((NY, NZ, NX), np.int32); kinds = np.zeros((NY, NZ, NX), np.uint8); union = np.zeros((NY, NZ, NX), np.uint8)
+    for v in voxes:
+        st, kd, un = build_states(v, PAL, PIDX)
+        ox, oz = int(v['box'][0] - X0), int(v['box'][2] - Z0)
+        ny, nz, nx = st.shape
+        states[:, oz:oz + nz, ox:ox + nx] = st; kinds[:, oz:oz + nz, ox:ox + nx] = kd; union[:, oz:oz + nz, ox:ox + nx] = un
+    states = post_pass(states, kinds, union, PAL, PIDX)
+    print(f'chosen blocks in {time.time() - t0:.1f}s: {int((states > 0).sum())} non-air blocks, {len(PAL)} block states, box {X0} {X1} {Z0} {Z1} {Y0} {Y1}')
     if a.blocks:
-        np.savez_compressed(a.blocks, states=states, pal=np.array(PAL), box=np.array(vox['box']))
-    # the world below and around the box: bedrock, stone, dirt, then the voxels (from y = Y0 + 64)
-    full = {k: i for i, k in enumerate(PAL)}
+        np.savez_compressed(a.blocks, states=states, pal=np.array(PAL), box=np.array([X0, X1, Z0, Z1, Y0, Y1]))
+    full = PIDX
     def sid(s):
         if s not in full: full[s] = len(PAL); PAL.append(s)
         return full[s]
     air, bed, stone, dirt, grass = sid('air'), sid('bedrock'), sid('stone'), sid('dirt'), sid('grass_block')
     ybox = int(Y0) + GROUND_Y                            # block y of voxel row 0
+    lo = ybox - MIN_Y                                    # its index in a chunk column (which starts at y -64)
+    gtop = GROUND_Y - MIN_Y                              # index of y 64, the first block above the ground
+    nonair = states > 0
+    has = nonair.any(axis=0)
+    lowest = np.where(has, nonair.argmax(axis=0), NY)   # lowest non-air row per column
     cx0, cx1, cz0, cz1 = math.floor(X0 / 16), math.floor((X1 - 1) / 16), math.floor(Z0 / 16), math.floor((Z1 - 1) / 16)
     chunks = {}
     for cx in range(cx0, cx1 + 1):
@@ -283,25 +307,22 @@ def main():
             col[0] = bed; col[1:124] = stone; col[124:127] = dirt; col[127] = grass   # y -64 .. 63, as the flat generator
             for lz in range(16):
                 for lx in range(16):
-                    wx, wz = cx * 16 + lx, cz * 16 + lz
-                    bx, bz = wx - int(X0), wz - int(Z0)
+                    bx, bz = cx * 16 + lx - int(X0), cz * 16 + lz - int(Z0)
                     if not (0 <= bx < NX and 0 <= bz < NZ): continue
                     c = states[:, bz, bx]
-                    nz_ = np.nonzero(c)[0]
-                    yb = ybox + MIN_Y * 0                          # rows of the box map to y = ybox + by
-                    lo = ybox - MIN_Y                              # index into col of box row 0
                     col[lo:lo + NY, lz, lx] = c
-                    # under the lowest voxel below ground level: dirt three deep, then stone
-                    below = [k for k in nz_ if ybox + k < GROUND_Y]
-                    if below:
-                        k0 = below[0]; top = lo + k0
+                    k0 = int(lowest[bz, bx])
+                    if k0 < NY and ybox + k0 < GROUND_Y:
+                        # under the lowest block below ground level: dirt three deep, then stone
+                        top = lo + k0
                         col[max(1, top - 3):top, lz, lx] = dirt; col[1:max(1, top - 3), lz, lx] = stone
                     else:
-                        col[lo:GROUND_Y - MIN_Y, lz, lx] = np.where(c[:GROUND_Y - ybox] == 0, dirt, c[:GROUND_Y - ybox])
-                        col[GROUND_Y - MIN_Y - 1, lz, lx] = grass if c[GROUND_Y - ybox - 1] == 0 else c[GROUND_Y - ybox - 1]
+                        seg = c[:GROUND_Y - ybox]
+                        col[lo:gtop, lz, lx] = np.where(seg == 0, dirt, seg)
+                        if seg[-1] == 0: col[gtop - 1, lz, lx] = grass
             chunks[(cx, cz)] = nbt_bytes(chunk_nbt(cx, cz, col, PAL))
-    os.makedirs(a.world, exist_ok=True)
-    nreg = write_regions(a.world, chunks)
+    os.makedirs(a.out, exist_ok=True)
+    nreg = write_regions(a.out, chunks)
     if a.spawn:
         sx, sz, yaw = (float(v) for v in a.spawn.split(','))
     else:
@@ -312,8 +333,8 @@ def main():
     if 0 <= bx < NX and 0 <= bz < NZ:
         nzc = np.nonzero(states[:, bz, bx])[0]
         if len(nzc): sy = max(GROUND_Y, ybox + int(nzc[-1]) + 1)
-    level_dat(a.world, a.name, (int(sx), sy, int(sz), yaw))
-    print(f'wrote {len(chunks)} chunks in {nreg} region files and level.dat to {a.world} in {time.time() - t0:.1f}s; spawn {int(sx)},{sy},{int(sz)}')
+    level_dat(a.out, a.name, (int(sx), sy, int(sz), yaw))
+    print(f'wrote {len(chunks)} chunks in {nreg} region files and level.dat to {a.out} in {time.time() - t0:.1f}s; spawn {int(sx)},{sy},{int(sz)}')
 
 if __name__ == '__main__':
     main()

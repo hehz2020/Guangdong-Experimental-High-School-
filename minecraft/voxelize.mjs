@@ -1,6 +1,7 @@
 // Turns a box of the 3D campus into 1 m voxels for the Minecraft export.
 //
-// usage: node minecraft/voxelize.mjs <page url> <out.json> x0 x1 z0 z1 y0 y1 [--list-hidden]
+// usage: node minecraft/voxelize.mjs <page url> <out.json> x0 x1 z0 z1 y0 y1 [--tile N] [--list-hidden]
+//   --tile N: cut the box into N x N metre tiles (x and z) and write one file per tile, <out>_<i>_<j>.json
 //   page url: the site served locally, e.g. http://127.0.0.1:8800/index.html (the script adds its own query)
 //   x0..y1:   the box in world metres (x east, z south, y up; origin at the track centre)
 //
@@ -20,7 +21,8 @@ const { chromium } = require('playwright');
 
 const [url, out, ...rest] = process.argv.slice(2);
 const listHidden = rest.includes('--list-hidden');
-const [x0, x1, z0, z1, y0, y1] = rest.filter(a => !a.startsWith('--')).map(Number);
+const ti = rest.indexOf('--tile'), tile = ti >= 0 ? +rest[ti + 1] : 0;
+const [x0, x1, z0, z1, y0, y1] = rest.filter((a, i) => !a.startsWith('--') && !(ti >= 0 && i === ti + 1)).map(Number);
 if (!url || !out || [x0, x1, z0, z1, y0, y1].some(v => !Number.isFinite(v))) {
   console.error('usage: node minecraft/voxelize.mjs <url> <out.json> x0 x1 z0 z1 y0 y1 [--list-hidden]'); process.exit(2);
 }
@@ -34,7 +36,7 @@ await page.goto(url + sep + 'lightdebug=1&ui=0&shadows=0&post=0&aa=0&time=12&qua
 await page.waitForFunction(() => window.__app && window.__app.ready && window.__engine, null, { timeout: 900000, polling: 500 });
 console.log('loaded in', Math.round((Date.now() - t0) / 1000), 's', errs.length ? 'errors: ' + errs.join(' | ') : '');
 
-const result = await page.evaluate(async ({ box, listHidden }) => {
+const setup = await page.evaluate(({ listHidden }) => {
   const E = window.__engine, root = E.root;
   const SKIP_GROUPS = /^(people|moving-traffic|birds)$/;           // alive things: not part of the map
   const SKIP_NAMES = /collid|barrier|^traffic-|^people-|^bird/i;
@@ -50,6 +52,7 @@ const result = await page.evaluate(async ({ box, listHidden }) => {
   // A hidden object is drawn only if it is a group (room sets, interior tiers) and not a collider group.
   for (const o of hidden) if (!o.isMesh && !SKIP_NAMES.test(o.name || '')) o.visible = true;
   root.updateMatrixWorld(true);
+  window.__voxBox = box => {
 
   const [X0, X1, Z0, Z1, Y0, Y1] = box, NX = X1 - X0, NY = Y1 - Y0, NZ = Z1 - Z0;
   const SP = 0.3, PUSH = 0.1;
@@ -161,9 +164,19 @@ const result = await page.evaluate(async ({ box, listHidden }) => {
   const b64 = arr => { const u = new Uint8Array(arr.buffer); let s = ''; for (let i = 0; i < u.length; i += 0x8000) s += String.fromCharCode.apply(null, u.subarray(i, i + 0x8000)); return btoa(s); };
   // the outlines of the items in the box, for naming in the report
   return { box, size: [NX, NY, NZ], stats: { meshes, tris, samples, rows: n }, mats, blk: b64(blk), mid: b64(mid), area: b64(area), sub: b64(sub), hy: b64(hy) };
-}, { box: [x0, x1, z0, z1, y0, y1], listHidden });
+  };
+  return { ok: true };
+}, { listHidden });
 
-if (listHidden) { console.log(JSON.stringify(result.hidden, null, 1)); await browser.close(); process.exit(0); }
-fs.writeFileSync(out, JSON.stringify(result));
-console.log('box', result.box.join(' '), 'stats', JSON.stringify(result.stats), 'materials', result.mats.length, 'written', out, Math.round(fs.statSync(out).size / 1e6) + ' MB', 'in', Math.round((Date.now() - t0) / 1000), 's');
+if (listHidden) { console.log(JSON.stringify(setup.hidden, null, 1)); await browser.close(); process.exit(0); }
+const boxes = [];
+if (tile > 0) {
+  for (let i = 0, x = x0; x < x1; i++, x += tile) for (let j = 0, z = z0; z < z1; j++, z += tile)
+    boxes.push({ box: [x, Math.min(x + tile, x1), z, Math.min(z + tile, z1), y0, y1], file: out.replace(/\.json$/, '') + `_${i}_${j}.json` });
+} else boxes.push({ box: [x0, x1, z0, z1, y0, y1], file: out });
+for (const { box, file } of boxes) {
+  const result = await page.evaluate(b => window.__voxBox(b), box);
+  fs.writeFileSync(file, JSON.stringify(result));
+  console.log('box', result.box.join(' '), 'stats', JSON.stringify(result.stats), 'materials', result.mats.length, 'written', file, Math.round(fs.statSync(file).size / 1e6) + ' MB', 'at', Math.round((Date.now() - t0) / 1000), 's');
+}
 await browser.close();
