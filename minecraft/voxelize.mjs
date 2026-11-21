@@ -38,8 +38,17 @@ console.log('loaded in', Math.round((Date.now() - t0) / 1000), 's', errs.length 
 
 const setup = await page.evaluate(({ listHidden }) => {
   const E = window.__engine, root = E.root;
+  let THREE_Color = null; root.traverse(o => { if (!THREE_Color && o.material && o.material.color) THREE_Color = o.material.color.constructor; });
   const SKIP_GROUPS = /^(people|moving-traffic|birds)$/;           // alive things: not part of the map
   const SKIP_NAMES = /collid|barrier|^traffic-|^people-|^bird/i;
+  // Named furniture: not sampled; each instance is handed to build_world.py, which sets down a Minecraft piece for it.
+  // 'skip' kinds are small things (books, bags, bedding folds) that would only be noise at one metre.
+  const FURNITURE = [
+    [/-desks?$|-task-body$/, 'desk'], [/-chairs?$|-chair-body$|-seat-body$|-stool-body$|-stool$|^arc-building-seat$/, 'chair'],
+    [/^grandstand-seating-seats$|^seats$/, 'seat'], [/-mattress$/, 'bed'], [/^highbay-bodies$/, 'light'],
+    [/-(pillow|fold|sheet|spread|drape|net)$|-books$|-bags$|-pencil-cases$|-bottles$|-globes?$|-globe-stands$|-room-pots$|^fixings$|^highbay-(lenses|rods)$|^basketballs$|-chair-frame$|-seat-frame$|-task-frame$|-stool-frame$|-tub-frame$|-fans$/, 'skip'],
+  ];
+  const furnitureKind = name => { for (const [re, k] of FURNITURE) if (re.test(name)) return k; return null; };
   // ---- switch on what the engine shows only near the viewer
   for (const d of E.details) d.obj.visible = true;
   const hidden = [];
@@ -98,6 +107,7 @@ const setup = await page.evaluate(({ listHidden }) => {
   const mul = (A, B) => { const R = new Float64Array(16); for (let i = 0; i < 4; i++) for (let j = 0; j < 4; j++) { let s = 0; for (let k = 0; k < 4; k++) s += A[k * 4 + j] * B[i * 4 + k]; R[i * 4 + j] = s; } return R; };
   const xf = (e, p, i, o) => { const x = p.getX(i), y = p.getY(i), z = p.getZ(i); o[0] = e[0] * x + e[4] * y + e[8] * z + e[12]; o[1] = e[1] * x + e[5] * y + e[9] * z + e[13]; o[2] = e[2] * x + e[6] * y + e[10] * z + e[14]; };
   let tris = 0, samples = 0, meshes = 0;
+  const furniture = [];
   const addTri = (mid) => {
     const minx = Math.min(a[0], b[0], c[0]), maxx = Math.max(a[0], b[0], c[0]), miny = Math.min(a[1], b[1], c[1]), maxy = Math.max(a[1], b[1], c[1]);
     const minz = Math.min(a[2], b[2], c[2]), maxz = Math.max(a[2], b[2], c[2]);
@@ -132,6 +142,24 @@ const setup = await page.evaluate(({ listHidden }) => {
     const groups = g.groups && g.groups.length ? g.groups : [{ start: 0, count: idx ? idx.count : pos.count, materialIndex: 0 }];
     const inst = o.isInstancedMesh ? o.count : 1, base = o.matrixWorld.elements;
     meshes++;
+    const fk = o.isInstancedMesh ? furnitureKind(o.name || '') : null;
+    if (fk) {
+      if (fk === 'skip') return;
+      if (!g.boundingBox) g.computeBoundingBox();
+      const bb = g.boundingBox, lc = [(bb.min.x + bb.max.x) / 2, (bb.min.y + bb.max.y) / 2, (bb.min.z + bb.max.z) / 2], C = new THREE_Color();
+      for (let q = 0; q < o.count; q++) {
+        const im = o.instanceMatrix.array; for (let k = 0; k < 16; k++) M[k] = im[q * 16 + k];
+        const e = mul(base, M), x = e[0] * lc[0] + e[4] * lc[1] + e[8] * lc[2] + e[12], y = e[1] * lc[0] + e[5] * lc[1] + e[9] * lc[2] + e[13], z = e[2] * lc[0] + e[6] * lc[1] + e[10] * lc[2] + e[14];
+        if (x < X0 || x >= X1 || z < Z0 || z >= Z1 || y < Y0 || y >= Y1) continue;
+        const sx = Math.hypot(e[0], e[1], e[2]) * (bb.max.x - bb.min.x), sy = Math.hypot(e[4], e[5], e[6]) * (bb.max.y - bb.min.y), sz = Math.hypot(e[8], e[9], e[10]) * (bb.max.z - bb.min.z);
+        let rgb = mlist[0].color ? [mlist[0].color.r, mlist[0].color.g, mlist[0].color.b] : [1, 1, 1];
+        if (o.instanceColor) { o.getColorAt(q, C); rgb = [rgb[0] * C.r, rgb[1] * C.g, rgb[2] * C.b]; }
+        const tm = meanOf(mlist[0].map); const toS = v => Math.round(255 * (v <= 0.0031308 ? v * 12.92 : 1.055 * Math.pow(v, 1 / 2.4) - 0.055));
+        let srgb = rgb.map(toS); if (tm) srgb = srgb.map((c, i) => Math.round(c * tm[i] / 255));
+        furniture.push({ k: fk, n: o.name, x: +x.toFixed(2), y: +(y - sy / 2).toFixed(2), top: +(y + sy / 2).toFixed(2), z: +z.toFixed(2), yaw: +Math.atan2(e[8], e[10]).toFixed(3), sx: +sx.toFixed(2), sy: +sy.toFixed(2), sz: +sz.toFixed(2), rgb: srgb });
+      }
+      return;
+    }
     for (let q = 0; q < inst; q++) {
       let e = base;
       if (o.isInstancedMesh) {
@@ -163,7 +191,7 @@ const setup = await page.evaluate(({ listHidden }) => {
   for (const [key, e] of cell) { blk[k] = Math.floor(key / 4096); mid[k] = key % 4096; area[k] = e[0]; sub[k] = e[1]; hy[k] = Math.min(255, Math.round(e[2] / e[0] * 255)); k++; }
   const b64 = arr => { const u = new Uint8Array(arr.buffer); let s = ''; for (let i = 0; i < u.length; i += 0x8000) s += String.fromCharCode.apply(null, u.subarray(i, i + 0x8000)); return btoa(s); };
   // the outlines of the items in the box, for naming in the report
-  return { box, size: [NX, NY, NZ], stats: { meshes, tris, samples, rows: n }, mats, blk: b64(blk), mid: b64(mid), area: b64(area), sub: b64(sub), hy: b64(hy) };
+  return { box, size: [NX, NY, NZ], stats: { meshes, tris, samples, rows: n, furniture: furniture.length }, furniture, mats, blk: b64(blk), mid: b64(mid), area: b64(area), sub: b64(sub), hy: b64(hy) };
   };
   return { ok: true };
 }, { listHidden });

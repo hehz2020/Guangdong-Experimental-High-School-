@@ -158,6 +158,105 @@ def post_pass(states, kinds, union, PAL, PIDX):
     for k, v in conn.items(): states[k] = v
     return states
 
+
+# ---------------------------------------------------------------------------------------------------------- furniture
+BED_COLOURS = ['white', 'light_blue', 'light_gray', 'blue', 'pink', 'yellow', 'lime', 'cyan', 'orange', 'purple']
+WOOL = {'white': (234, 236, 237), 'light_gray': (142, 142, 135), 'gray': (63, 68, 72), 'black': (21, 21, 26), 'red': (161, 39, 35),
+        'orange': (240, 118, 19), 'yellow': (249, 198, 40), 'lime': (112, 185, 26), 'green': (84, 109, 27), 'cyan': (21, 137, 145),
+        'light_blue': (58, 175, 217), 'blue': (53, 57, 157), 'purple': (121, 42, 172), 'magenta': (189, 68, 179), 'pink': (237, 141, 172),
+        'brown': (114, 71, 40)}
+
+def place_furniture(states, kinds, PAL, PIDX, furniture, X0, Z0, Y0):
+    """Sets down a Minecraft piece for each named furniture instance of voxelize.mjs (imagined translations):
+    desk -> a top slab of the nearest plank colour at the desk top; chair -> a stairs block whose back faces away from the
+    nearest desk; seat (stand, gym) -> a carpet of the seat colour; bed (mattress) -> a two-block bed with its head against
+    the wall; light (gym high bays) -> a sea lantern. A piece only goes into air; a floor slab in the way lifts it a block.
+    Returns the block entities the pieces need (beds)."""
+    from blocks import PLANKS, nearest, SOLID
+    NY, NZ, NX = states.shape
+    def sid(s):
+        if s not in PIDX: PIDX[s] = len(PAL); PAL.append(s)
+        return PIDX[s]
+    def cell(x, h, z):
+        return int(math.floor(h - Y0)), int(math.floor(z - Z0)), int(math.floor(x - X0))
+    def inside(c):
+        return 0 <= c[0] < NY and 0 <= c[1] < NZ and 0 <= c[2] < NX
+    def free(c):
+        if not inside(c): return None
+        st = PAL[states[c]]
+        if st == 'air': return c
+        if '_slab[type=bottom' in st or st.startswith('air'):
+            up = (c[0] + 1, c[1], c[2])
+            return up if inside(up) and states[up] == 0 else None
+        return None
+    def solid(c):
+        return inside(c) and kinds[c] in (4, 6) and states[c] != 0
+    ents = {}
+    desks = [f for f in furniture if f['k'] == 'desk']
+    import collections
+    grid = collections.defaultdict(list)
+    for d in desks: grid[(int(d['x'] // 2), int(d['z'] // 2))].append(d)
+    def nearest_desk(f):
+        best, bd = None, 1.3
+        gx, gz = int(f['x'] // 2), int(f['z'] // 2)
+        for i in (-1, 0, 1):
+            for j in (-1, 0, 1):
+                for d in grid[(gx + i, gz + j)]:
+                    if abs(d['y'] - f['y']) > 1.0: continue
+                    dd = math.hypot(d['x'] - f['x'], d['z'] - f['z'])
+                    if dd < bd: best, bd = d, dd
+        return best
+    stairs_tbl = {k: v for k, v in {**SOLID, **PLANKS}.items() if v[4]}
+    placed = collections.Counter()
+    for f in sorted(furniture, key=lambda f: {'desk': 0, 'bed': 1, 'light': 2, 'seat': 3, 'chair': 4}[f['k']]):
+        k = f['k']
+        if k == 'desk':
+            c = free(cell(f['x'], f['top'] - 0.05, f['z']))
+            if c:
+                b = nearest(f['rgb'], PLANKS); states[c] = sid(f'{PLANKS[b][3]}[type=top,waterlogged=false]'); kinds[c] = 6; placed[k] += 1
+        elif k == 'chair':
+            c = free(cell(f['x'], f['y'] + 0.3, f['z']))
+            if not c: continue
+            d = nearest_desk(f)
+            if d: dx, dz = f['x'] - d['x'], f['z'] - d['z']
+            else: dx, dz = -math.sin(f['yaw']), -math.cos(f['yaw'])
+            facing = ('east' if dx > 0 else 'west') if abs(dx) > abs(dz) else ('south' if dz > 0 else 'north')
+            b = nearest(f['rgb'], stairs_tbl)
+            states[c] = sid(f'{stairs_tbl[b][4]}[facing={facing},half=bottom,shape=straight,waterlogged=false]'); kinds[c] = 6; placed[k] += 1
+        elif k == 'seat':
+            c = cell(f['x'], f['y'] + 0.1, f['z'])
+            if inside(c) and states[c] == 0 and solid((c[0] - 1, c[1], c[2])):
+                col = nearest(f['rgb'], {n: v for n, v in WOOL.items()})
+                states[c] = sid(f'{col}_carpet'); kinds[c] = 6; placed[k] += 1
+        elif k == 'light':
+            c = cell(f['x'], f['y'] + f['sy'] / 2, f['z'])
+            if inside(c) and states[c] == 0:
+                states[c] = sid('sea_lantern'); kinds[c] = 4; placed[k] += 1
+        elif k == 'bed':
+            # the long side of the mattress, in the world: local z when sz is the longer size
+            ang = f['yaw'] if f['sz'] >= f['sx'] else f['yaw'] + math.pi / 2
+            ux, uz = math.sin(ang), math.cos(ang)
+            if abs(ux) > abs(uz): ux, uz = (1 if ux > 0 else -1), 0
+            else: ux, uz = 0, (1 if uz > 0 else -1)
+            a = cell(f['x'] - ux * 0.5, f['y'] + 0.2, f['z'] - uz * 0.5)
+            b = (a[0], a[1] + uz, a[2] + ux)
+            if a == b or not (inside(a) and inside(b)): continue
+            fa, fb = free(a), free(b)
+            if not fa or not fb or fa[0] != fb[0]: continue
+            # head against the wall: the end with a solid block beyond it
+            beyond_b = (fb[0], fb[1] + uz, fb[2] + ux)
+            head, foot, hx, hz = (fb, fa, ux, uz) if solid(beyond_b) else (fa, fb, -ux, -uz)
+            facing = {(1, 0): 'east', (-1, 0): 'west', (0, 1): 'south', (0, -1): 'north'}[(hx, hz)]
+            colour = BED_COLOURS[int(abs(f['x'] * 7 + f['z'] * 13)) % len(BED_COLOURS)]
+            states[foot] = sid(f'{colour}_bed[facing={facing},occupied=false,part=foot]'); kinds[foot] = 6
+            states[head] = sid(f'{colour}_bed[facing={facing},occupied=false,part=head]'); kinds[head] = 6
+            for c in (foot, head):
+                wx, wy, wz = int(X0) + c[2], int(math.floor(Y0)) + c[0] + GROUND_Y, int(Z0) + c[1]
+                ents[(wx, wy, wz)] = {'id': 'minecraft:bed', 'x': wx, 'y': wy, 'z': wz}
+            placed[k] += 1
+    print('furniture set down:', dict(placed), 'of', dict(collections.Counter(f['k'] for f in furniture)))
+    return ents
+
 # ---------------------------------------------------------------------------------------------------------- writing
 def parse_state(s):
     if '[' not in s: return 'minecraft:' + s, {}
@@ -187,8 +286,8 @@ def section_nbt(y, block_ids, PAL):
     if len(uniq) > 1: bs['data'] = pack(inv, len(uniq))
     return Compound({'Y': Byte(y), 'block_states': bs, 'biomes': Compound({'palette': List[String]([String('minecraft:plains')])})})
 
-def chunk_nbt(cx, cz, column, PAL):
-    """column: (384, 16, 16) palette indices from y -64 up."""
+def chunk_nbt(cx, cz, column, PAL, ents=()):
+    """column: (384, 16, 16) palette indices from y -64 up; ents: block entity dicts in this chunk."""
     secs = List[Compound]()
     for sy in range(-4, 20):
         part = column[(sy + 4) * 16:(sy + 5) * 16]
@@ -196,7 +295,7 @@ def chunk_nbt(cx, cz, column, PAL):
     return Compound({
         'DataVersion': Int(DATA_VERSION), 'xPos': Int(cx), 'zPos': Int(cz), 'yPos': Int(-4),
         'Status': String('minecraft:full'), 'LastUpdate': Long(0), 'InhabitedTime': Long(0), 'isLightOn': Byte(0),
-        'sections': secs, 'block_entities': List[Compound](), 'Heightmaps': Compound(),
+        'sections': secs, 'block_entities': List[Compound]([Compound({'id': String(e['id']), 'x': Int(e['x']), 'y': Int(e['y']), 'z': Int(e['z']), 'keepPacked': Byte(0)}) for e in ents]), 'Heightmaps': Compound(),
         'fluid_ticks': List[Compound](), 'block_ticks': List[Compound](), 'PostProcessing': List[List[Int]](),
         'structures': Compound({'References': Compound(), 'starts': Compound()}),
     })
@@ -285,6 +384,10 @@ def main():
         ny, nz, nx = st.shape
         states[:, oz:oz + nz, ox:ox + nx] = st; kinds[:, oz:oz + nz, ox:ox + nx] = kd; union[:, oz:oz + nz, ox:ox + nx] = un
     states = post_pass(states, kinds, union, PAL, PIDX)
+    furniture = [f for v in voxes for f in v.get('furniture', [])]
+    ents = place_furniture(states, kinds, PAL, PIDX, furniture, X0, Z0, Y0) if furniture else {}
+    ents_by_chunk = {}
+    for (x, y, z), e in ents.items(): ents_by_chunk.setdefault((x >> 4, z >> 4), []).append(e)
     print(f'chosen blocks in {time.time() - t0:.1f}s: {int((states > 0).sum())} non-air blocks, {len(PAL)} block states, box {X0} {X1} {Z0} {Z1} {Y0} {Y1}')
     if a.blocks:
         np.savez_compressed(a.blocks, states=states, pal=np.array(PAL), box=np.array([X0, X1, Z0, Z1, Y0, Y1]))
@@ -320,7 +423,7 @@ def main():
                         seg = c[:GROUND_Y - ybox]
                         col[lo:gtop, lz, lx] = np.where(seg == 0, dirt, seg)
                         if seg[-1] == 0: col[gtop - 1, lz, lx] = grass
-            chunks[(cx, cz)] = nbt_bytes(chunk_nbt(cx, cz, col, PAL))
+            chunks[(cx, cz)] = nbt_bytes(chunk_nbt(cx, cz, col, PAL, ents_by_chunk.get((cx, cz), ())))
     os.makedirs(a.out, exist_ok=True)
     nreg = write_regions(a.out, chunks)
     if a.spawn:
