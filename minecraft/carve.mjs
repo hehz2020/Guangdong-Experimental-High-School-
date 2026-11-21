@@ -1,8 +1,7 @@
 // For each candidate cell of doorways.py: would a person fit there in the 3D campus? (its own collision, as the walker)
 //
 // usage: node minecraft/carve.mjs <page url> <cands.json> <free.json>
-// A capsule of radius 0.25 m from 0.45 m to 1.55 m above the cell's floor, at the cell's centre and at four points
-// 0.2 m off it; the cell is free if any of them touches nothing.
+// A capsule of radius 0.25 m from 0.45 m to 1.8 m above the cell's floor, moved through the cell along the walking axis.
 import { createRequire } from 'node:module';
 import fs from 'node:fs';
 const require = createRequire(import.meta.url);
@@ -22,11 +21,18 @@ const free = await page.evaluate(async cands => {
   E.colliders.updateMatrixWorld(true);
   const oct = new FastOctree(); oct.fromGraphNode(E.colliders);
   const cap = new Capsule(new THREE.Vector3(), new THREE.Vector3(), 0.25);
-  return cands.map(([x, y, z, h]) => {
-    for (const [ox, oz] of [[0, 0], [0.2, 0], [-0.2, 0], [0, 0.2], [0, -0.2]]) {
-      const cx = x + 0.5 + ox, cz = z + 0.5 + oz;
-      cap.start.set(cx, h + 0.45 + 0.25, cz); cap.end.set(cx, h + 1.55, cz);
-      if (!oct.capsuleIntersect(cap)) return 1;
+  // Walk through: from the middle of the cell before to the middle of the cell after (along the walking axis), at
+  // the cell's middle or 0.25 m to either side; free if one of those three lines touches nothing all the way. A thin
+  // wall on a block edge is crossed, so it is found wherever it lies in the cell.
+  const hit = (cx, h, cz) => { cap.start.set(cx, h + 0.45 + 0.25, cz); cap.end.set(cx, h + 1.55, cz); return !!oct.capsuleIntersect(cap); };
+  return cands.map(([x, y, z, h, axis]) => {
+    for (const side of [0, 0.25, -0.25]) {
+      let clear = true;
+      for (let t = -1; t <= 1.0001 && clear; t += 0.2) {
+        const cx = x + 0.5 + (axis === 'x' ? t : side), cz = z + 0.5 + (axis === 'x' ? side : t);
+        if (hit(cx, h, cz)) clear = false;
+      }
+      if (clear) return 1;
     }
     return 0;
   });

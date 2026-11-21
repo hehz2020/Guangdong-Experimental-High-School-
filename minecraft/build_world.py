@@ -159,6 +159,47 @@ def post_pass(states, kinds, union, PAL, PIDX):
     return states
 
 
+
+def raise_slab_floors(states, kinds, PAL, PIDX, min_cells=12):
+    """Indoor floors that came out as bottom slabs (floors 0.1-0.5 m above a block line, e.g. ground floors raised
+    0.3 m) become whole blocks: furniture is set into the block above a floor, so on a slab it would float half a
+    block. A region counts as a floor if it has at least min_cells slabs side by side and most of it is under a roof
+    (something within 2-8 blocks above)."""
+    from blocks import SOLID, PLANKS
+    base_of = {v[3]: k for t in (SOLID, PLANKS) for k, v in t.items() if v[3]}
+    def sid(s):
+        if s not in PIDX: PIDX[s] = len(PAL); PAL.append(s)
+        return PIDX[s]
+    NY, NZ, NX = states.shape
+    slab_ids = np.array(['_slab[type=bottom' in p for p in PAL] + [False] * 4096)
+    full_of = {}
+    for i, p in enumerate(PAL):
+        if '_slab[type=bottom' in p:
+            b = base_of.get(p.split('[')[0])
+            if b: full_of[i] = sid(b)
+    from collections import deque
+    changed = 0
+    for y in range(1, NY - 1):
+        cand = slab_ids[states[y]] & (states[y + 1] == 0)
+        seen = np.zeros((NZ, NX), bool)
+        roof = np.zeros((NZ, NX), bool)
+        for k in range(2, 9):
+            if y + k < NY: roof |= (states[y + k] != 0)
+        for z0, x0 in zip(*np.nonzero(cand)):
+            if seen[z0, x0]: continue
+            reg, q = [], deque([(z0, x0)]); seen[z0, x0] = True
+            while q:
+                z, x = q.popleft(); reg.append((z, x))
+                for dz, dx in ((1, 0), (-1, 0), (0, 1), (0, -1)):
+                    zz, xx = z + dz, x + dx
+                    if 0 <= zz < NZ and 0 <= xx < NX and cand[zz, xx] and not seen[zz, xx]:
+                        seen[zz, xx] = True; q.append((zz, xx))
+            if len(reg) < min_cells or sum(roof[z, x] for z, x in reg) < 0.7 * len(reg): continue
+            for z, x in reg:
+                f = full_of.get(int(states[y, z, x]))
+                if f: states[y, z, x] = f; kinds[y, z, x] = 4; changed += 1
+    print(f'indoor slab floors raised to whole blocks: {changed}')
+
 # ---------------------------------------------------------------------------------------------------------- furniture
 BED_COLOURS = ['white', 'light_blue', 'light_gray', 'blue', 'pink', 'yellow', 'lime', 'cyan', 'orange', 'purple']
 WOOL = {'white': (234, 236, 237), 'light_gray': (142, 142, 135), 'gray': (63, 68, 72), 'black': (21, 21, 26), 'red': (161, 39, 35),
@@ -215,16 +256,21 @@ def place_furniture(states, kinds, PAL, PIDX, furniture, X0, Z0, Y0):
             if c:
                 b = nearest(f['rgb'], PLANKS); states[c] = sid(f'{PLANKS[b][3]}[type=top,waterlogged=false]'); kinds[c] = 6; placed[k] += 1
         elif k == 'chair':
-            c = free(cell(f['x'], f['y'] + 0.3, f['z']))
-            if not c: continue
             d = nearest_desk(f)
             if d: dx, dz = f['x'] - d['x'], f['z'] - d['z']
             else: dx, dz = -math.sin(f['yaw']), -math.cos(f['yaw'])
             facing = ('east' if dx > 0 else 'west') if abs(dx) > abs(dz) else ('south' if dz > 0 else 'north')
+            c0 = cell(f['x'], f['y'] + 0.3, f['z'])
+            c = free(c0)
+            if not c:      # its block holds the desk: one block further back
+                step = {'east': (0, 1), 'west': (0, -1), 'south': (1, 0), 'north': (-1, 0)}[facing]
+                c = free((c0[0], c0[1] + step[0], c0[2] + step[1]))
+            if not c: continue
             b = nearest(f['rgb'], stairs_tbl)
             states[c] = sid(f'{stairs_tbl[b][4]}[facing={facing},half=bottom,shape=straight,waterlogged=false]'); kinds[c] = 6; placed[k] += 1
         elif k == 'seat':
             c = cell(f['x'], f['y'] + 0.1, f['z'])
+            if inside(c) and '_slab[type=bottom' in PAL[states[c]]: c = (c[0] + 1, c[1], c[2])     # the seat on a step tier
             if inside(c) and states[c] == 0 and solid((c[0] - 1, c[1], c[2])):
                 col = nearest(f['rgb'], {n: v for n, v in WOOL.items()})
                 states[c] = sid(f'{col}_carpet'); kinds[c] = 6; placed[k] += 1
@@ -241,8 +287,13 @@ def place_furniture(states, kinds, PAL, PIDX, furniture, X0, Z0, Y0):
             a = cell(f['x'] - ux * 0.5, f['y'] + 0.2, f['z'] - uz * 0.5)
             b = (a[0], a[1] + uz, a[2] + ux)
             if a == b or not (inside(a) and inside(b)): continue
-            fa, fb = free(a), free(b)
+            # a bed replaces whatever the frame and bedding became, but never glass
+            over = lambda c: c if inside(c) and 'glass' not in PAL[states[c]] and 'pane' not in PAL[states[c]] else None
+            fa, fb = (free(a) or over(a)), (free(b) or over(b))
             if not fa or not fb or fa[0] != fb[0]: continue
+            for c in (fa, fb):
+                up = (c[0] + 1, c[1], c[2])
+                if inside(up) and kinds[up] in (6, 7) and 'bed' not in PAL[states[up]]: states[up] = 0; kinds[up] = 0
             # head against the wall: the end with a solid block beyond it
             beyond_b = (fb[0], fb[1] + uz, fb[2] + ux)
             head, foot, hx, hz = (fb, fa, ux, uz) if solid(beyond_b) else (fa, fb, -ux, -uz)
@@ -369,6 +420,7 @@ def main():
     ap.add_argument('--name', default='广东实验中学')
     ap.add_argument('--spawn', default=None, help='x,z,yaw in world metres / Minecraft yaw (90 = facing west)')
     ap.add_argument('--blocks', default=None, help='also save the block grid (npz) for previews')
+    ap.add_argument('--open', default=None, help='doorways.py open.json: cells to clear, two blocks high')
     a = ap.parse_args()
     t0 = time.time()
     voxes = [json.load(open(f)) for f in a.vox]
@@ -383,7 +435,16 @@ def main():
         ox, oz = int(v['box'][0] - X0), int(v['box'][2] - Z0)
         ny, nz, nx = st.shape
         states[:, oz:oz + nz, ox:ox + nx] = st; kinds[:, oz:oz + nz, ox:ox + nx] = kd; union[:, oz:oz + nz, ox:ox + nx] = un
+    if a.open:
+        n = 0
+        for x, y, z in json.load(open(a.open)):
+            bx, bz, by = x - int(X0), z - int(Z0), y - 64 - int(math.floor(Y0))
+            for k in (0, 1):
+                if 0 <= by + k < NY and 0 <= bz < NZ and 0 <= bx < NX and states[by + k, bz, bx]:
+                    states[by + k, bz, bx] = 0; kinds[by + k, bz, bx] = 0; n += 1
+        print(f'doorways opened: {n} blocks cleared')
     states = post_pass(states, kinds, union, PAL, PIDX)
+    raise_slab_floors(states, kinds, PAL, PIDX)
     furniture = [f for v in voxes for f in v.get('furniture', [])]
     ents = place_furniture(states, kinds, PAL, PIDX, furniture, X0, Z0, Y0) if furniture else {}
     ents_by_chunk = {}
