@@ -504,6 +504,146 @@ def place_lamps(states, kinds, PAL, PIDX, lamps, X0, Z0, Y0):
         n['floodlights' if big else 'posts'] += 1
     print('lamps: ' + ', '.join(f'{k} {v}' for k, v in n.items()))
 
+def place_trees(states, kinds, PAL, PIDX, trees, X0, Z0, Y0):
+    """Trees grown in the game's manner where the 3D campus has its trees (trees.mjs), instead of the voxelized leaf
+    cards: those fill every block their cards touch, and fill_crowns closes the gaps, so a crown came out as a solid
+    box of leaves on a stick. Each tree first clears what the voxels made of it (tree leaves and logs, not hedges, in
+    a cylinder round it), then:
+      - broadleaf: the 3D tree's own trunk (2 x 2 blocks when it is 1.3 m thick or more) and six boughs (logs with bark
+        all round, along the 3D boughs) and, round each of its eleven leaf clusters, a ball of leaves the size of the
+        cluster with a ragged edge (cells near the edge are left out at random). Oak leaves, or dark oak for the 3D
+        site's yellower tint;
+      - palm: a pale trunk, a green crown shaft and eight fronds of jungle leaves that droop at their ends;
+      - conifer: a spruce trunk and tiers of spruce leaves narrowing to the top.
+    Leaves only go into air and keep two blocks clear above the foot (people walk under them); logs replace leaves.
+    CHOSEN, all of it by eye: the block kinds, the 1.3 m threshold, how ragged the edges are, the frond shape."""
+    NY, NZ, NX = states.shape
+    def sid(s):
+        if s not in PIDX: PIDX[s] = len(PAL); PAL.append(s)
+        return PIDX[s]
+    TREE = re.compile(r'^(oak|jungle|spruce|dark_oak|birch)_leaves|^(oak|spruce|jungle|birch|dark_oak)_log|^stripped_birch_log')
+    tree_ids = np.array([i for i, p in enumerate(PAL) if TREE.match(p)], np.int32)
+    free_ids = np.array([i for i, p in enumerate(PAL) if p == 'air' or p.startswith('light[')], np.int32)
+    def rowf(h): return int(math.floor(h - Y0))
+    def colx(x): return int(math.floor(x - X0))
+    def colz(z): return int(math.floor(z - Z0))
+    def inside(y, z, x): return 0 <= y < NY and 0 <= z < NZ and 0 <= x < NX
+    def is_free(y, z, x): return states[y, z, x] == 0 or PAL[states[y, z, x]].startswith('light[')
+    def is_leafy(y, z, x): return '_leaves' in PAL[states[y, z, x]]
+    def hashf(*a):                                       # a fixed pseudo-random number in [0, 1) per cell and tree
+        h = 2166136261
+        for v in a: h = ((h ^ (int(v) & 0xFFFFFFFF)) * 16777619) & 0xFFFFFFFF
+        h ^= h >> 13; h = (h * 1274126177) & 0xFFFFFFFF; h ^= h >> 16
+        return h / 4294967296.0
+    def put_log(y, z, x, s):
+        if inside(y, z, x) and (is_free(y, z, x) or is_leafy(y, z, x)):
+            states[y, z, x] = s; kinds[y, z, x] = 4; return 1
+        return 0
+    def put_leaf(y, z, x, s):
+        if inside(y, z, x) and is_free(y, z, x):
+            states[y, z, x] = s; kinds[y, z, x] = 5; return 1
+        return 0
+    def line(a, b, step=0.35):
+        n = max(1, int(math.dist(a, b) / step))
+        for i in range(n + 1):
+            t = i / n
+            yield tuple(a[k] + (b[k] - a[k]) * t for k in range(3))
+    # 1. clear the voxelized trees
+    cleared = 0
+    for t in trees:
+        fx, fy, fz = t['foot']
+        if t['k'] == 'b':
+            reach = max([math.hypot(c[0] - fx, c[2] - fz) + c[3] for c in t['clusters']] + [1.0]) + 1.5
+            top = max(c[1] + c[4] for c in t['clusters']) + 1.5
+        elif t['k'] == 'p':
+            reach = 4.3 * t['s'] * 1.15 + 1.5; top = t['crown'][1] + 1.5
+        else:
+            reach = t['r'] + 1.5; top = t['top'][1] + 1.0
+        x0, x1, z0, z1 = colx(fx - reach), colx(fx + reach) + 1, colz(fz - reach), colz(fz + reach) + 1
+        y0, y1 = max(0, rowf(fy)), min(NY, rowf(top) + 1)
+        x0, z0, x1, z1 = max(0, x0), max(0, z0), min(NX, x1), min(NZ, z1)
+        if x0 >= x1 or z0 >= z1 or y0 >= y1: continue
+        sub = states[y0:y1, z0:z1, x0:x1]
+        gx = (np.arange(x0, x1) + X0 + 0.5 - fx)[None, None, :]; gz = (np.arange(z0, z1) + Z0 + 0.5 - fz)[None, :, None]
+        m = np.isin(sub, tree_ids) & ((gx * gx + gz * gz) <= reach * reach)
+        cleared += int(m.sum()); sub[m] = 0; kinds[y0:y1, z0:z1, x0:x1][m] = 0
+    # 2. grow them again
+    n = {'broadleaf': 0, 'palm': 0, 'conifer': 0, 'logs': 0, 'leaves': 0}
+    oak_log, oak_wood = sid('oak_log[axis=y]'), {a: sid(f'oak_wood[axis={a}]') for a in 'xyz'}
+    for ti, t in enumerate(trees):
+        fx, fy, fz = t['foot']
+        r0 = rowf(fy + 0.01)
+        if t['k'] == 'b':
+            leaf = sid(('dark_oak_leaves' if t.get('hue') == 86 else 'oak_leaves') + '[distance=1,persistent=true,waterlogged=false]')
+            tx, ty, tz = t['top']
+            height = max(c[1] + c[4] for c in t['clusters']) - fy
+            thick = (t['clusters'][0][3] > 0 and (0.56 * 2 * max(c[3] for c in t['clusters']) / 2.4) >= 1.3)
+            lo = r0 + (1 if height < 3.5 else 2)                # leaves start here: two blocks of head room under them
+            # trunk
+            cells = [(0, 0)]
+            if thick:
+                cx_, cz_ = round(fx - X0), round(fz - Z0)       # the grid corner nearest the trunk's axis
+                cells = [(cx_ - 1 - colx(fx), cz_ - 1 - colz(fz)), (cx_ - colx(fx), cz_ - 1 - colz(fz)), (cx_ - 1 - colx(fx), cz_ - colz(fz)), (cx_ - colx(fx), cz_ - colz(fz))]
+            for p in line((fx, fy + 0.01, fz), (tx, ty, tz)):
+                for dx, dz in cells:
+                    n['logs'] += put_log(rowf(p[1]), colz(p[2]) + dz, colx(p[0]) + dx, oak_log)
+            # boughs
+            if height >= 5:
+                for s, mid, e in t['boughs']:
+                    pts = list(line(tuple(s), tuple(mid))) + list(line(tuple(mid), tuple(e)))[1:]
+                    pts = pts[:max(2, int(len(pts) * 0.8))]
+                    for a, b in zip(pts, pts[1:]):
+                        d = [abs(b[0] - a[0]), abs(b[1] - a[1]), abs(b[2] - a[2])]
+                        ax = 'xyz'[d.index(max(d))]
+                        n['logs'] += put_log(rowf(b[1]), colz(b[2]), colx(b[0]), oak_wood[ax])
+            # leaves
+            for k, (cx, cy, cz, rx, ry) in enumerate(t['clusters']):
+                Rx, Ry = rx + 0.35, ry + 0.25
+                for y in range(rowf(cy - Ry), rowf(cy + Ry) + 1):
+                    if y < lo: continue
+                    for z in range(colz(cz - Rx), colz(cz + Rx) + 1):
+                        for x in range(colx(cx - Rx), colx(cx + Rx) + 1):
+                            dx, dy, dz = (x + X0 + 0.5 - cx) / Rx, (y + Y0 + 0.5 - cy) / Ry, (z + Z0 + 0.5 - cz) / Rx
+                            d2 = dx * dx + dy * dy + dz * dz
+                            if d2 > 1: continue
+                            if d2 > 0.5 and hashf(x, y, z, ti) < (d2 - 0.5) * 1.3: continue     # a ragged edge
+                            n['leaves'] += put_leaf(y, z, x, leaf)
+            n['broadleaf'] += 1
+        elif t['k'] == 'p':
+            trunk, shaft, frond = sid('stripped_birch_log[axis=y]'), sid('green_terracotta'), sid('jungle_leaves[distance=1,persistent=true,waterlogged=false]')
+            bx, bz = colx(fx), colz(fz)
+            rt, rc = rowf(t['top'][1]), rowf(t['crown'][1])
+            # the trunk's column is the palm's own (the 3D palm trunk's material, 'palmTrunk', was voxelized as stone)
+            for y in range(r0, rc + 1):
+                if inside(y, bz, bx) and kinds[y, bz, bx] != 7 and '_door' not in PAL[states[y, bz, bx]]:
+                    states[y, bz, bx] = trunk if y <= rt else shaft; kinds[y, bz, bx] = 4; n['logs'] += 1
+            L = max(2, round(4.3 * t['s'] * 1.05))
+            for i, (dx, dz) in enumerate(((1, 0), (1, 1), (0, 1), (-1, 1), (-1, 0), (-1, -1), (0, -1), (1, -1))):
+                diag = dx and dz
+                steps = max(2, round(L * (0.72 if diag else 1.0)))
+                for s in range(1, steps + 1):
+                    drop = 0 if s <= steps // 2 else (1 if s < steps or steps < 4 else 2)
+                    n['leaves'] += put_leaf(rc + 1 - drop, bz + dz * s, bx + dx * s, frond)
+            for dx, dz in ((0, 0), (1, 0), (-1, 0), (0, 1), (0, -1)):
+                n['leaves'] += put_leaf(rc + 1, bz + dz, bx + dx, frond)
+            n['leaves'] += put_leaf(rc + 2, bz, bx, frond)
+            n['palm'] += 1
+        else:
+            log, leaf = sid('spruce_log[axis=y]'), sid('spruce_leaves[distance=1,persistent=true,waterlogged=false]')
+            bx, bz = colx(fx), colz(fz)
+            rt = rowf(t['top'][1])
+            for y in range(r0, rt): n['logs'] += put_log(y, bz, bx, log)
+            for y in range(r0 + 2, rt + 1):
+                f = (y - r0) / max(1, rt - r0)
+                R = t['r'] * (1 - f) ** 0.9 * (0.7 if (rt - y) % 2 else 1.0) + 0.35
+                for z in range(colz(fz - R), colz(fz + R) + 1):
+                    for x in range(colx(fx - R), colx(fx + R) + 1):
+                        if math.hypot(x + X0 + 0.5 - fx, z + Z0 + 0.5 - fz) <= R:
+                            n['leaves'] += put_leaf(y, z, x, leaf)
+            n['leaves'] += put_leaf(rt + 1, bz, bx, leaf)
+            n['conifer'] += 1
+    print(f'trees: cleared {cleared} voxelized blocks; grew ' + ', '.join(f'{k} {v}' for k, v in n.items()))
+
 def apply_fixes(states, kinds, PAL, PIDX, path, X0, Z0, Y0):
     """Hand-made changes in fixes.json, in game block coordinates, applied last: 'fill' sets a box to one block, 'ladder'
     puts ladders up a column (facing: the way the ladder faces, away from the wall it hangs on)."""
@@ -803,6 +943,7 @@ def main():
     ap.add_argument('--fixes', default=None, help='fixes.json: hand-made changes applied last')
     ap.add_argument('--surfaces', default=None, help='surfaces.mjs outputs, comma separated: steps rebuilt from the 3D standing heights')
     ap.add_argument('--lamps', default=None, help='lamps.mjs output: the 3D campus lamps, set as lanterns and lamp posts')
+    ap.add_argument('--trees', default=None, help='trees.mjs output: the 3D campus trees, grown again as Minecraft trees')
     a = ap.parse_args()
     t0 = time.time()
     voxes = [json.load(open(f)) for f in a.vox]
@@ -839,6 +980,7 @@ def main():
     if a.open:
         hung = hang_doors(states, kinds, PAL, PIDX, opened, X0, Z0, Y0)
         json.dump(hung, open(os.path.join(os.path.dirname(os.path.abspath(a.out)), 'doors.json'), 'w'))
+    if a.trees: place_trees(states, kinds, PAL, PIDX, json.load(open(a.trees)), X0, Z0, Y0)
     light_rooms(states, kinds, PAL, PIDX)
     if a.lamps: place_lamps(states, kinds, PAL, PIDX, json.load(open(a.lamps)), X0, Z0, Y0)
     if a.fixes: apply_fixes(states, kinds, PAL, PIDX, a.fixes, X0, Z0, Y0)

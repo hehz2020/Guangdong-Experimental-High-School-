@@ -21,10 +21,12 @@ echo "== $V: standing heights of the 3D campus (for stairs)"
 [ -f "$W/surf_b.json" ] || node minecraft/surfaces.mjs "$URL" "$W/surf_b.json" 95 300 -290 250 82
 echo "== $V: the 3D campus lamps"
 [ -f "$W/lamps.json" ] || node minecraft/lamps.mjs "$URL" "$W/lamps.json"
+echo "== $V: the 3D campus trees"
+[ -f "$W/trees.json" ] || node minecraft/trees.mjs "$URL" "$W/trees.json"
 echo "== $V: the world"
 rm -rf "$W/world_$V"
 python3 minecraft/build_world.py "$W"/full/vox_*.json --out "$W/world_$V" --name "广东实验中学（荔湾校区）" --spawn 262,-20,90 \
-  --blocks "$W/blocks_$V.npz" --open "$W/open.json" --surfaces "$W/surf_a.json,$W/surf_b.json" --lamps "$W/lamps.json" --fixes minecraft/fixes.json | tee "$W/build_$V.log"
+  --blocks "$W/blocks_$V.npz" --open "$W/open.json" --surfaces "$W/surf_a.json,$W/surf_b.json" --lamps "$W/lamps.json" --trees "$W/trees.json" --fixes minecraft/fixes.json | tee "$W/build_$V.log"
 python3 minecraft/check_world.py "$W/world_$V" | tail -1
 python3 minecraft/walk_check.py "$W/blocks_$V.npz" 262,-20 minecraft/targets.json | tee "$W/walk_$V.log"
 python3 minecraft/metrics.py "$W/blocks_$V.npz" | tee "$W/metrics_$V.log" || echo "== $V: SOME COUNTS ARE LOW (see above)"

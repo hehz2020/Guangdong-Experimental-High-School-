@@ -96,7 +96,7 @@ RULES = [
     (r'^$|roomview|lamp-pools|ao-stand-in|shadow|^sky|stars|haze|glow|algae|grime|streaks|weathering|stain|tower-hands', 'skip'),
     (r'water|MirrorShader', 'water'),
     (r'leaves|needles|fronds|hedge|crownshaft|shrub|foliage|ivy', 'leaves'),
-    (r'bark|trunk', 'log'),
+    (r'bark|[tT]runk', 'log'),                       # palmTrunk: the royal palms' trunks
     (r'lamp|lantern-light|highbay-lens|beacon|lite-inner|bulb', 'lamp'),
     (r'glass|pane|window|clere|skyPanel|skyTop|frosted|mirror|lite\b|glaze', 'glass'),
     (r'roadpaint|roadyellow', 'roadline'),
@@ -224,7 +224,7 @@ def color_of(block):
         if block in t: return t[block][:3]
     extra = {'water': (50, 90, 170), 'grass_block': (110, 160, 80), 'dirt': (134, 96, 67), 'coarse_dirt': (119, 85, 59),
              'podzol': (91, 63, 24), 'stone': (126, 126, 126), 'bedrock': (85, 85, 85), 'sea_lantern': (172, 199, 190),
-             'glowstone': (171, 131, 84), 'lantern': (250, 200, 110), 'shroomlight': (240, 146, 70), 'spruce_log': (58, 37, 16), 'oak_log': (109, 85, 50),
+             'glowstone': (171, 131, 84), 'lantern': (250, 200, 110), 'oak_wood': (109, 85, 50), 'shroomlight': (240, 146, 70), 'spruce_log': (58, 37, 16), 'oak_log': (109, 85, 50),
              'jungle_log': (85, 67, 25), 'stripped_birch_log': (196, 176, 118), 'iron_bars': (136, 139, 135),
              'glass_pane': (190, 215, 220), 'red_tulip': (180, 60, 50), 'poppy': (190, 40, 30), 'oxeye_daisy': (220, 225, 210),
              'azure_bluet': (200, 210, 225), 'dandelion': (230, 200, 40)}
