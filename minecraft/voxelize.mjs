@@ -61,7 +61,12 @@ const setup = await page.evaluate(({ listHidden }) => {
   // A hidden object is drawn only if it is a group (room sets, interior tiers) and not a collider group.
   for (const o of hidden) if (!o.isMesh && !SKIP_NAMES.test(o.name || '')) o.visible = true;
   root.updateMatrixWorld(true);
+  // The page keeps rendering between tiles, and its per-frame switches hide interiors again (the gym's tiers, the rooms
+  // per storey, the culling of details): stop the loop and switch everything on again before each tile.
+  try { if (E.renderer && E.renderer.setAnimationLoop) E.renderer.setAnimationLoop(null); } catch (e) {}
+  const showAll = () => { for (const d of E.details) d.obj.visible = true; for (const o of hidden) if (!o.isMesh && !SKIP_NAMES.test(o.name || '')) o.visible = true; root.updateMatrixWorld(true); };
   window.__voxBox = box => {
+    showAll();
 
   const [X0, X1, Z0, Z1, Y0, Y1] = box, NX = X1 - X0, NY = Y1 - Y0, NZ = Z1 - Z0;
   const SP = 0.3, PUSH = 0.1;
