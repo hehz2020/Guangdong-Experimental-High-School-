@@ -364,7 +364,7 @@ function face(S, P) {
 function hair(S, P, lod) {
   const [na, nt] = LODS[lod].hair, k = bind(B.head), Jh = P.J[B.head], Cn = headCentre(P);
   // hairline: polar angle of the edge by azimuth (0 forward): forehead, temples, above the ears, nape
-  const edge = ph => { const c = Math.cos(ph), a = Math.abs(Math.sin(ph)); return 0.92 + 0.5 * (1 - c) / 2 + 0.36 * a * a * (c > 0 ? 1 : 0.5) + (c < -0.5 ? 0.2 * (-c - 0.5) : 0); };
+  const edge = ph => { const c = Math.cos(ph), a = Math.abs(Math.sin(ph)); return 0.92 + 0.5 * (1 - c) / 2 + 0.36 * a * a * (c > 0 ? 1 : 0.5) + (c < -0.3 ? 0.75 * (-c - 0.3) : 0); };   // down to the nape at the back
   // volume: thickest on the crown, a few clumps, thinning to the edge and tucked under the skin at it
   const thick = (ph, t) => {
     const side = Math.abs(Math.sin(ph)), v = (0.008 + 0.022 * Math.pow(Math.max(0, Math.cos(t * 1.35)), 1.3) + 0.004 * Math.max(0, -Math.cos(ph)) - 0.002 * side * t) * (1 + (lod ? 0 : 0.22 * Math.sin(ph * 7 + t * 9) * Math.sin(ph * 3 - 2)));

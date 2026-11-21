@@ -182,7 +182,10 @@ export function createCulling({ root, details, indoors = [], lowPower = false, s
       finally { for (const q of hidden) q.d.obj.visible = true; }
       if (query && !pending) { gl.beginQuery(gl.ANY_SAMPLES_PASSED_CONSERVATIVE, query); active = true; queriedAt = mirror.frame; }
     };
-    // the query spans exactly the water's own draw, which three.js makes between onBeforeRender and onAfterRender
+    // The query spans exactly the water's own draw, which three.js makes between onBeforeRender and onAfterRender. Opaque
+    // things are drawn sorted by material before distance, so the water is put after the other opaque things (render
+    // order 10): whatever hides it is then already in the depth buffer when it is counted.
+    water.renderOrder = Math.max(water.renderOrder, 10);
     const after = water.onAfterRender;
     water.onAfterRender = function (...args) { if (active) { gl.endQuery(gl.ANY_SAMPLES_PASSED_CONSERVATIVE); active = false; pending = true; } if (after) after.apply(this, args); };
   }

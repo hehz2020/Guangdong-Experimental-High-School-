@@ -377,7 +377,7 @@ export function createLighting(scene, renderer, opts = {}) {
   // it has faded out, and every light fades with its rank: the lamp just beyond the set (the next to come in) defines the
   // distance at which a light is at zero, so swapping one lamp for the next happens in the dark. ?lamps=0..16 (default 8).
   const lampCount = plain || low || opts.legacy ? 0 : query.has('lamps') && Number.isFinite(Number(query.get('lamps'))) ? THREE.MathUtils.clamp(Math.round(Number(query.get('lamps'))), 0, 16) : 8;
-  const LAMP_COLOR = 0xffd09a, LAMP_K = 0.9;
+  const LAMP_COLOR = 0xffd09a, LAMP_K = 0.5;
   const posts = (opts.lamps || LIT).map(([x, z, r, y]) => ({ x, z, r, y: Number.isFinite(y) ? y : THREE.MathUtils.clamp(0.62 * r, 2.4, 9) }));
   const lampSlots = [];
   for (let i = 0; i < lampCount; i++) {
@@ -399,7 +399,7 @@ export function createLighting(scene, renderer, opts = {}) {
     for (const [q, w] of want) {
       const s = lampSlots.find(t => !t.post || (t.goal === 0 && t.w < 0.02)); if (!s) break;
       s.post = q; s.w = 0; s.goal = w;
-      s.light.position.set(q.x, q.y, q.z); s.light.distance = q.r * 2.2; s.power = LAMP_K * q.r * q.r;
+      s.light.position.set(q.x, q.y, q.z); s.light.distance = q.r * 1.9; s.power = LAMP_K * q.r * q.r;
     }
   }
   function updateLamps(p, dt, on) {

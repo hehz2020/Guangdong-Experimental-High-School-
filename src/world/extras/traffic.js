@@ -242,6 +242,7 @@ export function build(ctx) {
     const cx = cam.x, cz = cam.z, Rm = low ? 220 : 360; env.camera.updateMatrixWorld(); PV.multiplyMatrices(env.camera.projectionMatrix, env.camera.matrixWorldInverse); frustum.setFromProjectionMatrix(PV);
     const n = { car: 0, suv: 0, bus: 0, scooter: 0, bike: 0 }; let ns = 0;
     for (const L of lanes) for (const c of L.cars) {
+      if (!L.name.startsWith('main') && (c.s < 22 || c.s > L.len - 22)) continue;   // the ends of the short lanes: nobody sees a car appear
       pointAt(L, c.s, tmp); const dx = tmp[0] - cx, dz = tmp[1] - cz; if (dx * dx + dz * dz > Rm * Rm) continue;
       sph.center.set(tmp[0], 1, tmp[1]); sph.radius = c.len; if (!frustum.intersectsSphere(sph)) continue;
       const m = meshes[c.k]; if (n[c.k] >= CAP[c.k]) continue;
