@@ -75,25 +75,35 @@ def choose(vox):
     blk2, kid2 = (uniq // K).astype(np.int64), (uniq % K).astype(np.int64)
     hy2 = h2 / np.maximum(a2, 1e-6)
     cat = np.array([CAT_WEIGHT.get(c, 0.0) if b else 0.0 for c, b in info], dtype=np.float32)
+    cat[[i for i, (c, b) in enumerate(info) if c == 'line']] = 0.0
     score = w2 * cat[kid2] * (0.6 + hy2 / 255.0 * 0.8)
-    keep = score > 0
+    keep = (score > 0) | np.array([info[k][0] == 'line' for k in kid2], bool)
     blk2, kid2, a2, s2, score = blk2[keep], kid2[keep], a2[keep], s2[keep], score[keep]
     order = np.lexsort((-score, blk2))
     blk2, kid2, a2, s2 = blk2[order], kid2[order], a2[order], s2[order]
     first = np.ones(len(blk2), bool); first[1:] = blk2[1:] != blk2[:-1]
+    first &= score > 0
     # the sub-cells of a block are the union over every block kind that is not skipped and covers enough
     union = np.zeros(NX * NY * NZ, np.uint8)
     np.bitwise_or.at(union, blk2[a2 > 0.05], s2[a2 > 0.05])
     grid = np.full(NX * NY * NZ, -1, np.int32)       # winning (category, block) per block, as an index into info
     garea = np.zeros(NX * NY * NZ, np.float32)
     grid[blk2[first]] = kid2[first]; garea[blk2[first]] = a2[first]
-    return grid.reshape(NY, NZ, NX), garea.reshape(NY, NZ, NX), union.reshape(NY, NZ, NX), info
+    # painted lines (pitch, roads, the gym floor): they cover a few hundredths of a block and never win; kept apart
+    is_line = np.array([c == 'line' for c, b in info])
+    # thin pitch and court lines count from 3 hundredths of a block; road markings (broad stripes, closely spaced) from a quarter
+    lmin = np.array([0.25 if (c == 'line' and b in ('white_concrete', 'yellow_concrete') and any(re.search(r'road', mats[i]['name']) for i in range(len(mats)) if mkey[i] == k)) else 0.03
+                     for k, (c, b) in enumerate(info)], np.float32)
+    lsel = is_line[kid2] & (a2 >= lmin[kid2])
+    lgrid = np.full(NX * NY * NZ, -1, np.int32)
+    lgrid[blk2[lsel]] = kid2[lsel]
+    return grid.reshape(NY, NZ, NX), garea.reshape(NY, NZ, NX), union.reshape(NY, NZ, NX), info, lgrid.reshape(NY, NZ, NX)
 
 def build_states(vox, PAL, PIDX):
     """Blocks of one voxel file, as indices into the shared palette PAL (0 = air)."""
     X0, X1, Z0, Z1, Y0, Y1 = vox['box']
     NX, NY, NZ = vox['size']
-    grid, garea, union, info = choose(vox)
+    grid, garea, union, info, lgrid = choose(vox)
     states = np.zeros((NY, NZ, NX), np.int32)       # index into PAL; 0 = air
     def sid(s):
         if s not in PIDX: PIDX[s] = len(PAL); PAL.append(s)
@@ -147,6 +157,13 @@ def build_states(vox, PAL, PIDX):
                         facing = {0b0101: 'west', 0b1010: 'east', 0b0011: 'north', 0b1100: 'south'}[upper]
                         states[by, bz, bx] = sid(f'{st}[facing={facing},half=bottom,shape=straight,waterlogged=false]'); kinds[by, bz, bx] = 6; continue
                 states[by, bz, bx] = sid(base); kinds[by, bz, bx] = 4
+    # painted lines: where one crosses a block that is the top of a pitch, road or floor, the block takes its colour
+    for by, bz, bx in zip(*np.nonzero(lgrid >= 0)):
+        if by + 1 >= NY or states[by + 1, bz, bx] != 0 or states[by, bz, bx] == 0: continue
+        under = PAL[states[by, bz, bx]].split('[')[0]
+        if under in ('red_terracotta', 'terracotta') or '_slab[type=bottom' in PAL[states[by, bz, bx]] or 'stairs' in under: continue
+        c, base = info[int(lgrid[by, bz, bx])]
+        states[by, bz, bx] = sid(base); kinds[by, bz, bx] = 4
     return states, kinds, union
 
 def post_pass(states, kinds, union, PAL, PIDX):

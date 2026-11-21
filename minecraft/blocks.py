@@ -95,6 +95,8 @@ RULES = [
     (r'bark|trunk', 'log'),
     (r'lamp|lantern-light|highbay-lens|beacon|lite-inner|bulb', 'lamp'),
     (r'glass|pane|window|clere|skyPanel|skyTop|frosted|mirror|lite\b|glaze', 'glass'),
+    (r'linepaint|roadpaint|roadyellow|lanenumbers|gym-in-paint-(white|maroon)', 'line'),
+    (r'gym-in-paint-(green|blue|dark)', 'skip'),
     (r'turf', 'turf'),
     (r'^earth$|lawn|grass|soil|farground', 'ground'),
     (r'asphalt|setts|^paving$|hifi-paving', 'pave'),
@@ -140,6 +142,9 @@ def block_for(mat):
         return cat, 'sea_lantern' if rgb[2] >= rgb[0] - 10 else 'glowstone'
     if cat == 'glass':
         return cat, nearest(rgb, GLASS)
+    if cat == 'line':
+        lines = {k: SOLID[k] for k in ('white_concrete', 'yellow_concrete', 'green_concrete', 'blue_concrete', 'red_concrete', 'gray_concrete', 'lime_concrete', 'light_blue_concrete')}
+        return cat, nearest(rgb, lines)
     if cat == 'turf':
         return cat, 'grass_block'
     if cat == 'ground':
