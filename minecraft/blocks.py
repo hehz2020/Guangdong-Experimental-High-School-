@@ -95,7 +95,8 @@ RULES = [
     (r'bark|trunk', 'log'),
     (r'lamp|lantern-light|highbay-lens|beacon|lite-inner|bulb', 'lamp'),
     (r'glass|pane|window|clere|skyPanel|skyTop|frosted|mirror|lite\b|glaze', 'glass'),
-    (r'^earth$|lawn|grass|turf|soil|farground', 'ground'),
+    (r'turf', 'turf'),
+    (r'^earth$|lawn|grass|soil|farground', 'ground'),
     (r'asphalt|setts|^paving$|hifi-paving', 'pave'),
     (r'bloom|flower', 'flowers'),
     (r'chainlink|pickets|rail|inox|galv|steel|metal|alu\b|net$|bars|fence|frame$|bike|pole|post', 'metal'),
@@ -139,6 +140,8 @@ def block_for(mat):
         return cat, 'sea_lantern' if rgb[2] >= rgb[0] - 10 else 'glowstone'
     if cat == 'glass':
         return cat, nearest(rgb, GLASS)
+    if cat == 'turf':
+        return cat, 'grass_block'
     if cat == 'ground':
         if re.search('soil', name): return cat, 'coarse_dirt'
         if sum(rgb) < 200 and not re.search('lawn|grass', name): return cat, 'podzol'
@@ -193,6 +196,14 @@ def color_of(block):
              'glass_pane': (190, 215, 220), 'red_tulip': (180, 60, 50), 'poppy': (190, 40, 30), 'oxeye_daisy': (220, 225, 210),
              'azure_bluet': (200, 210, 225), 'dandelion': (230, 200, 40)}
     if block in extra: return extra[block]
+    wool = {'white': (234, 236, 237), 'light_gray': (142, 142, 135), 'gray': (63, 68, 72), 'black': (21, 21, 26), 'red': (161, 39, 35),
+            'orange': (240, 118, 19), 'yellow': (249, 198, 40), 'lime': (112, 185, 26), 'green': (84, 109, 27), 'cyan': (21, 137, 145),
+            'light_blue': (58, 175, 217), 'blue': (53, 57, 157), 'purple': (121, 42, 172), 'magenta': (189, 68, 179), 'pink': (237, 141, 172),
+            'brown': (114, 71, 40)}
+    for suf in ('_carpet', '_bed', '_wool'):
+        if block.endswith(suf) and block[:-len(suf)] in wool: return wool[block[:-len(suf)]]
+    if block == 'red_nether_bricks': return (69, 7, 9)
+    if block.endswith('_door'): return (162, 131, 79)
     for suf in ('_slab', '_stairs', '_pane'):
         if block.endswith(suf):
             b = block[:-len(suf)]

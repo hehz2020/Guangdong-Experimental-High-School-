@@ -18,7 +18,7 @@ Water is filled down from its surface to the first solid block. Leaves are made 
 
 Needs: Python 3.9+, numpy, nbtlib (pip install numpy nbtlib).
 """
-import argparse, base64, io, json, math, os, struct, sys, time, zlib
+import argparse, base64, io, json, math, os, re, struct, sys, time, zlib
 import numpy as np
 import nbtlib
 from nbtlib.tag import Compound, List, String, Int, Byte, Long, Float, LongArray
@@ -30,7 +30,7 @@ DATA_VERSION, VERSION_NAME = 3953, '1.21'     # older than most games in use: ne
 GROUND_Y = 64                                 # block y of the first block above the ground (h 0..1)
 MIN_Y = -64
 
-CAT_WEIGHT = {'flowers': 0.9, 'water': 3.0, 'glass': 1.3, 'lamp': 2.0, 'leaves': 0.7, 'metal': 1.0, 'wood': 1.0, 'solid': 1.0,
+CAT_WEIGHT = {'turf': 1.5, 'flowers': 0.9, 'water': 3.0, 'glass': 1.3, 'lamp': 2.0, 'leaves': 0.7, 'metal': 1.0, 'wood': 1.0, 'solid': 1.0,
               'ground': 0.3, 'pave': 1.0, 'log': 1.2}   # ground loses to anything laid on it
 MIN_AREA = {'leaves': 0.20, 'metal': 0.03, 'lamp': 0.02, 'glass': 0.08, 'water': 0.05}
 
@@ -48,24 +48,45 @@ def thin_vertical(mask):
     return 0
 
 def choose(vox):
+    """Per block the winner among the blocks its materials stand for: materials that become the same block are counted
+    together first (two tones of turf, a texture split into several materials), then the largest area wins, top
+    surfaces a little ahead. Returns the winning (category, block) per block, its area and the hit sub-cells."""
     X0, X1, Z0, Z1, Y0, Y1 = vox['box']
     NX, NY, NZ = vox['size']
     mats = vox['mats']
     blk, mid, area, sub, hy = dec(vox['blk'], np.int32), dec(vox['mid'], np.uint16), dec(vox['area'], np.float32), dec(vox['sub'], np.uint8), dec(vox['hy'], np.uint8)
-    info = [block_for(m) for m in mats]
+    minfo = [block_for(m) for m in mats]
+    keys, info, mkey = {}, [], []
+    for c, b in minfo:
+        k = (c, b)
+        if k not in keys: keys[k] = len(info); info.append(k)
+        mkey.append(keys[k])
+    mkey = np.array(mkey, np.int64)
+    # base layers under a finished surface (the infield's apron under the turf): they only win where nothing lies on them
+    wmat = np.array([0.4 if re.search(r'apron', m['name']) else 1.0 for m in mats], np.float32)
+    kid = mkey[mid]
+    K = len(info)
+    comb = blk.astype(np.int64) * K + kid
+    uniq, inv = np.unique(comb, return_inverse=True)
+    a2 = np.zeros(len(uniq), np.float32); np.add.at(a2, inv, area)
+    w2 = np.zeros(len(uniq), np.float32); np.add.at(w2, inv, area * wmat[mid])
+    h2 = np.zeros(len(uniq), np.float32); np.add.at(h2, inv, area * hy.astype(np.float32))
+    s2 = np.zeros(len(uniq), np.uint8); np.bitwise_or.at(s2, inv, sub)
+    blk2, kid2 = (uniq // K).astype(np.int64), (uniq % K).astype(np.int64)
+    hy2 = h2 / np.maximum(a2, 1e-6)
     cat = np.array([CAT_WEIGHT.get(c, 0.0) if b else 0.0 for c, b in info], dtype=np.float32)
-    score = area * cat[mid] * (0.6 + hy.astype(np.float32) / 255.0 * 0.8)
+    score = w2 * cat[kid2] * (0.6 + hy2 / 255.0 * 0.8)
     keep = score > 0
-    blk, mid, area, sub, hy, score = blk[keep], mid[keep], area[keep], sub[keep], hy[keep], score[keep]
-    order = np.lexsort((-score, blk))
-    blk, mid, area, sub = blk[order], mid[order], area[order], sub[order]
-    first = np.ones(len(blk), bool); first[1:] = blk[1:] != blk[:-1]
-    # the sub-cells of a block are the union over every material that is not skipped and covers enough
+    blk2, kid2, a2, s2, score = blk2[keep], kid2[keep], a2[keep], s2[keep], score[keep]
+    order = np.lexsort((-score, blk2))
+    blk2, kid2, a2, s2 = blk2[order], kid2[order], a2[order], s2[order]
+    first = np.ones(len(blk2), bool); first[1:] = blk2[1:] != blk2[:-1]
+    # the sub-cells of a block are the union over every block kind that is not skipped and covers enough
     union = np.zeros(NX * NY * NZ, np.uint8)
-    np.bitwise_or.at(union, blk[area > 0.05], sub[area > 0.05])
-    grid = np.full(NX * NY * NZ, -1, np.int32)       # winning material per block
+    np.bitwise_or.at(union, blk2[a2 > 0.05], s2[a2 > 0.05])
+    grid = np.full(NX * NY * NZ, -1, np.int32)       # winning (category, block) per block, as an index into info
     garea = np.zeros(NX * NY * NZ, np.float32)
-    grid[blk[first]] = mid[first]; garea[blk[first]] = area[first]
+    grid[blk2[first]] = kid2[first]; garea[blk2[first]] = a2[first]
     return grid.reshape(NY, NZ, NX), garea.reshape(NY, NZ, NX), union.reshape(NY, NZ, NX), info
 
 def build_states(vox, PAL, PIDX):
@@ -102,7 +123,7 @@ def build_states(vox, PAL, PIDX):
                     states[by, bz, bx] = sid(base + '[distance=1,persistent=true,waterlogged=false]'); kinds[by, bz, bx] = 5; continue
                 if c == 'log':
                     states[by, bz, bx] = sid(base + '[axis=y]'); kinds[by, bz, bx] = 4; continue
-                if c in ('lamp', 'ground') or ymc < GROUND_Y:
+                if c in ('lamp', 'ground', 'turf') or ymc < GROUND_Y:
                     states[by, bz, bx] = sid(base); kinds[by, bz, bx] = 4; continue
                 if c == 'glass':
                     if thin_vertical(mask):
@@ -217,7 +238,7 @@ def apply_surfaces(states, kinds, PAL, PIDX, files, X0, Z0, Y0):
     base_of = {v[3]: k for t in (SOLID, PLANKS) for k, v in t.items() if v[3]}
     def passable(i):
         p = PAL[i]
-        return p == 'air' or p.startswith('water') or p.split('[')[0].endswith(('_carpet', '_door', 'tulip', 'poppy', 'daisy', 'bluet', 'dandelion'))
+        return p == 'air' or p.startswith(('water', 'light[')) or p.split('[')[0].endswith(('_carpet', '_door', 'tulip', 'poppy', 'daisy', 'bluet', 'dandelion'))
     pas = np.array([passable(i) for i in range(len(PAL))] + [False] * 4096)
     clears, supports = {}, {}
     n_spots = n_ok = 0
@@ -274,6 +295,66 @@ def apply_surfaces(states, kinds, PAL, PIDX, files, X0, Z0, Y0):
     for c, st in supports.items():
         states[c] = sid(st); kinds[c] = 6 if '_slab' in st else 4
     print(f'standing spots: {n_spots}, already served {n_ok}, rebuilt {len(supports)} (cleared {len(clears)} blocks above)')
+
+
+def hang_doors(states, kinds, PAL, PIDX, opened, X0, Z0, Y0):
+    """Doors in the doorways opened by doorways.py: one or two blocks wide get a wooden door (two: a pair, hinged at the
+    outer sides), closed; wider openings stay open. The door stands in the first block of the wall's depth, on a floor."""
+    def sid(s):
+        if s not in PIDX: PIDX[s] = len(PAL); PAL.append(s)
+        return PIDX[s]
+    NY, NZ, NX = states.shape
+    cells = {(e[0], e[1], e[2]): e for e in opened if len(e) > 3}
+    done, n = set(), 0
+    for (x, y, z), e in sorted(cells.items()):
+        axis, run, depth = e[3], e[4], e[5]
+        if run > 2 or (x, y, z) in done: continue
+        along = (0, 1) if axis == 'x' else (1, 0)          # (dx, dz) along the wall
+        # the door's own cells: this one and, for a pair, the next along the wall; only the first of a deep wall
+        across = (1, 0) if axis == 'x' else (0, 1)
+        if (x - across[0], y, z - across[1]) in cells: continue   # second block of a two-deep wall
+        pair = [(x, y, z)]
+        nxt = (x + along[0], y, z + along[1])
+        if run == 2:
+            if nxt not in cells: continue
+            pair.append(nxt)
+        facing = 'east' if axis == 'x' else 'south'
+        ok = True
+        for (cx, cy, cz) in pair:
+            bx, bz, by = cx - int(X0), cz - int(Z0), cy - 64 - int(math.floor(Y0))
+            if not (1 <= by < NY - 1 and 0 <= bz < NZ and 0 <= bx < NX) or states[by, bz, bx] or states[by + 1, bz, bx] or not states[by - 1, bz, bx]:
+                ok = False
+        if not ok: continue
+        for i, (cx, cy, cz) in enumerate(pair):
+            bx, bz, by = cx - int(X0), cz - int(Z0), cy - 64 - int(math.floor(Y0))
+            hinge = 'left' if i == 0 else 'right'
+            for half, k in (('lower', 0), ('upper', 1)):
+                states[by + k, bz, bx] = sid(f'oak_door[facing={facing},half={half},hinge={hinge},open=false,powered=false]'); kinds[by + k, bz, bx] = 6
+            done.add((cx, cy, cz)); n += 1
+    print(f'doors hung: {n}')
+
+def light_rooms(states, kinds, PAL, PIDX, step=6, level=13):
+    """Indoor light without fittings: an invisible light block (the game's 'light') under the ceiling of every covered
+    standing place on a grid of step blocks, so that rooms deep inside the buildings are not dark at noon or at night."""
+    NY, NZ, NX = states.shape
+    lid = PIDX.get(f'light[level={level},waterlogged=false]')
+    if lid is None:
+        lid = len(PAL); PAL.append(f'light[level={level},waterlogged=false]'); PIDX[PAL[-1]] = lid
+    air = states == 0
+    n = 0
+    for z in range(0, NZ, step):
+        for x in range(0, NX, step):
+            col = states[:, z, x]
+            y = 1
+            while y < NY - 3:
+                if air[y, z, x] and air[y + 1, z, x] and not air[y - 1, z, x]:
+                    # a standing place: is there a ceiling 2 to 6 blocks up?
+                    top = next((k for k in range(y + 2, min(NY, y + 7)) if not air[k, z, x]), None)
+                    if top is not None and not PAL[col[top]].startswith(('oak_leaves', 'jungle_leaves', 'spruce_leaves', 'azalea', 'flowering', 'dark_oak_leaves')):
+                        states[top - 1, z, x] = lid; kinds[top - 1, z, x] = 0; n += 1
+                        y = top
+                y += 1
+    print(f'invisible lights under ceilings: {n}')
 
 # ---------------------------------------------------------------------------------------------------------- furniture
 BED_COLOURS = ['white', 'light_blue', 'light_gray', 'blue', 'pink', 'yellow', 'lime', 'cyan', 'orange', 'purple']
@@ -513,7 +594,9 @@ def main():
         states[:, oz:oz + nz, ox:ox + nx] = st; kinds[:, oz:oz + nz, ox:ox + nx] = kd; union[:, oz:oz + nz, ox:ox + nx] = un
     if a.open:
         n = 0
-        for x, y, z in json.load(open(a.open)):
+        opened = json.load(open(a.open))
+        for e in opened:
+            x, y, z = e[:3]
             bx, bz, by = x - int(X0), z - int(Z0), y - 64 - int(math.floor(Y0))
             for k in (0, 1):
                 if 0 <= by + k < NY and 0 <= bz < NZ and 0 <= bx < NX and states[by + k, bz, bx]:
@@ -525,6 +608,8 @@ def main():
     raise_slab_floors(states, kinds, PAL, PIDX)
     furniture = [f for v in voxes for f in v.get('furniture', [])]
     ents = place_furniture(states, kinds, PAL, PIDX, furniture, X0, Z0, Y0) if furniture else {}
+    if a.open: hang_doors(states, kinds, PAL, PIDX, opened, X0, Z0, Y0)
+    light_rooms(states, kinds, PAL, PIDX)
     ents_by_chunk = {}
     for (x, y, z), e in ents.items(): ents_by_chunk.setdefault((x >> 4, z >> 4), []).append(e)
     print(f'chosen blocks in {time.time() - t0:.1f}s: {int((states > 0).sum())} non-air blocks, {len(PAL)} block states, box {X0} {X1} {Z0} {Z1} {Y0} {Y1}')

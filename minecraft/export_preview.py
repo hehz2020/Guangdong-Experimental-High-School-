@@ -33,7 +33,8 @@ def main():
     pad = np.pad(occ, 1, constant_values=False)
     for dy, dz, dx in ((1, 0, 0), (-1, 0, 0), (0, 1, 0), (0, -1, 0), (0, 0, 1), (0, 0, -1)):
         exposed |= ~pad[1 + dy:1 + dy + NY, 1 + dz:1 + dz + NZ, 1 + dx:1 + dx + NX]
-    keep = (st > 0) & (exposed | ~occ)
+    invisible = np.array([p.startswith('light[') for p in pal])
+    keep = (st > 0) & (exposed | ~occ) & ~invisible[st]
     ys, zs, xs = np.nonzero(keep)
     ids = st[ys, zs, xs]
     # panes and bars: one thin plate per axis they connect along (shape 4 = runs north-south, 8 = runs east-west)

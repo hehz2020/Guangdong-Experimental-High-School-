@@ -15,7 +15,7 @@ import json, math, sys
 from collections import deque
 import numpy as np
 
-PASS_PREFIX = ('air', 'water')
+PASS_PREFIX = ('air', 'water', 'light[')
 PASS_SUFFIX = ('_carpet', '_door', 'tulip', 'poppy', 'daisy', 'bluet', 'dandelion', 'torch', 'button', 'sign', 'banner')
 
 def main():

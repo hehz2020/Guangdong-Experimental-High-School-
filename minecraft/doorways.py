@@ -9,7 +9,7 @@ candidates that come as a long run along a wall are a wall lying on a block edge
 usage: python minecraft/doorways.py candidates <blocks.npz> <cands.json>
        python minecraft/doorways.py open <cands.json> <free.json> <open.json>
 cands.json: [[mc_x, mc_y, mc_z, h, axis, depth], ...] (h: the 3D height of the floor; axis 'x' or 'z': the direction one
-walks through; depth: 1 or 2 blocks of wall). open.json: [[mc_x, mc_y, mc_z], ...] cells to clear, two blocks high.
+walks through; depth: 1 or 2 blocks of wall). open.json: [[mc_x, mc_y, mc_z, axis, run, depth], ...] cells to clear, two blocks high (run: the doorway's width).
 """
 import json, math, sys
 import numpy as np
@@ -82,7 +82,7 @@ def open_cells(cands_f, free_f, out):
             # beyond the run, within four cells, the wall must exist in the 3D campus (blocked there): a real wall with a
             # gap, not a solid thing the 3D campus has no collision for
             if all(fr.get((x + sgn * j * along[1], y, z + sgn * j * along[0]), 1) for j in range(k, 5)): ends_solid = False
-        if run <= 4 and ends_solid: keep.append([x, y, z])
+        if run <= 4 and ends_solid: keep.append([x, y, z, c[4], run, c[5]])
     json.dump(keep, open(out, 'w'))
     print(f'{len(ok)} free in the 3D campus, {len(keep)} to open (runs of 4 or fewer, wall in the 3D campus on both sides)')
 
