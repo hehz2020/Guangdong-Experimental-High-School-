@@ -374,7 +374,7 @@ def hang_doors(states, kinds, PAL, PIDX, opened, X0, Z0, Y0):
         return PIDX[s]
     NY, NZ, NX = states.shape
     cells = {(e[0], e[1], e[2]): e for e in opened if len(e) > 3}
-    done, n = set(), 0
+    done, n, hung = set(), 0, []
     for (x, y, z), e in sorted(cells.items()):
         axis, run, depth = e[3], e[4], e[5]
         if run > 2 or (x, y, z) in done: continue
@@ -400,7 +400,9 @@ def hang_doors(states, kinds, PAL, PIDX, opened, X0, Z0, Y0):
             for half, k in (('lower', 0), ('upper', 1)):
                 states[by + k, bz, bx] = sid(f'oak_door[facing={facing},half={half},hinge={hinge},open=false,powered=false]'); kinds[by + k, bz, bx] = 6
             done.add((cx, cy, cz)); n += 1
+        hung.append({'x': pair[0][0], 'y': pair[0][1], 'z': pair[0][2], 'axis': axis, 'run': len(pair)})
     print(f'doors hung: {n}')
+    return hung
 
 def light_rooms(states, kinds, PAL, PIDX, step=6, level=13):
     """Indoor light without fittings: an invisible light block (the game's 'light') under the ceiling of every covered
@@ -757,7 +759,9 @@ def main():
     raise_slab_floors(states, kinds, PAL, PIDX, keep=stair_cells)
     furniture = [f for v in voxes for f in v.get('furniture', [])]
     ents = place_furniture(states, kinds, PAL, PIDX, furniture, X0, Z0, Y0) if furniture else {}
-    if a.open: hang_doors(states, kinds, PAL, PIDX, opened, X0, Z0, Y0)
+    if a.open:
+        hung = hang_doors(states, kinds, PAL, PIDX, opened, X0, Z0, Y0)
+        json.dump(hung, open(os.path.join(os.path.dirname(os.path.abspath(a.out)), 'doors.json'), 'w'))
     light_rooms(states, kinds, PAL, PIDX)
     if a.fixes: apply_fixes(states, kinds, PAL, PIDX, a.fixes, X0, Z0, Y0)
     ents_by_chunk = {}
