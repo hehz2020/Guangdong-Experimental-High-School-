@@ -26,7 +26,9 @@ def main():
 
 def reach(src, spawn):
     d = np.load(src)
-    st, pal, box = d['states'], [str(p) for p in d['pal']], d['box']
+    return reach_grid(d['states'], [str(p) for p in d['pal']], d['box'], spawn)
+
+def reach_grid(st, pal, box, spawn):
     X0, X1, Z0, Z1, Y0, Y1 = box
     NY, NZ, NX = st.shape
     passable_pal = np.array([p.startswith(PASS_PREFIX) or p.split('[')[0].endswith(PASS_SUFFIX) for p in pal])

@@ -31,6 +31,12 @@ echo "== $V: the world"
 rm -rf "$W/world_$V"
 python3 minecraft/build_world.py "$W"/full/vox_*.json --out "$W/world_$V" --name "广东实验中学（荔湾校区）" --spawn 262,-20,90 \
   --blocks "$W/blocks_$V.npz" --open "$W/open.json" --surfaces "$W/surf_a.json,$W/surf_b.json" --lamps "$W/lamps.json" --trees "$W/trees.json" --balustrades "$W/balustrade.json" --boards "$W/boards.json" --fixes minecraft/fixes.json | tee "$W/build_$V.log"
+echo "== $V: doorways into the parts of storeys nothing reaches"
+python3 minecraft/access.py "$W/blocks_$V.npz" 262,-20 "$W/access.json" | tail -2
+rm -rf "$W/world_$V"
+python3 minecraft/build_world.py "$W"/full/vox_*.json --out "$W/world_$V" --name "广东实验中学（荔湾校区）" --spawn 262,-20,90 \
+  --blocks "$W/blocks_$V.npz" --open "$W/open.json" --surfaces "$W/surf_a.json,$W/surf_b.json" --lamps "$W/lamps.json" --trees "$W/trees.json" --balustrades "$W/balustrade.json" --boards "$W/boards.json" --fixes "minecraft/fixes.json,$W/access.json" > "$W/build_$V.log"
+grep -E "fixes|wrote" "$W/build_$V.log"
 python3 minecraft/check_world.py "$W/world_$V" | tail -1
 python3 minecraft/walk_check.py "$W/blocks_$V.npz" 262,-20 minecraft/targets.json | tee "$W/walk_$V.log"
 python3 minecraft/metrics.py "$W/blocks_$V.npz" | tee "$W/metrics_$V.log" || echo "== $V: SOME COUNTS ARE LOW (see above)"

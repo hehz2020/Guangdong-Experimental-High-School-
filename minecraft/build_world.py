@@ -1141,7 +1141,7 @@ def main():
     ap.add_argument('--spawn', default=None, help='x,z,yaw in world metres / Minecraft yaw (90 = facing west)')
     ap.add_argument('--blocks', default=None, help='also save the block grid (npz) for previews')
     ap.add_argument('--open', default=None, help='doorways.py open.json: cells to clear, two blocks high')
-    ap.add_argument('--fixes', default=None, help='fixes.json: hand-made changes applied last')
+    ap.add_argument('--fixes', default=None, help='fixes.json (and access.json...), comma separated: hand-made changes applied last')
     ap.add_argument('--surfaces', default=None, help='surfaces.mjs outputs, comma separated: steps rebuilt from the 3D standing heights')
     ap.add_argument('--lamps', default=None, help='lamps.mjs output: the 3D campus lamps, set as lanterns and lamp posts')
     ap.add_argument('--trees', default=None, help='trees.mjs output: the 3D campus trees, grown again as Minecraft trees')
@@ -1189,7 +1189,8 @@ def main():
     if a.trees: place_trees(states, kinds, PAL, PIDX, json.load(open(a.trees)), X0, Z0, Y0)
     light_rooms(states, kinds, PAL, PIDX)
     if a.lamps: place_lamps(states, kinds, PAL, PIDX, json.load(open(a.lamps)), X0, Z0, Y0)
-    if a.fixes: apply_fixes(states, kinds, PAL, PIDX, a.fixes, X0, Z0, Y0)
+    for fx_path in (a.fixes.split(',') if a.fixes else []):
+        if os.path.exists(fx_path): apply_fixes(states, kinds, PAL, PIDX, fx_path, X0, Z0, Y0)
     stair_shapes(states, PAL, PIDX)
     ents_by_chunk = {}
     for (x, y, z), e in ents.items(): ents_by_chunk.setdefault((x >> 4, z >> 4), []).append(e)
