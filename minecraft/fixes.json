@@ -295,5 +295,80 @@
     "block": "cyan_wool"
    }
   ]
+ },
+ {
+  "why": "出生点旁的校园地图公告栏（mapart.py）：深色橡木立柱、云杉木板面、顶上一排深色橡木半砖；板面朝南（z -26 一侧）挂 4×5 张地图，在欢迎牌西边，不挡校门前的路",
+  "ops": [
+   {
+    "op": "fill",
+    "from": [
+     251,
+     64,
+     -27
+    ],
+    "to": [
+     251,
+     71,
+     -27
+    ],
+    "block": "dark_oak_log[axis=y]"
+   },
+   {
+    "op": "fill",
+    "from": [
+     258,
+     64,
+     -27
+    ],
+    "to": [
+     258,
+     71,
+     -27
+    ],
+    "block": "dark_oak_log[axis=y]"
+   },
+   {
+    "op": "fill",
+    "from": [
+     252,
+     64,
+     -27
+    ],
+    "to": [
+     257,
+     70,
+     -27
+    ],
+    "block": "spruce_planks"
+   },
+   {
+    "op": "fill",
+    "from": [
+     252,
+     71,
+     -27
+    ],
+    "to": [
+     257,
+     71,
+     -27
+    ],
+    "block": "dark_oak_slab[type=bottom,waterlogged=false]"
+   },
+   {
+    "op": "fill",
+    "from": [
+     251,
+     64,
+     -26
+    ],
+    "to": [
+     258,
+     71,
+     -26
+    ],
+    "block": "air"
+   }
+  ]
  }
 ]

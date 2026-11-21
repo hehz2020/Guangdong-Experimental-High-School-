@@ -38,8 +38,9 @@ echo "== $V: through the official server"
 python3 minecraft/lettering.py minecraft/lettering.json "$W/blocks_$V.npz" "$W/commands_$V.txt"
 python3 minecraft/doorplates.py "$W/doors.json" "$W/commands_$V.txt"
 python3 minecraft/boards.py "$W/boards.json" "$W/blocks_$V.npz" "$W/commands_$V.txt"
-python3 minecraft/server_pack.py "$SRV" "$W/world_$V" "$W/out_$V/gdsy-campus" --box=$BOX --commands "$W/commands_$V.txt" > "$W/server_$V.log" 2>&1
-grep -E "commands run|command failed|ERROR|error" "$W/server_$V.log" | head -20; tail -6 "$W/server_$V.log"
+python3 minecraft/mapart.py frames "$W/blocks_$V.npz" "$W/commands_$V.txt"
+python3 minecraft/server_pack.py "$SRV" "$W/world_$V" "$W/out_$V/gdsy-campus" --box=$BOX --commands "$W/commands_$V.txt" --maps "$W/blocks_$V.npz" > "$W/server_$V.log" 2>&1
+grep -E "commands run|command failed|ERROR|error|campus map|saved data" "$W/server_$V.log" | grep -v "Block-attached" | head -20; tail -6 "$W/server_$V.log"
 echo "== $V: zip"
 mkdir -p minecraft/releases
 rm -rf "$W/zip_$V" && mkdir -p "$W/zip_$V"

@@ -56,6 +56,7 @@ def main():
     ap.add_argument('--yaw', default='90', help='the way a new player faces at the spawn (90 = west)')
     ap.add_argument('--java', default='/usr/lib/jvm/java-25-openjdk-amd64/bin/java'); ap.add_argument('--name', default='广东实验中学（荔湾校区）')
     ap.add_argument('--commands', default=None, help='a file of server commands run once the map is loaded (e.g. lettering.py summons)')
+    ap.add_argument('--maps', default=None, help="blocks.npz: write mapart.py's campus map files into the world before it is loaded")
     a = ap.parse_args()
     x0, x1, z0, z1 = (int(float(v)) for v in a.box.split(','))
     sd = os.path.abspath(a.server); wname = 'world'
@@ -71,6 +72,11 @@ def main():
     # 2. the map's region files
     for f in os.listdir(os.path.join(a.src, 'region')):
         shutil.copy(os.path.join(a.src, 'region', f), os.path.join(reg, f))
+    # the campus map's map files, in place before the game loads the world (the item frames come with the commands)
+    if a.maps:
+        sys.path.insert(0, os.path.dirname(os.path.abspath(__file__)))
+        import mapart
+        mapart.maps(a.maps, w)
     # 3. load every chunk of the box, so that the game upgrades and lights it, then save
     s = Server(a.java, sd); s.wait_for(r'Done \(', 1200)
     cx0, cx1, cz0, cz1 = x0 >> 4, (x1 - 1) >> 4, z0 >> 4, (z1 - 1) >> 4
