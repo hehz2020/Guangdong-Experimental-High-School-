@@ -89,6 +89,11 @@ LEAVES = {'oak_leaves': (60, 110, 40), 'jungle_leaves': (70, 120, 35), 'spruce_l
 #   metal   iron bars when thin, else by colour     lamp    light-giving blocks
 #   wood    planks, slabs, stairs                   solid   by colour, slabs and stairs where the shape asks
 RULES = [
+    # things with a block of their own in the game (imagined translations)
+    (r'books|spines', 'named:bookshelf'),
+    (r'chalkboard', 'named:dark_prismarine'),
+    (r'locker', 'named:iron_block'),
+    (r'drape|desk-cloth|mat-blue|mat-cover|flagcloth|(?<!-)curtain(?!glass|wall)', 'fabric'),
     (r'^$|roomview|lamp-pools|ao-stand-in|shadow|^sky|stars|haze|glow|algae|grime|streaks|weathering|stain|tower-hands', 'skip'),
     (r'water|MirrorShader', 'water'),
     (r'leaves|needles|fronds|hedge|crownshaft|shrub|foliage|ivy', 'leaves'),
@@ -121,10 +126,19 @@ def nearest(rgb, table):
             best, bd = k, d
     return best
 
+WOOL = {'white_wool': (234, 236, 237), 'light_gray_wool': (142, 142, 135), 'gray_wool': (63, 68, 72), 'red_wool': (161, 39, 35),
+        'orange_wool': (240, 118, 19), 'yellow_wool': (249, 198, 40), 'lime_wool': (112, 185, 26), 'green_wool': (84, 109, 27),
+        'cyan_wool': (21, 137, 145), 'light_blue_wool': (58, 175, 217), 'blue_wool': (53, 57, 157), 'purple_wool': (121, 42, 172),
+        'magenta_wool': (189, 68, 179), 'pink_wool': (237, 141, 172), 'brown_wool': (114, 71, 40)}
+
 def block_for(mat):
     """(category, base block id) for a material record of voxelize.mjs."""
     name, rgb = mat['name'], mat['rgb']
     cat = category(name, mat['type'])
+    if cat.startswith('named:'):
+        return 'named', cat[6:]
+    if cat == 'fabric':
+        return cat, nearest(rgb, WOOL)
     if cat == 'skip':
         return cat, None
     if cat == 'water':
@@ -205,6 +219,9 @@ def color_of(block):
             'orange': (240, 118, 19), 'yellow': (249, 198, 40), 'lime': (112, 185, 26), 'green': (84, 109, 27), 'cyan': (21, 137, 145),
             'light_blue': (58, 175, 217), 'blue': (53, 57, 157), 'purple': (121, 42, 172), 'magenta': (189, 68, 179), 'pink': (237, 141, 172),
             'brown': (114, 71, 40)}
+    if block == 'bookshelf': return (117, 94, 60)
+    if block == 'dark_prismarine': return (52, 92, 76)
+    if block == 'iron_block': return (220, 220, 220)
     for suf in ('_carpet', '_bed', '_wool'):
         if block.endswith(suf) and block[:-len(suf)] in wool: return wool[block[:-len(suf)]]
     if block == 'red_nether_bricks': return (69, 7, 9)

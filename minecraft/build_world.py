@@ -30,7 +30,7 @@ DATA_VERSION, VERSION_NAME = 3953, '1.21'     # older than most games in use: ne
 GROUND_Y = 64                                 # block y of the first block above the ground (h 0..1)
 MIN_Y = -64
 
-CAT_WEIGHT = {'turf': 1.5, 'flowers': 0.9, 'water': 3.0, 'glass': 1.3, 'lamp': 2.0, 'leaves': 0.7, 'metal': 1.0, 'wood': 1.0, 'solid': 1.0,
+CAT_WEIGHT = {'named': 1.3, 'fabric': 1.0, 'turf': 1.5, 'flowers': 0.9, 'water': 3.0, 'glass': 1.3, 'lamp': 2.0, 'leaves': 0.7, 'metal': 1.0, 'wood': 1.0, 'solid': 1.0,
               'ground': 0.3, 'pave': 1.0, 'log': 1.2}   # ground loses to anything laid on it
 MIN_AREA = {'leaves': 0.20, 'metal': 0.03, 'lamp': 0.02, 'glass': 0.08, 'water': 0.05}
 
@@ -90,9 +90,9 @@ def choose(vox):
     garea = np.zeros(NX * NY * NZ, np.float32)
     grid[blk2[first]] = kid2[first]; garea[blk2[first]] = a2[first]
     # painted lines (pitch, roads, the gym floor): they cover a few hundredths of a block and never win; kept apart
-    is_line = np.array([c == 'line' for c, b in info])
+    is_line = np.array([c == 'line' or (c == 'named' and b == 'bookshelf') for c, b in info])
     # thin pitch and court lines count from 3 hundredths of a block; road markings (broad stripes, closely spaced) from a quarter
-    lmin = np.array([0.25 if (c == 'line' and b in ('white_concrete', 'yellow_concrete') and any(re.search(r'road', mats[i]['name']) for i in range(len(mats)) if mkey[i] == k)) else 0.03
+    lmin = np.array([0.25 if (c == 'line' and b in ('white_concrete', 'yellow_concrete') and any(re.search(r'road', mats[i]['name']) for i in range(len(mats)) if mkey[i] == k)) else 0.08 if b == 'bookshelf' else 0.03
                      for k, (c, b) in enumerate(info)], np.float32)
     lsel = is_line[kid2] & (a2 >= lmin[kid2])
     lgrid = np.full(NX * NY * NZ, -1, np.int32)
@@ -159,10 +159,15 @@ def build_states(vox, PAL, PIDX):
                 states[by, bz, bx] = sid(base); kinds[by, bz, bx] = 4
     # painted lines: where one crosses a block that is the top of a pitch, road or floor, the block takes its colour
     for by, bz, bx in zip(*np.nonzero(lgrid >= 0)):
+        c, base = info[int(lgrid[by, bz, bx])]
+        if base == 'bookshelf':                    # books on a shelf: the shelf's block becomes a bookshelf
+            p = PAL[states[by, bz, bx]]
+            if 'glass' not in p and 'pane' not in p:
+                states[by, bz, bx] = sid('bookshelf'); kinds[by, bz, bx] = 4
+            continue
         if by + 1 >= NY or states[by + 1, bz, bx] != 0 or states[by, bz, bx] == 0: continue
         under = PAL[states[by, bz, bx]].split('[')[0]
         if under in ('red_terracotta', 'terracotta') or '_slab[type=bottom' in PAL[states[by, bz, bx]] or 'stairs' in under: continue
-        c, base = info[int(lgrid[by, bz, bx])]
         states[by, bz, bx] = sid(base); kinds[by, bz, bx] = 4
     return states, kinds, union
 
