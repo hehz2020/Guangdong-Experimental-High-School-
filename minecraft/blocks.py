@@ -116,7 +116,7 @@ CURATED = ['smooth_quartz', 'white_concrete', 'smooth_stone', 'light_gray_concre
            'gray_concrete', 'black_concrete', 'smooth_sandstone', 'white_terracotta', 'terracotta', 'light_gray_terracotta',
            'brown_terracotta', 'red_terracotta', 'orange_terracotta', 'yellow_terracotta', 'cyan_terracotta', 'green_terracotta',
            'bricks', 'polished_granite', 'red_concrete', 'orange_concrete', 'yellow_concrete', 'lime_concrete', 'green_concrete',
-           'cyan_concrete', 'light_blue_concrete', 'blue_concrete', 'brown_concrete', 'pink_concrete', 'gray_terracotta', 'polished_tuff', 'polished_diorite', 'andesite']
+           'cyan_concrete', 'light_blue_concrete', 'blue_concrete', 'brown_concrete', 'pink_concrete', 'gray_terracotta', 'polished_tuff', 'polished_diorite', 'andesite', 'dark_prismarine', 'prismarine_bricks']
 SOLID_CURATED = {k: SOLID[k] for k in CURATED}
 
 def category(name, mtype):
