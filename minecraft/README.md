@@ -21,6 +21,14 @@ z（向南），高度 h 米对应 y = floor(h) + 64（地面顶在 y 64）。
 
 需要：Node 和 Playwright（同网站的测试），Python 3.9+、numpy、nbtlib（`pip install numpy nbtlib`）。
 
+## 放进游戏（Java 版 26.x）
+
+Java 版 26.1 起改了存档结构（主世界的区块挪到 `dimensions/minecraft/overworld/region`，`level.dat` 拆成多个文件）。
+这里写的 `level.dat` 是 1.21 的格式，26.3 打不开（报 “Unknown data version: 0”）。所以现在的做法是：
+在游戏里新建超平坦世界（预设 `minecraft:bedrock,123*minecraft:stone,3*minecraft:dirt,minecraft:grass_block;minecraft:plains`，
+地面和地图对齐），退出后把 `region/*.mca` 复制进那个世界的 `dimensions/minecraft/overworld/region`。区块仍是 1.21 格式，
+游戏读到时会自己升级。
+
 ## 现状
 
 - 第 1 版 demo：校门、水池、林荫道、钟楼一带，约 175 × 125 米，自动转换，没有在游戏里打开过（这里没有游戏）。
