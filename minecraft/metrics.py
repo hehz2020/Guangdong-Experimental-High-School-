@@ -19,6 +19,8 @@ CHECKS = [
     ('carpets (seats)', lambda p: p.split('[')[0].endswith('_carpet'), None, 500),
     ('leaves', lambda p: '_leaves' in p, None, 20000),
     ('tree trunks and boughs (oak logs and wood)', lambda p: p.startswith(('oak_log', 'oak_wood')), None, 8000),
+    ("the canal's balustrade (diorite walls)", lambda p: p.startswith('diorite_wall'), None, 400),
+    ('the national flag (red wool on the platform)', lambda p: p == 'red_wool', (64, 68, -62, -60, 78, 79), 5),
     ('water', lambda p: p.startswith('water'), None, 1000),
     ('glass and panes', lambda p: 'glass' in p, None, 9000),
     ('lanterns (lamp posts and hanging lamps)', lambda p: p.startswith('lantern['), None, 250),

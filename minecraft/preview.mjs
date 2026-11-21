@@ -24,14 +24,15 @@ const renderer = new THREE.WebGLRenderer({ antialias: true, preserveDrawingBuffe
 const scene = new THREE.Scene(); scene.background = new THREE.Color(0x9cc3e6); scene.fog = new THREE.Fog(0x9cc3e6, 120, 420);
 scene.add(new THREE.HemisphereLight(0xdfefff, 0x6a6050, 1.6)); const sun = new THREE.DirectionalLight(0xffffff, 2.2); sun.position.set(-0.5, 1, 0.35); scene.add(sun);
 // shapes: 0 full, 1 bottom slab, 2 top slab, 3 stairs (drawn as full), 4 pane/bars running north-south, 5 water, 6 glass, 7 leaves,
-// 8 pane/bars running east-west, 9 a post (iron bars or a pane joined to nothing), 10 a standing lantern, 11 a hanging lantern
+// 8 pane/bars running east-west, 9 a post (iron bars or a pane joined to nothing), 10 a standing lantern, 11 a hanging lantern, 12 a wall block's post
 const geos = [new THREE.BoxGeometry(1, 1, 1), new THREE.BoxGeometry(1, 0.5, 1).translate(0, -0.25, 0), new THREE.BoxGeometry(1, 0.5, 1).translate(0, 0.25, 0),
   new THREE.BoxGeometry(1, 1, 1), new THREE.BoxGeometry(0.12, 1, 1), new THREE.BoxGeometry(1, 0.9, 1).translate(0, -0.05, 0), new THREE.BoxGeometry(1, 1, 1), new THREE.BoxGeometry(1, 1, 1), new THREE.BoxGeometry(1, 1, 0.12),
-  new THREE.BoxGeometry(0.14, 1, 0.14), new THREE.BoxGeometry(0.38, 0.45, 0.38).translate(0, -0.27, 0), new THREE.BoxGeometry(0.38, 0.45, 0.38).translate(0, 0.2, 0)];
+  new THREE.BoxGeometry(0.14, 1, 0.14), new THREE.BoxGeometry(0.38, 0.45, 0.38).translate(0, -0.27, 0), new THREE.BoxGeometry(0.38, 0.45, 0.38).translate(0, 0.2, 0),
+  new THREE.BoxGeometry(0.5, 1, 0.5)];
 const mats = [new THREE.MeshLambertMaterial(), new THREE.MeshLambertMaterial(), new THREE.MeshLambertMaterial(), new THREE.MeshLambertMaterial(), new THREE.MeshLambertMaterial(),
   new THREE.MeshLambertMaterial({ transparent: true, opacity: 0.75 }), new THREE.MeshLambertMaterial({ transparent: true, opacity: 0.45 }), new THREE.MeshLambertMaterial(), new THREE.MeshLambertMaterial(),
-  new THREE.MeshLambertMaterial(), new THREE.MeshBasicMaterial(), new THREE.MeshBasicMaterial()];
-const count = new Array(12).fill(0); for (let i = 0; i < n; i++) count[buf.getUint8(16 + i * 8 + 7)]++;
+  new THREE.MeshLambertMaterial(), new THREE.MeshBasicMaterial(), new THREE.MeshBasicMaterial(), new THREE.MeshLambertMaterial()];
+const count = new Array(13).fill(0); for (let i = 0; i < n; i++) count[buf.getUint8(16 + i * 8 + 7)]++;
 const ims = geos.map((g, k) => { const m = new THREE.InstancedMesh(g, mats[k], Math.max(1, count[k])); m.count = 0; scene.add(m); return m; });
 const M = new THREE.Matrix4(), C = new THREE.Color();
 for (let i = 0; i < n; i++) {

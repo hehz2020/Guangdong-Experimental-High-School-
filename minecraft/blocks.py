@@ -240,7 +240,7 @@ def color_of(block):
         if block.endswith(suf) and block[:-len(suf)] in wool: return wool[block[:-len(suf)]]
     if block == 'red_nether_bricks': return (69, 7, 9)
     if block.endswith('_door'): return (162, 131, 79)
-    for suf in ('_slab', '_stairs', '_pane'):
+    for suf in ('_slab', '_stairs', '_pane', '_wall'):
         if block.endswith(suf):
             b = block[:-len(suf)]
             for cand in (b, b + 's', b + '_block', b + '_planks', b.replace('brick', 'bricks'), b.replace('tile', 'tiles')):

@@ -15,6 +15,7 @@ def shape_of(state):
     if base == 'water': return 5
     if base.endswith('_leaves'): return 7
     if base == 'lantern': return 11 if 'hanging=true' in state else 10
+    if base.endswith('_wall'): return 12
     if base.endswith('_pane') or base == 'iron_bars':
         return 4 if any(f'{d}=true' in state for d in ('north', 'south', 'east', 'west')) else 9
     if base.endswith('glass'): return 6

@@ -688,6 +688,44 @@ def place_trees(states, kinds, PAL, PIDX, trees, X0, Z0, Y0):
             n['conifer'] += 1
     print(f'trees: cleared {cleared} voxelized blocks; grew ' + ', '.join(f'{k} {v}' for k, v in n.items()))
 
+def place_balustrades(states, kinds, PAL, PIDX, cols, X0, Z0, Y0, block='diorite_wall'):
+    """The canal's stone balustrade (groupcells.mjs: the columns its posts, rails and balusters occupy, 0.22 to 1.5 m)
+    as the game's wall blocks: at one metre its posts and balusters filled their blocks, so it was a solid kerb wall a
+    block and a half high. In each column the block at the balustrade's foot becomes a wall block and the half block
+    above it (its rail) goes; walls join their neighbours (a run along the grid is a low wall, a diagonal run a row of
+    posts, as the game draws them). Trees, lamps and doors in the line stay.
+    CHOSEN: diorite walls (the 3D balustrade is light concrete, #cfcac0)."""
+    NY, NZ, NX = states.shape
+    def sid(s):
+        if s not in PIDX: PIDX[s] = len(PAL); PAL.append(s)
+        return PIDX[s]
+    keep = ('_log', '_wood', '_leaves', 'lantern', 'iron_bars', '_door', 'water')
+    placed = set()
+    for x, z, lo, hi in cols:
+        if lo > 0.6: continue
+        bx, bz = int(x - X0), int(z - Z0)
+        if not (0 <= bx < NX and 0 <= bz < NZ): continue
+        y = int(math.floor(lo + 0.05 - Y0))
+        if not (0 <= y < NY - 1): continue
+        p = PAL[states[y, bz, bx]]
+        if any(k in p for k in keep): continue
+        states[y, bz, bx] = -1; kinds[y, bz, bx] = 4; placed.add((y, bz, bx))
+        for k in range(y + 1, min(NY, int(math.floor(hi - 0.05 - Y0)) + 1)):
+            q = PAL[states[k, bz, bx]]
+            if q != 'air' and not any(t in q for t in keep) and not q.startswith('light['):
+                states[k, bz, bx] = 0; kinds[k, bz, bx] = 0
+    def joins(y, z, x):
+        if not (0 <= z < NZ and 0 <= x < NX): return False
+        if (y, z, x) in placed: return True
+        p = PAL[states[y, z, x]] if states[y, z, x] >= 0 else ''
+        return kinds[y, z, x] == 4 and '[' not in p and p not in ('air',) and '_leaves' not in p and 'glass' not in p
+    for (y, z, x) in placed:
+        n, s, e, w = joins(y, z - 1, x), joins(y, z + 1, x), joins(y, z, x + 1), joins(y, z, x - 1)
+        up = not ((n and s and not e and not w) or (e and w and not n and not s))
+        f = lambda c: 'low' if c else 'none'
+        states[y, z, x] = sid(f'{block}[east={f(e)},north={f(n)},south={f(s)},up={str(up).lower()},waterlogged=false,west={f(w)}]')
+    print(f'balustrades: {len(placed)} wall blocks')
+
 def apply_fixes(states, kinds, PAL, PIDX, path, X0, Z0, Y0):
     """Hand-made changes in fixes.json, in game block coordinates, applied last: 'fill' sets a box to one block, 'ladder'
     puts ladders up a column (facing: the way the ladder faces, away from the wall it hangs on)."""
@@ -988,6 +1026,7 @@ def main():
     ap.add_argument('--surfaces', default=None, help='surfaces.mjs outputs, comma separated: steps rebuilt from the 3D standing heights')
     ap.add_argument('--lamps', default=None, help='lamps.mjs output: the 3D campus lamps, set as lanterns and lamp posts')
     ap.add_argument('--trees', default=None, help='trees.mjs output: the 3D campus trees, grown again as Minecraft trees')
+    ap.add_argument('--balustrades', default=None, help="groupcells.mjs output for the canal's balustrade: set as wall blocks")
     a = ap.parse_args()
     t0 = time.time()
     voxes = [json.load(open(f)) for f in a.vox]
@@ -1025,6 +1064,7 @@ def main():
     if a.open:
         hung = hang_doors(states, kinds, PAL, PIDX, opened, X0, Z0, Y0)
         json.dump(hung, open(os.path.join(os.path.dirname(os.path.abspath(a.out)), 'doors.json'), 'w'))
+    if a.balustrades: place_balustrades(states, kinds, PAL, PIDX, json.load(open(a.balustrades)), X0, Z0, Y0)
     if a.trees: place_trees(states, kinds, PAL, PIDX, json.load(open(a.trees)), X0, Z0, Y0)
     light_rooms(states, kinds, PAL, PIDX)
     if a.lamps: place_lamps(states, kinds, PAL, PIDX, json.load(open(a.lamps)), X0, Z0, Y0)
