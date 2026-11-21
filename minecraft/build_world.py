@@ -743,6 +743,29 @@ def place_balustrades(states, kinds, PAL, PIDX, cols, X0, Z0, Y0, block='diorite
         states[y, z, x] = sid(f'{block}[east={f(e)},north={f(n)},south={f(s)},up={str(up).lower()},waterlogged=false,west={f(w)}]')
     print(f'balustrades: {len(placed)} wall blocks')
 
+def seal_water(states, kinds, PAL, PIDX):
+    """Water that could run away: an air block at the level of a water block next to it (a notch in the canal's bank
+    at the waterline) becomes the bank's stone, and air under water becomes water. The game moves water only after a
+    block beside it changes, so the map looked right, but the first block a player set down there would have let the
+    canal out over the bank."""
+    NY, NZ, NX = states.shape
+    def sid(s):
+        if s not in PIDX: PIDX[s] = len(PAL); PAL.append(s)
+        return PIDX[s]
+    water = np.array([p.startswith('water') for p in PAL]); air = np.array([p == 'air' or p.startswith('light[') for p in PAL])
+    W, A = water[states], air[states]
+    stone, wid = sid('smooth_stone'), sid('water[level=0]')
+    n_side = n_below = 0
+    ys, zs, xs = np.nonzero(W)
+    for y, z, x in zip(ys, zs, xs):
+        if y > 0 and A[y - 1, z, x]:
+            states[y - 1, z, x] = wid; kinds[y - 1, z, x] = 3; A[y - 1, z, x] = False; n_below += 1
+        for dz, dx in ((1, 0), (-1, 0), (0, 1), (0, -1)):
+            zz, xx = z + dz, x + dx
+            if 0 <= zz < NZ and 0 <= xx < NX and A[y, zz, xx]:
+                states[y, zz, xx] = stone; kinds[y, zz, xx] = 4; A[y, zz, xx] = False; n_side += 1
+    print(f'water sealed: {n_side} blocks of bank beside it, {n_below} of water under it')
+
 def stair_shapes(states, PAL, PIDX):
     """Corner stairs, as the game shapes them when a stair is placed beside another (StairBlock.getStairsShape): every
     stair here was written straight, and the game only reshapes a stair when a neighbour changes, so where two stairs
@@ -1191,6 +1214,7 @@ def main():
     if a.lamps: place_lamps(states, kinds, PAL, PIDX, json.load(open(a.lamps)), X0, Z0, Y0)
     for fx_path in (a.fixes.split(',') if a.fixes else []):
         if os.path.exists(fx_path): apply_fixes(states, kinds, PAL, PIDX, fx_path, X0, Z0, Y0)
+    seal_water(states, kinds, PAL, PIDX)
     stair_shapes(states, PAL, PIDX)
     ents_by_chunk = {}
     for (x, y, z), e in ents.items(): ents_by_chunk.setdefault((x >> 4, z >> 4), []).append(e)
