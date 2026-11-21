@@ -204,7 +204,7 @@ export function build(ctx) {
             .box(lamp, 2.26, 0.3 + hh * 0.62, 0, 0.03, 0.14, 1.5).box(tail, -2.26, 0.3 + hh * 0.66, 0, 0.03, 0.14, 1.5);
           for (const wx of [-1.4, 1.4]) for (const wz of [-0.82, 0.82]) v.box(tyre, wx, 0.33, wz, 0.66, 0.66, 0.24); }
       }
-      ctx.add(v.build({ name: 'traffic' }));
+      // replaced by the moving traffic of extras/traffic.js
     } }
 
   // ---- far blocks in the haze beyond the square the streets cover

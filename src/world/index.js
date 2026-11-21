@@ -37,6 +37,9 @@ export const EXTRAS = [
   './extras/city.js',
   './extras/track-field.js',
   './extras/courts.js',
+  './extras/people.js',
+  './extras/traffic.js',
+  './extras/birds.js',
 ];
 
 /**
