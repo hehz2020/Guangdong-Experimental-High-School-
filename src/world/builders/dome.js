@@ -29,8 +29,13 @@
 //   starry ceiling. A stair winds up the drum wall to the fourth storey (activity room with charts and models), and a
 //   straight flight leads from there to the observatory room under the dome: a refractor on an equatorial mount on its
 //   pier, the slit, a control desk, charts, an observing ladder.
-// - All texts (天文台, 仰望星空, the chart captions).
-// NOT MODELLED: the terrace round the top storey cannot be reached; the dome does not turn.
+// - All texts (天文台, 仰望星空, the chart captions, 观景平台).
+// - Round 2: the terrace can be reached from the observatory: the door at the east stands open (its leaf folded back
+//   against the wall), a granite threshold, tiled floor, a steel guard rail on the parapet (and an unseen barrier to 1.8 m
+//   above the terrace for the walker), four benches and two viewing telescopes looking north and west, six wall lights
+//   (in LIT with their height), the plate 观景平台 over the door inside. The twelve posts of the top storey stop the walker.
+// NOT MODELLED: the dome does not turn; the terrace does not lead onto the arc building's roof garden (it lies 0.65 m
+//   lower, inside the arc's convex wall); the lighting module counts the terrace as indoors (it lies inside the item's circle).
 import { THREE } from '../../kit.js';
 import { Batch } from '../../batch.js';
 import { pbr, plain, SURFACES } from '../../hifi.js';

@@ -174,6 +174,14 @@ export async function buildWorld(campus, only = null, tryBuilders = {}, tryExtra
     catch (err) { console.error('extra module failed:', path, err); group.clear(); report.failed.push(path); }
   }
   // pools of light under every lamp the modules recorded, after dusk (not in safe mode: it is a custom shader)
-  if (!env.safe) { const pools = lightPools(); if (pools) { root.add(pools.mesh); updater('lamp-pools')((dt, t, e) => pools.update(e)); } }
+  // Where the lighting module gives the nearest lamps real lights (lighting.js, desktop), the ground under them is lit
+  // for real, so the painted pools are turned down to what the lights do not give: the bright spot under the lamp head.
+  if (!env.safe) {
+    const pools = lightPools();
+    if (pools) {
+      root.add(pools.mesh);
+      updater('lamp-pools')((dt, t, e) => { pools.update(e); const L = e && e.lighting; if (L && L.lampCount && L.lampCount() > 0 && pools.mesh.material.uniforms) pools.mesh.material.uniforms.uPower.value *= 0.6; });
+    }
+  }
   return { root, colliders, report, details, updaters, places, indoors };
 }

@@ -51,8 +51,9 @@
 //   - south-round-pavilion: drum radius (5.5 m), twelve columns on a 7.6 m ring, four glazed levels.
 //   - south-court-complex: that the red-brown infill of the north face is the back of recessed balconies; all courtyard
 //     faces, the east parts, the south bars; five storeys; the round tower's ribbon windows are continued all round.
-//   - Skewed outlines are squared, the S-curved parapet of north-wavy-parapet-block is straight, light wells and roof
-//     openings are left out (see "notModelled" in data/context.json).
+//   - Skewed outlines are squared, light wells and roof openings are left out (see "notModelled" in data/context.json).
+//     The S-curved parapet of north-wavy-parapet-block is drawn since round 2 as a parapet that weaves in plan up to 0.9 m
+//     inside the facade line and rises and falls with it; its period and heights are IMAGINED.
 //   - south-tall-building is the least certain entry: its 75 m come from the mosaic alone, and the 2018 frames that
 //     look its way show open sky (built later, or misread). To drop it, remove its bld(...) entry in
 //     scripts/make-context.py and regenerate.
@@ -64,8 +65,10 @@
 //   - EVERY USE given to a building, and with it every word on a plate, sign or poster:
 //       core-pergola-block    a tuck shop (sign 小卖部) behind glass in the west core, a lift lobby behind glass in the east
 //                             core, a door numbered 1; upper storeys drawn as rooms in use (curtains, blinds, lit after dusk)
-//       south-round-pavilion  a reading and exhibition room on the ground floor (plates 阅览室, 展厅 on a sign pylon; a
-//                             store room door 储藏室 in the round core; posters 摄影作品, 书画作品, 科普知识, 阅读推荐)
+//       south-round-pavilion  a reading and exhibition room on the ground floor (plates 阅览室, 展厅 on a sign pylon;
+//                             posters 摄影作品, 书画作品, 科普知识, 阅读推荐); round 2: a spiral stair in the middle (it
+//                             replaced the round store room) to a reading room on the second storey and a lounge with a
+//                             view on the fourth (the third storey's rooms are shut, its door 储藏室 in the stair's enclosure)
 //       south-low-link        a tuck shop front (小卖部) on the north face, a reading room front (阅览室) on the west face,
 //                             a plant room door (配电房) at the back
 //       south-court-complex   housing: balconies with washing and air-conditioners, access galleries toward the courts,
@@ -93,6 +96,13 @@
 //     desk), the paved platform and the path, column bases and caps, twelve lamps under the disc, benches, two garden lamps.
 //   - The pergola block's undercroft: paving with granite margins, tiled columns on granite bases, beams, ceiling
 //     lights, benches, two notice boards, a bicycle rack, bins; granite base and white floor bands of the east end.
+//     Round 2: its soffit and beams take the light of its lamps after dusk, and it is declared covered (ctx.indoor).
+//   - Round 2, the round pavilion upstairs: a spiral stair of open timber treads round a steel column, a reading room
+//     (shelves along the glass, armchairs, a long table with stools) behind clear glass on the second storey, a lounge
+//     (benches facing out, two binocular stands) behind clear glass on the fourth; the third storey stays shut. The
+//     drum is a covered place for the lighting; every lamp under the disc and on the ground floor is in LIT.
+//   - Round 2: a 2 m margin round the north-west corner of south-court-complex (ctx.occupy) keeps the crowns of the
+//     grounds' trees off its walls there.
 //   - After dusk: which rooms are lit and in what colour (every window variant of the facade sheet is a room of its
 //     own), the light in the rooms behind clear glass, the pools of light under the lamps.
 //
@@ -963,7 +973,7 @@ function pavilion(T, p, col, ctx) {
   A.frame();
   // inside: boards on the floor, a lit ceiling, the round core, exhibition boards, low book shelves along the glass, tables, a desk
   A.ring(M.roomFloor, cx, cz, 0, rd - 0.1, PL + 0.012, 0, TAU, 24);
-  N.frame(); for (let k = 0; k < 8; k++) { const [x, z] = pt((k + 0.5) / 8 * TAU, 3.5); N.cyl(M.lamp, x, yc - 0.03, z, 0.16, 0.03, 10); }
+  N.frame(); for (let k = 0; k < 8; k++) { const [x, z] = pt((k + 0.5) / 8 * TAU, 3.5); N.cyl(M.lamp, x, yc - 0.03, z, 0.16, 0.03, 10); LIT.push([x, z, 2.4, yc - 0.03]); }   // (round 2: in LIT; the upper floors' lamps are left to the indoor light of the lighting module, their pools would pile up on this floor)
   spiral(T, col, ctx, p, ad);
   for (const [k, a] of [[0, 1.65], [1, 2.3], [2, 2.95]]) {                                // exhibition boards on legs, posters on both faces
     const F = tang(a, 3.5, 1.9); T.on(F);

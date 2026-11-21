@@ -36,8 +36,12 @@
 //     units, pipes, doors, number plates, lamps, the porch steps, canopies and signs, roof parapet and lightning rods,
 //     the soft dirt on the walls, and everything inside (lobby, stairs, wash rooms, common rooms, furnished rooms);
 //   - the names on the entrance signs (学生公寓 一栋 to 四栋) and every word on the signs, notices and posters;
-//   - what the large glazed walls show after dusk (lit rooms with blinds, drapes and people: a drawn picture used as
-//     their emissive map), the bedding, bed curtains and mosquito nets, the potted plants (flora.js foliage);
+//   - what the large glazed walls show (round 2): a room behind every storey of the glazed middles and three behind each
+//     storey of the colonnade glass, drawn with parallax by roomViews() (below; it replaced a picture that repeated every
+//     8 bays by 4 storeys): common rooms, study rooms, offices, lit after dusk; the bedding, bed curtains and mosquito nets
+//     (round 2: a net hangs from its frame with a sagging top, soft folds, a flared hem and the aisle side drawn aside),
+//     the ceiling fans (round 2: their blades turn while the viewer is within about 22 m of the section), the potted
+//     plants (flora.js foliage); every gallery lamp in LIT with its height (round 2);
 //   - which rooms stand open and furnished: two in each row of rooms on every storey of block A north, one in the
 //     other blocks (isOpen() in plan()). All other room doors are closed and nothing is built behind them.
 //
@@ -870,6 +874,7 @@ export function build(item, ctx) {
     for (let i = 0; i < colX.length - 1; i++) if (colX[i + 1] - colX[i] > 2) {                                 // one ceiling lamp per bay
       const xm = (colX[i] + colX[i + 1]) / 2; box(ex, m.lamp, xm - 0.16, xm + 0.16, court + 0.84, court + 1.16, y + CEIL - 0.05, y + CEIL, 'DWEFK');
       if (k === 0 && i % 2 === 0) LIT.push([...P.toWorld(xm, gx + 1.3), 4.5]);
+      else LIT.push([...P.toWorld(xm, court + 1.0), 3.0, y + CEIL - 0.05]);           // round 2: every gallery lamp in LIT with its height (its pool lies under the raised floor, unseen)
     }
   }
   for (let x = xa + 6; x < xG1 - 3; x += 14.6) box(ex2, m.pvc, x - 0.05, x + 0.05, gx, gx + 0.1, 0.1, yF - SLAB, 'KWE');   // rainwater pipes

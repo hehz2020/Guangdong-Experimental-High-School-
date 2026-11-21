@@ -78,7 +78,7 @@ export class Population {
   /** A walker (or a little group walking together) from node a to node b. warm: start somewhere along the way. */
   walk(a, b, roles, seed, warm = false, n = 1) {
     const L = this.routeBetween(a, b); if (!L || L.len < 3) return 0;
-    const r = rng(seed), s0 = warm ? r() * L.len * 0.92 : 0, v = (0.95 + 0.3 * r()) * (roles === 'teacher' ? 1.25 : 1.33), base = -0.15 - 0.55 * r();
+    const r = rng(seed), s0 = warm ? r() * L.len * 0.92 : 0, v = (0.95 + 0.3 * r()) * (roles === 'teacher' ? 1.25 : 1.33), base = 0.15 + 0.55 * r();                // keep to the right (positive offsets lie to the right of travel)
     for (let k = 0; k < n; k++) {
       const role = typeof roles === 'string' ? roles : pickRole(roles, r());
       const p = person(role, Math.floor(r() * 1e9), 'walk');
@@ -95,6 +95,34 @@ export class Population {
       this.walkers.push(p);
     }
     return n;
+  }
+  /** A walker starting off the network at (x, z) (a pupil getting out of a car), joining it at its nearest node, to node b. */
+  walkFrom(x, z, a, b, seed, n = 1) {
+    const base = this.routeBetween(a, b); if (!base) return 0;
+    const L = { ...base, xs: [x, ...base.xs], zs: [z, ...base.zs], ws: [0.4, ...base.ws] }, n0 = L.xs.length;
+    L.n = n0; L.cum = new Float32Array(n0); L.nx = new Float32Array(n0); L.nz = new Float32Array(n0);
+    for (let i = 1; i < n0; i++) L.cum[i] = L.cum[i - 1] + Math.hypot(L.xs[i] - L.xs[i - 1], L.zs[i] - L.zs[i - 1]);
+    for (let i = 0; i < n0 - 1; i++) { const l = L.cum[i + 1] - L.cum[i] || 1; L.nx[i] = -(L.zs[i + 1] - L.zs[i]) / l; L.nz[i] = (L.xs[i + 1] - L.xs[i]) / l; }
+    L.len = L.cum[n0 - 1];
+    const r = rng(seed);
+    for (let k = 0; k < n; k++) {
+      const p = person('student', Math.floor(r() * 1e9), 'walk');
+      Object.assign(p, { L, s: -k * 0.6, seg: 0, v: 1.25 + 0.2 * r(), u: 0.2 + 0.3 * r() - k * 0.5, ph: r(), dodge: 0, arms: 'swing', y: 0 });
+      p.x = x; p.z = z; p.yaw = Math.atan2(L.xs[1] - x, L.zs[1] - z); this.walkers.push(p);
+    }
+    return n;
+  }
+  /** Walkers along one gallery edge between two doors: from arc length s0 to s1 (s1 < s0 walks the other way). */
+  walkSpan(e, s0, s1, seed, n = 1) {
+    const fwd = s1 >= s0, key = 'edge' + e + (fwd ? '+' : '-');
+    let L = this.routes.get(key); if (!L) { L = routeLine(this.G, [[e, fwd]]); this.routes.set(key, L); }
+    const r = rng(seed), a = fwd ? s0 : L.len - s0, b = fwd ? s1 : L.len - s1, base = 0.1 + 0.5 * r(), v = 1.0 + 0.35 * r();
+    for (let k = 0; k < n; k++) {
+      const p = person('student', Math.floor(r() * 1e9), 'walk');
+      Object.assign(p, { L, s: a - k * 0.3, sEnd: b, seg: 0, v, u: Math.max(-0.9, Math.min(0.9, base - k * 0.7)), ph: r(), dodge: 0, arms: 'swing', y: L.y }); p.carry = 0;
+      const q = along(L, p, Math.max(0, p.s), p.u, 0); p.x = q[0]; p.z = q[1]; p.yaw = Math.atan2(q[2], q[3]);
+      this.walkers.push(p);
+    }
   }
   /** Clears the stationary people of a category (or all). */
   clear(cat) { this.still = cat ? this.still.filter(p => p.cat !== cat) : []; }
@@ -118,7 +146,7 @@ export class Population {
         } else p.dodge *= Math.max(0, 1 - dt * 0.8);
       }
       p.s += p.v * slow * dt;
-      if (p.s >= p.L.len) { ws.splice(i, 1); continue; }
+      if (p.s >= (p.sEnd ?? p.L.len)) { ws.splice(i, 1); continue; }
       if (p.s < 0) continue;
       const q = along(p.L, p, p.s, p.u, p.dodge);
       p.x = q[0]; p.z = q[1]; p.y = p.L.y;

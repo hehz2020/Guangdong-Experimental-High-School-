@@ -10,7 +10,7 @@
 //     draws the bridge and tells this file where it lands), and one more turn up to a look-out at roof level;
 //   - the first flight from the ground is steeper and starts on the side away from the block; its base is solid;
 //   - solid white parapets that climb with the steps, a steel rail on them, six white piers outside and six slim white
-//     columns at the well, lamps under the landings, a paved base, a planter in the well (a palm in tower A, whose top
+//     columns at the well, lamps under the landings (round 2: in LIT with their height), a paved base, a planter in the well (a palm in tower A, whose top
 //     is open; shrubs in tower B);
 //   - the tops, drawn to match the two roof views: tower A ends in two concentric ring beams open toward the bridge
 //     side (the C shape), tower B has a flat ring roof with a dark octagonal roof light over the well;
@@ -129,7 +129,7 @@ export function build(item, ctx) {
       tq([at(ra, 0.3, 0), at(rb, 0.3, 0), at(rb, 0.3, hp), at(ra, 0.3, hp)], -si, 0, co); tq([at(ra, -0.3, 0), at(rb, -0.3, 0), at(rb, -0.3, hp), at(ra, -0.3, hp)], si, 0, -co); }
     v.cyl(m.white, (r1 - 0.06) * Math.cos(a), 0, (r1 - 0.06) * Math.sin(a), 0.085, (open ? yCrown : yRoof), 10, false);
   }
-  for (let k = 1; k <= FLOORS; k++) { const y = BASE + k * FH - T; radial(ex, m.lamp, thL, (r1 + r2) / 2, y - 0.05, y, 0.5, 0.5); }
+  for (let k = 1; k <= FLOORS; k++) { const y = BASE + k * FH - T; radial(ex, m.lamp, thL, (r1 + r2) / 2, y - 0.05, y, 0.5, 0.5); if (k === 1) LIT.push([cx + (r1 + r2) / 2 * Math.cos(thL), cz + (r1 + r2) / 2 * Math.sin(thL), 2.6, y - 0.05]); else LIT.push([cx, cz, 1.2, y - 0.05]); }   // round 2: in LIT with their height (the upper ones on the tower's axis, so that their pools on the ground do not pile up under the first)
   { const la = P.footAz + 0.3, over = segs.find(s => !s.ground && ((la - s.a1) % TAU + TAU) % TAU <= s.a0 - s.a1);      // a lamp over the way in, under the flight that passes there
     if (over) radial(ex, m.lamp, la, (r1 + r2) / 2, over.h0 - T - 0.05, over.h0 - T, 0.4, 0.4); }
   LIT.push([cx + (R + 1.5) * Math.cos(P.footAz + 0.25), cz + (R + 1.5) * Math.sin(P.footAz + 0.25), 5]);

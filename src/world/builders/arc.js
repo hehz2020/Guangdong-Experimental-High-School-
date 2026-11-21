@@ -1,9 +1,10 @@
 // Long curved building north of the teaching core (item "arc-building"), inside and out.
 // What it is used for is not known. Here it is treated as the school's administration and specialist-teaching building
 // (INVENTED, as is its name 求实楼): see IMAGINED below. Its three middle fields (cross-sections 11 to 44 of 60, about 98 m)
-// can be entered on all four floors and the roof garden can be reached by the stairs; the rest of the building is solid,
-// with dark rooms drawn behind its windows. A walker who leaves drone mode above it lands on the roof canopy (the collider
-// plate at canopy level also closes the roof openings).
+// and, since round 2, its west end (cross-sections 0 to 11, with a spiral stair in the glass box) can be entered on all
+// four floors and the roof garden can be reached by the stairs; the east end is solid, its windows show lit, furnished
+// rooms (drawn by the shader of roomViews() in slab-block.js). A walker who leaves drone mode above it lands on the roof
+// canopy (the collider plate at canopy level also closes the roof openings).
 //
 // DEPTH (the one thing here that does not come straight from the data item)
 // The item is a band 13.7 m deep. Its convex (north) edge is the outer roof edge; its concave edge lies at the inner
@@ -90,9 +91,21 @@
 //   drawing studio, two dance studios (mirror wall, barres, piano); third floor meeting room, two offices, toilets |
 //   lobby | office, second raked hall, choir room. Every room name, every piece of furniture, every finish.
 //   Furniture is drawn only from near; desks, chairs, seats and easels are instanced.
+// ROUND 2 (all IMAGINED): the west end can be entered. On every storey a lobby fills bays 0 and 1 (benches, sheets, a
+//   plant, the plate 西楼梯); in the glass box a spiral stair of open timber treads on a steel column (a quarter-turn landing
+//   and 270 degrees of treads per storey) climbs from the ground floor to a door onto the roof garden (a gap in the hedge);
+//   the box's glass is now see-through, with mullions. The corridor runs on into the lobby (its closed door at the west
+//   end is gone). Rooms of the west end: ground floor 校史馆 (a timeline wall, boards, show cases) and 校友接待室, first floor
+//   教师阅览室 (shelves, long tables with bar lamps) and 电子阅览室, second floor 书法教室 and 民乐排练室, third floor 资料室 and
+//   教研室 (every name invented). The western service door of the north face is left out. The east end (bays 44 to 58)
+//   stays shut; its windows show rooms with parallax (a corridor behind the concave face, offices, reading rooms,
+//   computer rooms, studios behind the convex face). The red facing is a brick of its own (4 m by 2 m repeat, every brick
+//   its own tone, flashed ends, specks) with a slow world-position tone over it (not in safe mode). Potted plants carry
+//   flora.js foliage. The corridor strip and the main porch are declared covered places for the lighting (ctx.indoor).
+//   Lamps of the roof garden are in LIT with their height.
 // NOT MODELLED: the green bicycle shelter at the foot of the west end (2018 frames 55-56); the dark green glazed
 // section beside the east end (2018 frame 2); stretches of the roof where the mosaic shows no dark openings; the inside
-// of the two outer fields at either end and of the room behind the toilets; doors and lifts do not move.
+// of the east end and of the room behind the toilets (seen through glass only); doors and lifts do not move.
 // COLLISION: floors are quads (top and underside), walls and partitions one box for all floors with the doorways left
 // out, flights are inclined boxes, entrance steps are ramps; furniture stops the walker as simple blocks (chairs and
 // small things do not). Stacked collider boxes with coincident faces are avoided (the collision octree degenerates on
@@ -1297,6 +1310,7 @@ export function build(item, ctx) {
     v.box(m.pave, 1.75, 0.3, -0.05, 0.9, 0.56, 0.9).box(m.soil, 1.75, 0.57, -0.05, 0.7, 0.04, 0.7, 'D'); c.box('generic', 1.75, 0.5, -0.05, 0.9, 0.96, 0.9);
     const pb = at(j + 0.5 + 1.75 / bay, G4 - 0.5); bushes.push([pb[0], pb[1], 0.5, 0.56]);
     sec(v, j + 0.5, G3 + 0.3, deck); sec(ex, j + 0.5, G3 + 0.3, deck); ex.cyl(m.lamp, -1.2, 0.62, 0, 0.065, 0.14, 8); v.cyl(m.bronze, -1.2, 0, 0, 0.05, 0.62, 8).cyl(m.bronze, -1.2, 0.76, 0, 0.08, 0.03, 8);
+    { const w = new THREE.Vector3(-1.2, 0.7, 0).applyMatrix4(v.m); LIT.push([w.x, w.z, 2.2, w.y]); }                   // round 2: the low lights of the roof garden in LIT (with their height)
   }
   // a hedge across the garden where the recessed west end begins
   { const L = along(v, O[0], I[0], deck), gap = WEST ? [0.9, 2.95] : [T, T];                     // (round 2: a gap where the stair in the glass box comes out)

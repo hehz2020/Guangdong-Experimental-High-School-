@@ -17,12 +17,20 @@
 //              time has changed, and at most one map per frame; box centres snap to whole texels, so edges do not
 //              crawl. If the chunk does not look as expected (another three.js release) one 300 m box is used.
 //              ?cascades=1|2 for comparison.
-//   interiors  a soft lamp above the viewer that is only on under a roof (building outlines of campus-data.js; weak by
-//              day, the main light at night), a fixed lamp in the middle of the gymnasium hall, and a little more
-//              exposure indoors by day
+//              Which casters each box takes is limited (culling.js puts them on layers; see setCasterLayers): all in
+//              the nearest box, only the larger ones in the middle and outer boxes. At run time the quality governor
+//              (main.js) can lower the map size (setShadowRes) and park the middle box (setCascades(2)) without any
+//              material being compiled again.
+//   interiors  under a roof (building outlines of campus-data.js, and covered places the builders declare) the room is
+//              lit from its ceiling: a wide spot light pointing down from just under the ceiling over the viewer, with
+//              a weak point light for the light bounced back up; in the gymnasium a lamp in the middle of the hall. The
+//              ambient light from the sky is turned down indoors by day and the exposure follows like an eye, over a
+//              second or two. Phones and safe mode keep the earlier single soft lamp.
 //   night      window glass glows (palette names glass*, and the glass materials of the builders), lamp materials get
-//              brighter, unlit line materials are dimmed with the daylight
-//   post       optional ambient occlusion and bloom (src/post.js), loaded only when wanted
+//              brighter, unlit line materials are dimmed with the daylight; eight real point lights (no shadows) are
+//              handed to the street, garden and canopy lamps nearest the viewer (LIT of street.js), fading in and out
+//   post       optional ambient occlusion and bloom (src/post.js), loaded before the first frame when wanted
+//   accounting every frame's draw calls and triangles by kind of pass (passes(), shown by __app.renderInfo())
 //
 // ASSUMED (choices of this module, not taken from any reference)
 //   - Sun path: latitude 23.08 N and a fixed solar declination of +12 degrees (late April / mid August); solar time,
@@ -32,11 +40,15 @@
 //     has nothing to do with a date.
 //   - Which windows glow after dusk, and how brightly: every glass surface glows, modulated by a smooth random pattern
 //     per 3.9 m band (the storey height most buildings here are drawn with). Nothing is known about which rooms are lit.
-//   - Indoor light: there are no real room lights. One lamp follows the viewer under a roof (1.25 m above the eye, 2 m
-//     in the new teaching building), and in the gymnasium a lamp hangs in the middle of the hall. Colour and strength
-//     are chosen by eye. "Under a roof" means inside the outline of a solid item of campus-data.js and below its height,
-//     so open galleries count as indoors and the plaza canopy and covered walkways do not; builders can add covered
-//     places of their own (ctx.indoor in world/index.js), which are checked first.
+//   - Indoor light: the builders' lamps are glowing surfaces, not lights. The room lamp follows the viewer under a roof
+//     (1.45 m above the eye, 3.4 m in the new teaching building), and in the gymnasium a lamp hangs in the middle of
+//     the hall. Colour by building (cool white in teaching blocks and dormitories, warmer in the library), strength,
+//     falloff and the eye's adaptation are chosen by eye. "Under a roof" means inside the outline of a solid item of
+//     campus-data.js and below its height, so open galleries count as indoors and the plaza canopy and covered
+//     walkways do not; builders can add covered places of their own (ctx.indoor in world/index.js), checked first.
+//   - Street lamps: the light's height is the lamp's fourth number in LIT if given, else 0.62 times the radius of its
+//     pool of light (2.4 to 9 m: about right for the garden lamps, street lights, canopy floodlights and court lights
+//     that record themselves); strength grows with the square of that radius; colour warm white. All chosen by eye.
 //   - Glass is recognised by material name (glass, teal, clere, curtain, ribbon, pane, window) or, for materials the
 //     builders left unnamed, by being smooth (roughness up to 0.3); lamps by a strong, nearly white emissive colour.
 //   - Exposure per time of day and the indoor boost are chosen by eye.
@@ -55,8 +67,8 @@ const STOREY = 3.9;
 const col = (hex, k = 1) => new THREE.Color(hex).multiplyScalar(k);            // linear working colour times a multiplier
 //            elevation  zenith                 horizon toward the sun   horizon away from it     glow round the sun
 const SKY_KEYS = [
-  [-18, col(0x0d1326, 1.0), col(0x46363a, 1.0), col(0x33333f, 1.0), col(0x000000, 0)],          // night: city glow on the horizon
-  [-9, col(0x0e1a3e, 1.0), col(0x55394a, 1.0), col(0x202b4a, 1.0), col(0x503040, 0.4)],
+  [-18, col(0x0c1222, 1.0), col(0x463a32, 1.0), col(0x2c3038, 1.0), col(0x000000, 0)],          // night: city glow on the horizon (warm grey, not purple)
+  [-9, col(0x0e1a3e, 1.0), col(0x564034, 1.0), col(0x202b4a, 1.0), col(0x503040, 0.4)],
   [-4, col(0x17306a, 1.0), col(0xd0683a, 0.9), col(0x2c3e6e, 1.0), col(0xff8040, 0.7)],         // civil twilight
   [0, col(0x2452a0, 1.0), col(0xff9a4a, 1.35), col(0x7088bc, 0.9), col(0xff9040, 1.3)],         // sunrise and sunset
   [6, col(0x2b62bd, 1.1), col(0xffc888, 1.5), col(0x9db9e0, 1.1), col(0xffb060, 1.5)],          // golden hour
@@ -66,7 +78,11 @@ const SKY_KEYS = [
 //            elevation  colour of the sunlight   intensity
 const SUN_KEYS = [[-2.5, col(0xff6a30), 0], [0, col(0xff7a3c), 0.8], [4, col(0xff9a55), 2.0], [10, col(0xffc890), 2.9], [22, col(0xffe6c4), 3.4], [45, col(0xfff3e0), 3.6], [80, col(0xfff6ea), 3.7]];
 const EXPOSURE_KEYS = [[-18, 1.8], [-9, 1.6], [-4, 1.45], [0, 1.35], [6, 1.12], [16, 0.82], [40, 0.66]];
-const MOON_LIGHT = col(0x9fb6e8), MOON_INTENSITY = 0.4, ENV_GAIN = 1.3;
+const MOON_LIGHT = col(0x9fb6e8), MOON_INTENSITY = 0.3, ENV_GAIN = 1.3;      // moon 0.4 before engine pass 2: the lamps' real light now carries the night
+// Daylight balance, CHOSEN by eye from side-by-side pictures (engine pass 2): tone curve, overall exposure, how much of the
+// sky's blue is washed out by the humid haze (0 keeps the keyframes above), the sun against the sky light, and the haze's
+// density (0: the earlier linear fog from 300 m). ?lightdebug=1 exposes window.__lighting.tune(...) to try others.
+const TUNE = { tone: 'aces', exposure: 1, haze: 0, sunGain: 1, envGain: 1, fogDensity: 0 };
 
 /** Interpolates a keyframe table [[x, a, b, ...], ...]; numbers and THREE.Color entries; out gets the mixed entries. */
 function sample(keys, x, out) {
@@ -246,7 +262,10 @@ function makeRoofs(extra = []) {
     for (const [x, z] of pts) { w = Math.min(w, x); e = Math.max(e, x); n = Math.min(n, z); s = Math.max(s, z); }
     // one big room (gymnasium): a fixed lamp in the middle instead of one that follows the viewer
     const hall = it.style === 'gym' ? { x: (w + e) / 2, y: it.height * 0.6, z: (n + s) / 2, reach: Math.hypot(e - w, s - n) * 0.8, power: 5.5 } : null;
-    roofs.push({ pts, w, e, n, s, height: it.height, hall, tall: it.style === 'new-building', style: it.style });
+    // The clock tower is solid only up to the roof of its western neighbour (22.5 m): above that its outside stair and the
+    // platform at 32.1 m are in the open, so it counts as a roof only below 22.4 m.
+    const height = it.style === 'clock-tower' ? Math.min(it.height, 22.4) : it.height;
+    roofs.push({ pts, w, e, n, s, height, hall, tall: it.style === 'new-building', style: it.style });
   }
   return roofs;
 }
@@ -284,6 +303,8 @@ export function createLighting(scene, renderer, opts = {}) {
   // opts.plain (the page's safe mode): stock three.js shaders only. No shadow maps (their shader chunk is patched here), no
   // window-glow patch, no sky capture, no post-processing.
   const plain = !!opts.plain;
+  // ?lightdebug=1&tune={...}: try other daylight settings from the address (JSON with the keys of TUNE)
+  if (query.get('lightdebug') === '1' && query.get('tune')) { try { Object.assign(TUNE, JSON.parse(query.get('tune'))); } catch (err) { console.warn('tune ignored:', err.message); } }
   const useEnv = plain ? false : query.has('env') ? query.get('env') !== '0' : true;
   renderer.toneMapping = THREE.ACESFilmicToneMapping;
   renderer.shadowMap.enabled = shadowsOn;
@@ -423,7 +444,7 @@ export function createLighting(scene, renderer, opts = {}) {
   let hours = 15, elDeg = 0, day = 1, night = 0, exposureTime = 0.7, sunPower = 0, depthMin = -800, depthMax = 800, bounds = null, envBase = ENV_GAIN, adapt = 0;
   let frame = 0, lastNow = 0, scale = 1, basisVersion = 0, viewer = null, indoor = 0, indoorTarget = 0, roofNow = null, lampPower = 0;
   const roofs = makeRoofs(opts.indoors || []);
-  scene.fog = new THREE.Fog(0xffffff, 300, 3200);
+  scene.fog = TUNE.fogDensity > 0 ? new THREE.FogExp2(0xffffff, TUNE.fogDensity) : new THREE.Fog(0xffffff, 300, 3200);
 
   // ---- materials found in the scene
   const windowGlow = { value: 0 }, windowColor = { value: new THREE.Color(0xffc37a) };
@@ -483,12 +504,17 @@ export function createLighting(scene, renderer, opts = {}) {
 
     // sky
     sample(SKY_KEYS, elDeg, K);
+    if (TUNE.haze > 0) {                              // humid haze: the zenith pales toward the horizon, the horizon toward white
+      const h = TUNE.haze * day, lum = c => 0.2126 * c.r + 0.7152 * c.g + 0.0722 * c.b;
+      K[0].lerp(tmpC.copy(K[2]).multiplyScalar(0.85), 0.42 * h);
+      for (const c of [K[1], K[2]]) c.lerp(tmpC.setScalar(lum(c)), 0.35 * h);
+    }
     U.zenith.value.copy(K[0]); U.horizonSun.value.copy(K[1]); U.horizonAway.value.copy(K[2]); U.glow.value.copy(K[3]);
     U.sunDir.value.copy(toSun); U.sunDisc.value = elDeg > -1.2 ? 26 : 0;
     U.stars.value = 1.1 * (1 - smooth(elDeg, -12, -4)); U.moonAmt.value = moon;
     U.cloudShift.value = hours * 0.045;
     // clouds: lit by the sun colour by day, by the horizon glow at dusk, nearly black against the night sky
-    sample(SUN_KEYS, elDeg, S); sunPower = S[1];
+    sample(SUN_KEYS, elDeg, S); sunPower = S[1] * TUNE.sunGain;
     U.cloudLit.value.setScalar(1).lerp(S[0], 0.55).multiplyScalar(0.25 + 0.3 * sunPower).lerp(K[1], 0.35 * (1 - day)).lerp(tmpC.copy(K[2]).multiplyScalar(1.6), 1 - smooth(elDeg, -8, 2));
     U.cloudDark.value.copy(K[2]).lerp(K[0], 0.35).multiplyScalar(0.55 + 0.25 * day);
     // light bounced off the ground, for the ambient capture
@@ -516,11 +542,13 @@ export function createLighting(scene, renderer, opts = {}) {
       hemi.groundColor.copy(U.groundCol.value).multiplyScalar(Math.PI * ENV_GAIN / hemi.intensity);
     }
     ambient.intensity = 0.02 + 0.03 * day;
-    exposureTime = sample(EXPOSURE_KEYS, elDeg, [])[0];
+    exposureTime = sample(EXPOSURE_KEYS, elDeg, [])[0] * TUNE.exposure;
+    renderer.toneMapping = TUNE.tone === 'agx' ? THREE.AgXToneMapping : TUNE.tone === 'neutral' ? THREE.NeutralToneMapping : THREE.ACESFilmicToneMapping;
+    if (TUNE.fogDensity > 0) { if (!scene.fog.isFogExp2) scene.fog = new THREE.FogExp2(scene.fog.color.getHex(), TUNE.fogDensity); scene.fog.density = TUNE.fogDensity * (0.75 + 0.25 * day); }
     windowColor.value.set(0xffc37a);
     applyMaterials();
     envDirty = true; timeSetAt = performance.now();
-    if (envTarget) envBase = ENV_GAIN * skyLevel() / envLevel;
+    if (envTarget) envBase = ENV_GAIN * TUNE.envGain * skyLevel() / envLevel;
     return { hours, elevationDeg: +elDeg.toFixed(1), azimuthFromSouthDeg: +(az / RAD).toFixed(1) };
   }
   // brightness of the sky now, to rescale the ambient capture between two captures
@@ -529,7 +557,7 @@ export function createLighting(scene, renderer, opts = {}) {
     const t0 = performance.now(); inEnv = true;
     let target; try { target = pmrem.fromScene(envScene, 0, 0.1, 100, { size: low ? 64 : 256 }); } finally { inEnv = false; }
     lightPerf.env += performance.now() - t0;
-    scene.environment = target.texture; envBase = ENV_GAIN;
+    scene.environment = target.texture; envBase = ENV_GAIN * TUNE.envGain;
     if (envTarget) envTarget.dispose();
     envTarget = target; envLevel = skyLevel(); envDirty = false; envBuiltAt = now; envBuilds++;
   }
@@ -648,15 +676,15 @@ export function createLighting(scene, renderer, opts = {}) {
         if (roomLamp.position.distanceToSquared(roomAt) > 64 || roomLamp.intensity < 1e-3) roomLamp.position.copy(roomAt); else roomLamp.position.lerp(roomAt, 1 - Math.exp(-dt * 6));
         roomLamp.target.position.set(roomLamp.position.x, roomLamp.position.y - 5, roomLamp.position.z); roomLamp.target.updateMatrixWorld();
         roomColor.set(ROOM_COLOR[roofNow && roofNow.style] || 0xfff4e8); roomLamp.color.lerp(roomColor, 1 - Math.exp(-dt * 4));
-        // illuminance on the floor about 1.7 at night and 0.75 by day (the sun's is 3.6 at noon), whatever the lamp's height
-        roomLamp.intensity = indoor * (0.75 + 0.95 * (1 - day)) * Math.pow(h, 1.3) * (hall ? 0.6 : 1);
+        // illuminance on the floor about 2.6 at night and 0.75 by day (the sun's is 3.6 at noon), whatever the lamp's height
+        roomLamp.intensity = indoor * (0.75 + 1.85 * (1 - day)) * Math.pow(h, 1.3) * (hall ? 0.6 : 1);
         roomLamp.distance = h * 5;
         if (!hall) {
           // light bounced back up from the floor and walls: a weak, warm-neutral point light at chest height
           tmpV.set(p.x, p.y - 0.25, p.z);
           if (fill.position.distanceToSquared(tmpV) > 100 || lampPower < 0.01) fill.position.copy(tmpV); else fill.position.lerp(tmpV, 1 - Math.exp(-dt * 5));
           lampPower += (1 - lampPower) * (1 - Math.exp(-dt * 4));
-          fill.distance = 14; fill.decay = 1.2; fill.intensity = indoor * lampPower * (0.3 + 0.75 * (1 - day));
+          fill.distance = 14; fill.decay = 1.2; fill.intensity = indoor * lampPower * (0.3 + 1.1 * (1 - day));
         }
       }
     } else { fill.intensity = 0; lampPower = 0; if (roomLamp) roomLamp.intensity = 0; }
@@ -668,7 +696,8 @@ export function createLighting(scene, renderer, opts = {}) {
     // the door) and the eye opens up over a second or two; indoors at night the lit room is brighter than the street and
     // the eye closes a little. Phones and safe mode keep the earlier small boost.
     if (roomLamp) {
-      renderer.toneMappingExposure = exposureTime * (1 + adapt * (0.42 * day - 0.2 * (1 - day)));
+      // (a lit room at night is seen at about the exposure of a room by day: the street's night exposure would burn it out)
+      renderer.toneMappingExposure = exposureTime * (1 + adapt * (0.42 * day - 0.42 * (1 - day)));
       scene.environmentIntensity = envBase * (1 - 0.38 * indoor * day);
     } else {
       renderer.toneMappingExposure = exposureTime * (1 + 0.12 * indoor * day);
@@ -702,6 +731,9 @@ export function createLighting(scene, renderer, opts = {}) {
     setBloom: on => { bloomWanted = !!on; return post ? post.setBloom(!!on) : false; },
     /** Resolves once post-processing has loaded (or is not wanted, or failed). */
     whenReady: () => postReady,
+    /** Everything the shaders depend on, before they are compiled: glass and lamp materials adopted, the sky captured
+     *  (scene.environment), the shadow boxes placed. True if the frame will be drawn through the composer's buffer. */
+    prepare: camera => { scan(); if (useEnv && !envTarget) buildEnvironment(performance.now()); if (shadowsOn) updateBoxes(camera); sky.position.copy(camera.position); return !!(post && postEnabled && postState === 'on'); },
     postWanted: () => wantPost,
     /** Calls and triangles of the last frame by kind of pass (see pass accounting above), and how many shadow maps were redrawn. */
     passes: () => JSON.parse(JSON.stringify(passLast)),
@@ -719,6 +751,7 @@ export function createLighting(scene, renderer, opts = {}) {
     info: () => ({ hours, elevationDeg: +elDeg.toFixed(1), cascades: N, cascadesInUse: N === 3 ? active : N, cascadesPatched: cascadesOk, shadowRes: res, boxes: boxes.map(b => +b.r.toFixed(1)), scale, post: postEnabled ? postState : 'switched off', postInfo: post && post.info ? post.info() : null, envBuilds, indoor: +indoor.toFixed(2), adapt: +adapt.toFixed(2), exposure: +renderer.toneMappingExposure.toFixed(3), room: roofNow ? roofNow.style : null,
       materials: { windows: [...seen].filter(m => m.userData.campusWindow).map(m => m.name || '(unnamed)'), lamps: lamps.map(l => l.m.name), unlit: unlit.length, all: seen.size } }),
   };
-  if (typeof location !== 'undefined' && /[?&]lightdebug=1/.test(location.search)) globalThis.__lighting = Object.assign({ scene, renderer, camera: () => mainCamera }, api);
+  if (typeof location !== 'undefined' && /[?&]lightdebug=1/.test(location.search)) globalThis.__lighting = Object.assign({ scene, renderer, camera: () => mainCamera,
+    tune: (o = {}) => { Object.assign(TUNE, o); setTime(hours); envDirty = true; envBuiltAt = -1e9; return { ...TUNE }; } }, api);
   return api;
 }

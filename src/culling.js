@@ -15,7 +15,8 @@
 //              else. Nothing looks different; they are only skipped where they cannot be seen.
 //   casters    which shadow boxes an object casts into (see lighting.js, which gives each box's shadow camera a layer
 //              mask): everything casts into the nearest box; into the middle one only things whose own size (per
-//              instance for instanced meshes) is at least MID_SIZE, into the outermost one at least FAR_SIZE.
+//              instance for instanced meshes) is at least MID_SIZE and not thinner than MID_THIN (the middle side
+//              of its box: a roof sheet is thin but wide, a pole is not), into the outermost one FAR_SIZE and FAR_THIN.
 //   mirror     the gate pool's reflection (extras/gate.js, three.js Water), which draws the scene a second time: redrawn
 //              only while the pool is at least MIRROR_MIN_PX across on screen and was not hidden behind buildings the last
 //              time it was drawn (an occlusion query round the water's own draw); the mirror camera is narrowed to the
@@ -30,9 +31,10 @@
 import * as THREE from 'three';
 import { CAMPUS } from './campus-data.js';
 
-const CEILING = 110;            // m from a detail group's outline, beyond which it is not drawn
+const CEILING = 90;             // m from a detail group's outline, beyond which it is not drawn
 const INTERIOR_CEILING = 60;    // the same for a group inside a building, seen from outside it
-const MID_SIZE = 0.3, FAR_SIZE = 1.2;
+const MID_SIZE = 0.3, FAR_SIZE = 1.2;     // radius; and the middle side of the box (a pole or a cable is long but thin):
+const MID_THIN = 0.04, FAR_THIN = 0.3;    // about half a texel of the middle box (9 cm) and one of the outer one (31 cm) at 2048
 const LAYER_MID = 3, LAYER_FAR = 2;
 const MIRROR_MIN_PX = 28, MIRROR_REACH = 70;
 
@@ -46,11 +48,14 @@ function inside(pts, x, z) {
 }
 const circle = (cx, cz, r) => Array.from({ length: 24 }, (_, i) => [cx + r * Math.cos(i / 24 * 2 * Math.PI), cz + r * Math.sin(i / 24 * 2 * Math.PI)]);
 
-/** Bounding-sphere radius of one thing a mesh draws: the mesh itself, or one instance of an instanced mesh. */
+/** Size of one thing a mesh draws (the mesh itself, or one instance of an instanced mesh): [bounding-sphere radius,
+ *  middle side of its bounding box], in metres. */
 function partSize(o) {
-  const g = o.geometry; if (!g) return 0;
+  const g = o.geometry; if (!g) return [0, 0];
   if (!g.boundingSphere) g.computeBoundingSphere();
-  const r = g.boundingSphere ? g.boundingSphere.radius : 0;
+  if (!g.boundingBox) g.computeBoundingBox();
+  // the middle one of the box's three sides: small for a pole or a cable, large for a roof sheet (thin, but wide both ways)
+  const r = g.boundingSphere ? g.boundingSphere.radius : 0, bb = g.boundingBox, sides = bb ? [bb.max.x - bb.min.x, bb.max.y - bb.min.y, bb.max.z - bb.min.z].sort((a, b) => a - b) : [0, 0, 0], thin = sides[1];
   const s = new THREE.Vector3(), q = new THREE.Quaternion(), p = new THREE.Vector3(), m = new THREE.Matrix4();
   o.matrixWorld.decompose(p, q, s);
   let k = Math.max(s.x, s.y, s.z);
@@ -59,7 +64,7 @@ function partSize(o) {
     for (let i = 0; i < n; i++) { o.getMatrixAt(Math.floor(i * o.count / n), m); m.decompose(p, q, s); sum += Math.max(s.x, s.y, s.z); }
     k *= sum / n;
   }
-  return r * k;
+  return [r * k, thin * k];
 }
 
 /**
@@ -121,9 +126,9 @@ export function createCulling({ root, details, indoors = [], lowPower = false, s
   root.traverse(o => {
     if (!(o.isMesh || o.isLine || o.isPoints) || !o.castShadow) return;
     casters.all++;
-    const r = partSize(o);
-    if (r >= MID_SIZE) { o.layers.enable(LAYER_MID); casters.mid++; }
-    if (r >= FAR_SIZE) { o.layers.enable(LAYER_FAR); casters.far++; }
+    const [r, thin] = partSize(o);
+    if (r >= MID_SIZE && thin >= MID_THIN) { o.layers.enable(LAYER_MID); casters.mid++; }
+    if (r >= FAR_SIZE && thin >= FAR_THIN) { o.layers.enable(LAYER_FAR); casters.far++; }
   });
 
   // ---- the pool's mirror

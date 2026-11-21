@@ -10,6 +10,14 @@
 // below are not even requested otherwise. If the composer cannot be built or fails on its first frame, render() returns
 // false for good and lighting.js draws the scene directly.
 //
+// Cost (engine pass 2, measured in draw calls in the software renderer): the occlusion pass draws the scene a second
+// time for its normals and depth. It now draws only out to the distance where occlusion is applied at all (the camera's
+// far plane is lent to it for that pass) and leaves out cut-out and see-through surfaces (leaf cards, glass), which it
+// used to draw as solid cards; the list of those is kept instead of walking the scene every frame. At the start view
+// this took the pass from 881 to about 470 calls (at 640x360; the distance grows with the window's height). The quality
+// governor can halve its resolution (setAO('half')), switch it off (setAO('off')) and switch bloom off (setBloom),
+// all without leaving the composer, so no material has to be compiled again.
+//
 // ASSUMED: every number here (occlusion radius 0.7 m, its strength, bloom threshold, cap and strength) is chosen by eye.
 import * as THREE from 'three';
 import { EffectComposer } from 'three/addons/postprocessing/EffectComposer.js';

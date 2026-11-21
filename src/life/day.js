@@ -26,25 +26,25 @@ const S = (from, to, rate, roles = { student: 1 }) => ({ from, to, rate, roles }
 const STATES = {
   night:     { streams: [S('TEACH', 'DORM', 0.15)], groups: 0, benches: 0, classes: 0, readers: 0, diners: 0, courts: 0, runners: 0, workers: ['guard'] },
   dawn:      { streams: [S('OUT', 'TEACH', 0.6, { teacher: 1 }), S('DORM', 'HALL', 4)], groups: 1, benches: 0.03, classes: 0, readers: 0, diners: 6, courts: 0, runners: 6, workers: ['guard', 'cleaner'] },
-  arrive:    { streams: [S('OUT', 'TEACH', 26, { student: 0.92, teacher: 0.08 }), S('DORM', 'TEACH', 16), S('HALL', 'TEACH', 5), S('DORM', 'HALL', 4)], groups: 5, benches: 0.12, classes: 0.15, readers: 0, diners: 10, courts: 0, runners: 2, workers: ['guard', 'cleaner'] },
+  arrive:    { streams: [S('OUT', 'TEACH', 38, { student: 0.93, teacher: 0.07 }), S('DORM', 'TEACH', 16), S('HALL', 'TEACH', 5), S('DORM', 'HALL', 4)], groups: 5, benches: 0.12, classes: 0.15, readers: 0, diners: 10, courts: 0, runners: 2, workers: ['guard', 'cleaner'] },
   reading:   { streams: [S('OUT', 'TEACH', 4), S('DORM', 'TEACH', 2)], groups: 1, benches: 0.03, classes: 0.8, readers: 0, diners: 0, courts: 0, runners: 0, workers: ['guard', 'cleaner'] },
   class:     { streams: [S('TEACH', 'TEACH', 1.2, { teacher: 0.6, student: 0.4 }), S('OUT', 'TEACH', 0.4, { teacher: 1 }), S('TEACH', 'GYM', 0.8, { sport: 1 })], groups: 0, benches: 0.02, classes: 0.75, readers: 6, diners: 0, courts: 2, pe: true, runners: 10, workers: ['guard', 'gardener'] },
-  break:     { streams: [S('TEACH', 'TEACH', 30), S('TEACH', 'COURTS', 3), S('TEACH', 'HALL', 2)], galleries: 9, groups: 8, benches: 0.25, classes: 0.1, readers: 8, diners: 0, courts: 1, runners: 2, workers: ['guard', 'gardener'] },
-  toField:   { streams: [S('TEACH', 'FIELD', 70)], galleries: 6, groups: 2, benches: 0.05, classes: 0, readers: 0, diners: 0, courts: 0, runners: 0, drill: 0.4, workers: ['guard'] },
+  break:     { streams: [S('TEACH', 'TEACH', 30), S('TEACH', 'COURTS', 3), S('TEACH', 'HALL', 2)], galleries: 30, groups: 10, benches: 0.25, classes: 0.1, readers: 8, diners: 0, courts: 1, runners: 2, workers: ['guard', 'gardener'] },
+  toField:   { streams: [S('TEACH', 'FIELD', 70)], galleries: 14, groups: 2, benches: 0.05, classes: 0, readers: 0, diners: 0, courts: 0, runners: 0, drill: 0.4, workers: ['guard'] },
   drill:     { streams: [], groups: 0, benches: 0, classes: 0, readers: 0, diners: 0, courts: 0, runners: 0, drill: 1, workers: ['guard'] },
-  fromField: { streams: [S('FIELD', 'TEACH', 70)], galleries: 6, groups: 2, benches: 0.05, classes: 0, readers: 0, diners: 0, courts: 0, runners: 0, drill: 0.3, workers: ['guard'] },
+  fromField: { streams: [S('FIELD', 'TEACH', 70)], galleries: 14, groups: 2, benches: 0.05, classes: 0, readers: 0, diners: 0, courts: 0, runners: 0, drill: 0.3, workers: ['guard'] },
   lunch:     { streams: [S('TEACH', 'HALL', 22), S('HALL', 'DORM', 12), S('TEACH', 'DORM', 8), S('TEACH', 'OUT', 3), S('HALL', 'TEACH', 4)], groups: 6, benches: 0.35, classes: 0.04, readers: 10, diners: 1, courts: 2, runners: 1, workers: ['guard', 'cleaner'] },
   siesta:    { streams: [S('DORM', 'TEACH', 1.5), S('TEACH', 'DORM', 1), S('OUT', 'TEACH', 0.4, { teacher: 1 })], groups: 1, benches: 0.12, classes: 0.05, readers: 14, diners: 0, courts: 1, runners: 0, workers: ['guard', 'cleaner'] },
   sport:     { streams: [S('TEACH', 'COURTS', 6, { sport: 0.6, student: 0.4 }), S('TEACH', 'DORM', 10), S('TEACH', 'FIELD', 4, { sport: 1 }), S('TEACH', 'OUT', 8), S('TEACH', 'GYM', 3, { sport: 1 })], galleries: 4, groups: 6, benches: 0.3, classes: 0.05, readers: 10, diners: 4, courts: 6, runners: 18, stand: 14, workers: ['guard', 'gardener'] },
   dinner:    { streams: [S('TEACH', 'HALL', 12), S('COURTS', 'HALL', 4, { sport: 1 }), S('DORM', 'HALL', 6), S('HALL', 'DORM', 8), S('TEACH', 'OUT', 3)], groups: 5, benches: 0.3, classes: 0.03, readers: 6, diners: 1, courts: 3, runners: 8, workers: ['guard'] },
   dusk:      { streams: [S('DORM', 'TEACH', 14), S('HALL', 'TEACH', 6), S('OUT', 'TEACH', 4)], groups: 4, benches: 0.15, classes: 0.4, readers: 6, diners: 2, courts: 2, runners: 5, workers: ['guard'] },
   study:     { streams: [S('TEACH', 'TEACH', 0.8, { student: 0.5, teacher: 0.5 }), S('TEACH', 'DORM', 0.3)], groups: 0, benches: 0.01, classes: 0.85, readers: 8, diners: 0, courts: 0, runners: 1, workers: ['guard'] },
-  home:      { streams: [S('TEACH', 'DORM', 40), S('TEACH', 'OUT', 12, { student: 0.85, teacher: 0.15 })], galleries: 5, groups: 2, benches: 0, classes: 0.1, readers: 0, diners: 0, courts: 0, runners: 0, workers: ['guard'] },
+  home:      { streams: [S('TEACH', 'DORM', 40), S('TEACH', 'OUT', 12, { student: 0.85, teacher: 0.15 })], galleries: 12, groups: 2, benches: 0, classes: 0.1, readers: 0, diners: 0, courts: 0, runners: 0, workers: ['guard'] },
 };
 /** The state at hour h: { period, ... } with counts scaled for the time within the period (crowds swell and ebb). */
 export function stateAt(h) {
   const p = periodAt(h), s = STATES[p.name] || STATES.night;
   // arrivals peak in the middle of their window; breaks are busiest early; evening study empties toward its end
-  const k = p.name === 'arrive' ? 0.35 + 0.9 * Math.sin(Math.PI * Math.min(1, p.into * 1.15)) : p.name === 'break' ? 1.2 - 0.6 * p.into : p.name === 'home' ? 1.2 - 0.8 * p.into : 1;
+  const k = p.name === 'arrive' ? 0.4 + 0.9 * Math.sin(Math.PI * Math.min(1, p.into * 0.95)) : p.name === 'break' ? 1.2 - 0.6 * p.into : p.name === 'home' ? 1.2 - 0.8 * p.into : 1;
   return { period: p.name, into: p.into, k, ...s };
 }

@@ -20,7 +20,7 @@ export const ROUGH = [0.52, 0.64, 0.86, 0.86, 0.62, 0.62, 0.84, 0.74, 0.74, 0.9,
 /** Variant bits of the body (bit = value - 1). */
 export const V = { hairBase: 1, nape: 2, fringe: 3, ponytail: 4, curtain: 5, skirt: 6, sleeve: 7, collar: 8, shortsHem: 9, cuffs: 10, glasses: 11, cap: 12, hat: 13, bun: 14, crop: 15 };
 /** Variant bits of the carried things. */
-export const A = { backpack: 1, bottle: 2, umbrella: 3, books: 4, broom: 5, phone: 6, can: 7, folder: 8, shoulderBag: 9 };
+export const A = { backpack: 1, bottle: 2, umbrella: 3, books: 4, broom: 5, phone: 6, can: 7, folder: 8, shoulderBag: 9, cap: 10, hat: 11 };
 export const bit = v => 1 << (v - 1);
 
 const TAU = Math.PI * 2;
@@ -289,9 +289,9 @@ function buildBody(P, lod) {
   }
   // ---------- skirt: from the waist to just above the knee, pleats as a wavy edge
   if (lod < 2) {
-    const yw = yP + 0.06, yh = j(B.shL)[1] + pick(P, 0.08, 0.075), segs = lod ? 8 : 16, rows = lod ? 1 : 3, ring = [];
+    const yw = yP + 0.06, yh = j(B.shL)[1] + pick(P, 0.08, 0.075), segs = lod ? 8 : 16, rows = lod ? 1 : 4, ring = [];
     for (let r = 0; r <= rows; r++) {
-      const t = r / rows, y = yw + (yh - yw) * t, rx = 0.15 + 0.075 * t, rf = 0.094 + 0.085 * t, rb = 0.108 + 0.06 * t;
+      const t = r / rows, q = Math.sqrt(t), y = yw + (yh - yw) * t, rx = 0.15 + 0.078 * q, rf = 0.094 + 0.085 * q, rb = 0.108 + 0.064 * q;   // flares at once, over the shirt's hem
       ring.push({ c: [0, y, 0.0], u: X, v: Z, rx, rf, rb, n: 2.1, k: bind(B.pelvis), slot: SLOT.skirt, ao: 0.9 + 0.1 * t, vr: V.skirt });
     }
     const legBind = (i0) => { for (let i = i0; i < S.n; i++) {
@@ -309,7 +309,7 @@ function buildBody(P, lod) {
     }
   }
   // ---------- collar, glasses, caps (near only)
-  if (L.extras) { collar(S, P); glasses(S, P); headwear(S, P); }
+  if (L.extras) { collar(S, P); glasses(S, P); }
   return S;
 }
 
@@ -370,8 +370,14 @@ function hair(S, P, lod) {
     const side = Math.abs(Math.sin(ph)), v = (0.008 + 0.022 * Math.pow(Math.max(0, Math.cos(t * 1.35)), 1.3) + 0.004 * Math.max(0, -Math.cos(ph)) - 0.002 * side * t) * (1 + (lod ? 0 : 0.22 * Math.sin(ph * 7 + t * 9) * Math.sin(ph * 3 - 2)));
     return v * (1 - ss(0.8, 1, t)) - 0.0025 * ss(0.93, 1, t);
   };
+  const h0 = S.n;
   patch(S, (u, v) => { const ph = u * TAU, th = 0.0001 + edge(ph) * v; return headPoint(P, ph, th, thick(ph, v)); }, na, nt, { wrap: true, k, slot: SLOT.hair, vr: V.hairBase,
     ao: (u, v) => 0.96 - 0.14 * ss(0.65, 1, v), out: () => Cn });
+  if (!lod) for (let i = h0; i < S.n; i++) {                            // tufts: a small irregular push in or out (not on the hairline row)
+    const x = S.pos[i * 3], y = S.pos[i * 3 + 1], z = S.pos[i * 3 + 2], dx = x - Cn[0], dy = y - Cn[1], dz = z - Cn[2], l = Math.hypot(dx, dy, dz) || 1;
+    if (Math.floor((i - h0) / na) >= nt - 1) continue; const j = 0.004 * Math.sin(x * 917 + z * 533 + y * 271);
+    S.pos[i * 3] += dx / l * j; S.pos[i * 3 + 1] += dy / l * j; S.pos[i * 3 + 2] += dz / l * j;
+  }
   if (lod === 2) return;
   // nape for short cuts: from the base edge down at the back, close cropped
   patch(S, (u, v) => { const ph = Math.PI * (0.42 + 1.16 * u), e = edge(ph), th = e + (0.28 * Math.max(0, -Math.cos(ph)) + 0.08) * v; return headPoint(P, ph, th - 0.06, 0.006 * (1 - v) - 0.0015 * v * v); }, lod ? 4 : 9, lod ? 1 : 2,
@@ -388,15 +394,6 @@ function hair(S, P, lod) {
     tube(S, lod ? [tail[0], tail[1], tail[3]] : tail, segs, { vr: V.ponytail });
     const bc = headPoint(P, Math.PI, 1.22, 0.034);
     tube(S, along(add3(bc, [0, 0.035, 0.012]), add3(bc, [0, -0.035, -0.012]), [[0, 0.01, 0.01, 0.01, k, SLOT.hair, 1], [0.25, 0.035, 0.035, 0.031, k, SLOT.hair, 1], [0.75, 0.035, 0.035, 0.031, k, SLOT.hair, 1], [1, 0.012, 0.012, 0.012, k, SLOT.hair, 0.9]]), segs, { vr: V.bun, capA: { h: 0.002 }, capB: { h: 0.002 } }); }
-  // bob: hair falling round the sides and back to the jaw, its tips turned in
-  { const n = lod ? 7 : 12, rows = lod ? 2 : 3, ys = Jh[1] - (P.sex ? 0.015 : 0.02), y0 = Jh[1] + 0.085;
-    const at = (u, v, extra) => { const ph = Math.PI * (0.24 + 1.52 * u), y = y0 + (ys - y0) * v, lowY = headPoint(P, ph, 1.85)[1];
-      const p = headPoint(P, ph, y > lowY ? thetaAt(P, ph, y) : 1.85, 0.016 + extra * v), out = norm3([Math.sin(ph), 0, Math.cos(ph)]);
-      return y > lowY ? p : [p[0] + out[0] * 0.012 * v, y, p[2] + out[2] * 0.012 * v]; };
-    patch(S, (u, v) => at(u, v, 0.012), n, rows, { k: (u, v) => (v > 0.6 ? bind(B.head, B.neck, 0.15) : k), slot: SLOT.hair, vr: V.curtain, ao: (u, v) => 0.95 - 0.15 * v, out: () => Cn });
-    patch(S, (u, v) => (v ? at(u, 0.72, -0.014) : at(u, 1, 0.012)), n, 1,
-      { k: bind(B.head, B.neck, 0.15), slot: SLOT.hair, vr: V.curtain, ao: () => 0.45, out: p => [Cn[0] + (p[0] - Cn[0]) * 3, p[1], Cn[2] + (p[2] - Cn[2]) * 3] });
-  }
 }
 
 /** Glasses: two thin rims, a bridge and the arms to the ears (dark metal or plastic in the "extra" slot). */
@@ -420,20 +417,20 @@ function glasses(S, P) {
 }
 
 /** A peaked cap (guard) and a wide-brimmed sun hat (gardener, cleaner). */
-function headwear(S, P) {
+function headwear(S, P, CAP, HAT) {
   const k = bind(B.head), sc = hs(P), c = headCentre(P), X = [1, 0, 0], Z = [0, 0, 1], segs = 14;
   tube(S, [{ c: add3(c, [0, 0.028, -0.004]), u: X, v: Z, rx: 0.085 * sc, rf: 0.096 * sc, rb: 0.106 * sc, k, slot: SLOT.extra, ao: 0.8 },
     { c: add3(c, [0, 0.085, 0.0]), u: X, v: Z, rx: 0.09 * sc, rf: 0.102 * sc, rb: 0.106 * sc, k, slot: SLOT.extra, ao: 1 },
-    { c: add3(c, [0, 0.112, 0.014]), u: X, v: Z, rx: 0.097 * sc, rf: 0.12 * sc, rb: 0.102 * sc, k, slot: SLOT.extra, ao: 1 }], segs, { vr: V.cap, capB: { h: 0.004 } });
+    { c: add3(c, [0, 0.112, 0.014]), u: X, v: Z, rx: 0.097 * sc, rf: 0.12 * sc, rb: 0.102 * sc, k, slot: SLOT.extra, ao: 1 }], segs, { vr: CAP, capB: { h: 0.004 } });
   { const n = 8, pts = []; for (let i = 0; i <= n; i++) { const a = (i / n - 0.5) * 2.4; pts.push([Math.sin(a) * 0.09 * sc, Math.cos(a) * 0.1 * sc]); }
-    const top = pts.map(([x, z]) => S.vert(add3(c, [x, 0.034, z]), k.b0, k.b1, k.w, SLOT.trim, 0.9, V.cap)), tip = pts.map(([x, z]) => S.vert(add3(c, [x * 1.02, 0.026 - 0.012 * Math.cos(x * 12), z + 0.06 * Math.cos(x / 0.09)]), k.b0, k.b1, k.w, SLOT.trim, 0.85, V.cap));
+    const top = pts.map(([x, z]) => S.vert(add3(c, [x, 0.034, z]), k.b0, k.b1, k.w, SLOT.trim, 0.9, CAP)), tip = pts.map(([x, z]) => S.vert(add3(c, [x * 1.02, 0.026 - 0.012 * Math.cos(x * 12), z + 0.06 * Math.cos(x / 0.09)]), k.b0, k.b1, k.w, SLOT.trim, 0.85, CAP));
     for (let i = 0; i < n; i++) { S.tri(top[i], tip[i], tip[i + 1]); S.tri(top[i], tip[i + 1], top[i + 1]); S.tri(top[i], tip[i + 1], tip[i]); S.tri(top[i], top[i + 1], tip[i + 1]); } }
   tube(S, [{ c: add3(c, [0, 0.025, 0]), u: X, v: Z, rx: 0.087 * sc, rf: 0.099 * sc, rb: 0.108 * sc, k, slot: SLOT.extra, ao: 0.8 },
     { c: add3(c, [0, 0.1, 0]), u: X, v: Z, rx: 0.09 * sc, rf: 0.1 * sc, rb: 0.106 * sc, k, slot: SLOT.extra, ao: 1 },
-    { c: add3(c, [0, 0.132, 0]), u: X, v: Z, rx: 0.06 * sc, rf: 0.065 * sc, rb: 0.068 * sc, k, slot: SLOT.extra, ao: 1 }], segs, { vr: V.hat, capB: { h: 0.008 } });
+    { c: add3(c, [0, 0.132, 0]), u: X, v: Z, rx: 0.06 * sc, rf: 0.065 * sc, rb: 0.068 * sc, k, slot: SLOT.extra, ao: 1 }], segs, { vr: HAT, capB: { h: 0.008 } });
   const brim = [{ c: add3(c, [0, 0.028, 0]), u: X, v: Z, rx: 0.09 * sc, rf: 0.102 * sc, rb: 0.11 * sc, k, slot: SLOT.extra, ao: 0.9 },
     { c: add3(c, [0, 0.008, 0]), u: X, v: Z, rx: 0.2 * sc, rf: 0.21 * sc, rb: 0.21 * sc, k, slot: SLOT.extra, ao: 1 }];
-  tube(S, brim, 18, { vr: V.hat }); tube(S, brim, 18, { vr: V.hat, flip: true });
+  tube(S, brim, 18, { vr: HAT }); tube(S, brim, 18, { vr: HAT, flip: true });
 }
 
 /** A hand: palm and fingers as one tapering, slightly cupped mitten, and a thumb. s: 1 left, -1 right. */
@@ -488,13 +485,14 @@ function buildCarried(P) {
   const hR = J[B.handR], g = [hR[0] + 0.012, hR[1] - 0.07 * sc, hR[2] + 0.01], kh = bind(B.handR);
   // water bottle, held upright in the hand
   tube(S, [[0, 0.033], [0.02, 0.036], [0.17, 0.036], [0.2, 0.03], [0.215, 0.018], [0.245, 0.018]].map(([y, r], i) => ({ c: add3(g, [0, y - 0.1, 0.03]), u: X, v: Z, rx: r, rf: r, rb: r, k: kh, slot: i >= 4 ? SLOT.item2 : SLOT.bottle, ao: 1 })), 10, { vr: A.bottle, capA: { h: 0 }, capB: { h: 0.004 } });
-  // umbrella: a shaft through the fist, eight ribs, a shallow canopy with scalloped edge (both faces), a tip
-  { const top = add3(g, [0, 0.95, 0.06]), segs = 16, R = 0.5, n = 3, ids = [];
-    tube(S, along(add3(g, [0, -0.12, 0.0]), top, [[0, 0.008, 0.008, 0.008, kh, SLOT.item2, 1], [1, 0.006, 0.006, 0.006, kh, SLOT.item2, 1]]), 5, { vr: A.umbrella });
-    for (let r = 0; r <= n; r++) { const row = []; for (let i = 0; i < segs; i++) { const a = i / segs * TAU, t = r / n, rr = R * t * (1 + (r === n ? -0.04 * Math.cos(a * 8) : 0)), y = 0.11 * (1 - t * t) - (r === n ? 0.02 * Math.cos(a * 8) : 0);
-      row.push(S.vert(add3(top, [Math.cos(a) * rr, y - 0.11, Math.sin(a) * rr]), kh.b0, kh.b1, kh.w, SLOT.umbrella, r === 0 ? 1 : 0.95 + 0.05 * (i % 2), A.umbrella)); } ids.push(row); }
+  // umbrella: a shaft through the fist, a shallow canopy with a scalloped edge (both faces), a tip. Built along the hand's
+  // forward axis, which points up once the forearm is raised (the 'umbrella' arms of anim.js)
+  { const top = add3(g, [0, 0, 0.95]), segs = 16, R = 0.5, n = 3, ids = [];
+    tube(S, along(add3(g, [0, 0, -0.12]), top, [[0, 0.008, 0.008, 0.008, kh, SLOT.item2, 1], [1, 0.006, 0.006, 0.006, kh, SLOT.item2, 1]]), 5, { vr: A.umbrella });
+    for (let r = 0; r <= n; r++) { const row = []; for (let i = 0; i < segs; i++) { const a = i / segs * TAU, t = r / n, rr = R * t * (1 + (r === n ? -0.04 * Math.cos(a * 8) : 0)), h = 0.11 * (1 - t * t) - (r === n ? 0.02 * Math.cos(a * 8) : 0);
+      row.push(S.vert(add3(top, [Math.cos(a) * rr, Math.sin(a) * rr, h - 0.11]), kh.b0, kh.b1, kh.w, SLOT.umbrella, r === 0 ? 1 : 0.95 + 0.05 * (i % 2), A.umbrella)); } ids.push(row); }
     for (let r = 0; r < n; r++) for (let i = 0; i < segs; i++) { const a = ids[r][i], b = ids[r][(i + 1) % segs], c = ids[r + 1][(i + 1) % segs], d = ids[r + 1][i]; S.tri(a, c, b); S.tri(a, d, c); S.tri(a, b, c); S.tri(a, c, d); }
-    tube(S, along(add3(top, [0, -0.01, 0]), add3(top, [0, 0.06, 0]), [[0, 0.006, 0.006, 0.006, kh, SLOT.item2, 1], [1, 0.003, 0.003, 0.003, kh, SLOT.item2, 1]]), 5, { vr: A.umbrella }); }
+    tube(S, along(add3(top, [0, 0, -0.01]), add3(top, [0, 0, 0.06]), [[0, 0.006, 0.006, 0.006, kh, SLOT.item2, 1], [1, 0.003, 0.003, 0.003, kh, SLOT.item2, 1]]), 5, { vr: A.umbrella }); }
   // books / a folder held against the side
   box(add3(g, [0.02, 0.02, 0.04]), 0.012, 0.12, 0.09, kh, SLOT.item, A.books, 1, 8);
   box(add3(g, [0.038, 0.02, 0.04]), 0.008, 0.118, 0.088, kh, SLOT.item2, A.books, 0.95, 8);
@@ -519,6 +517,7 @@ function buildCarried(P) {
       const q = [add3(a, side, w), add3(a, side, -w), add3(b, side, -w), add3(b, side, w)].map(p => S.vert(p, kk2.b0, kk2.b1, kk2.w, SLOT.bagTrim, 0.85, A.shoulderBag));
       S.tri(q[0], q[1], q[2]); S.tri(q[0], q[2], q[3]); S.tri(q[0], q[2], q[1]); S.tri(q[0], q[3], q[2]);
     } }
+  headwear(S, P, A.cap, A.hat);                                       // the guard's cap, a sun hat: only the few who wear them pay for them
   return S;
 }
 

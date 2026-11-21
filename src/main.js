@@ -157,10 +157,12 @@ const ui = showUi ? initUI({ player, lighting, campus: CAMPUS, camera, renderer,
 // CHOSEN by reasoning, not measured on any real graphics card: the thresholds, the rungs and their order.
 const adaptive = { on: !!player && (params.get('adapt') === '1' || (params.get('adapt') !== '0' && !navigator.webdriver && params.get('quality') !== 'high' && params.get('post') !== '1')),
   level: 0, settle: 60, avg: 0, slow: 0, fast: 0, last: 0, probation: 0, log: [], history: [], barred: {}, backoff: {} };
-const startShadow = lighting && lighting.getShadow ? lighting.getShadow() : { res: 0, cascades: 0 };
-const postWanted = !!(lighting && lighting.postWanted && lighting.postWanted());
-const START = { pr: renderer.getPixelRatio(), ao: postWanted ? 2 : 0, post: postWanted ? 1 : 0, shadowRes: startShadow.res, cascades: startShadow.cascades,
-  detail: culling ? culling.getScale() : 1, mirror: culling ? culling.getMirror() : 0 };
+// what the page started with, read at the first frame (post-processing has loaded by then, or failed)
+let START = null;
+function startSettings() {
+  const sh = lighting && lighting.getShadow ? lighting.getShadow() : { res: 0, cascades: 0 }, postOn = !!(lighting && lighting.info && lighting.info().post === 'on');
+  return { pr: renderer.getPixelRatio(), ao: postOn ? 2 : 0, post: postOn ? 1 : 0, shadowRes: sh.res, cascades: sh.cascades, detail: culling ? culling.getScale() : 1, mirror: culling ? culling.getMirror() : 0 };
+}
 const RUNGS = [
   {},                                                  // as loaded
   { ao: 1, mirror: 1 },                                // occlusion at half resolution, mirror at most 256 texels
@@ -177,7 +179,7 @@ const SAY = {
   pr: [['降低像素密度'], ['提高像素密度']], shadowRes: [['降低阴影分辨率'], ['提高阴影分辨率']], cascades: [['减少阴影层数'], ['恢复阴影层数']],
   detail: [['缩短细节的显示距离'], ['加长细节的显示距离']], post: [['关闭泛光'], ['恢复泛光']],
 };
-let settings = settingsAt(0);
+let settings = null;
 function applySettings(next) {
   const did = [];
   for (const k of Object.keys(next)) {
@@ -226,6 +228,7 @@ function stepQuality(dir, now) {
 function watchFrameTime(now) {
   const ms = now - adaptive.last; adaptive.last = now;
   if (!adaptive.on) return;
+  if (!START) { START = startSettings(); settings = settingsAt(0); }
   if (adaptive.settle > 0) { adaptive.settle--; adaptive.avg = 0; adaptive.slow = adaptive.fast = 0; return; }   // right after loading or after a step
   const m = Math.min(ms, 120);                // capped: one huge gap (the tab was hidden) must not count as many slow frames
   adaptive.avg = adaptive.avg ? adaptive.avg * 0.92 + m * 0.08 : m;
@@ -247,6 +250,22 @@ const reveal = { groups: root.children.filter(o => o.visible), next: 0, settle: 
 if (reveal.on) for (const g of reveal.groups) g.visible = false; else reveal.next = reveal.groups.length;
 // post-processing first (see lighting.js whenReady): the first frame is drawn the way every later one is
 if (lighting && lighting.whenReady) await Promise.race([lighting.whenReady(), new Promise(done => setTimeout(done, 20000))]);
+// Every material is compiled before the first frame, the hidden detail groups' too (they used to be compiled the first
+// time the viewer came near them: a stall in the middle of a walk). With KHR_parallel_shader_compile the browser compiles
+// them side by side while the page stays responsive and the loading panel keeps counting; without it, this only queues
+// them and the first frame waits as before. They are compiled for the buffer they will be drawn into: the composer's
+// (no tone mapping, linear) when post-processing is on, the canvas otherwise. ?precompile=0 skips this.
+if (lighting && lighting.prepare && params.get('precompile') !== '0') {
+  step('正在编译着色器'); await breathe();
+  const t0 = performance.now(), intoBuffer = lighting.prepare(camera), prev = renderer.getRenderTarget(), probe = intoBuffer ? new THREE.WebGLRenderTarget(1, 1, { type: THREE.HalfFloatType }) : null;
+  let compiling = null;
+  try { if (probe) renderer.setRenderTarget(probe); compiling = renderer.compileAsync(scene, camera); }
+  catch (err) { console.warn('precompile skipped:', err && err.message); }
+  finally { renderer.setRenderTarget(prev); }
+  if (compiling) await Promise.race([compiling, new Promise(done => setTimeout(done, 180000))]);
+  if (probe) probe.dispose();
+  console.info('[load] ' + Math.round(performance.now()) + ' ms: ' + (renderer.info.programs ? renderer.info.programs.length : '?') + ' shader programs compiled before the first frame in ' + Math.round(performance.now() - t0) + ' ms' + (renderer.extensions.has('KHR_parallel_shader_compile') ? ' (in parallel)' : ''));
+}
 step('正在编译着色器并绘制第一帧（画面会停顿一会儿，请稍等）'); await breathe(); await breathe();
 const timer = new THREE.Timer();
 let frames = 0;
@@ -343,6 +362,6 @@ window.__app = {
       programs: renderer.info.programs ? renderer.info.programs.length : null, gpuTextures: renderer.info.memory.textures, gpuGeometries: renderer.info.memory.geometries, details: details.length, updaters: updaters.length };
   },
   // steps: what each step down did, in order; history: every step down and up; settings: what is in force now
-  quality: () => ({ adaptive: adaptive.on, steps: adaptive.log.slice(), level: adaptive.level, history: adaptive.history.slice(), settings: { ...settings },
+  quality: () => ({ adaptive: adaptive.on, steps: adaptive.log.slice(), level: adaptive.level, history: adaptive.history.slice(), settings: settings ? { ...settings } : null,
     pixelRatio: renderer.getPixelRatio(), averageFrameMs: +adaptive.avg.toFixed(1), lighting: lighting && lighting.info ? lighting.info().post : null }),
 };

@@ -1,8 +1,8 @@
 // What the people look like: build, height, skin, hair, clothes and what they carry. ALL IMAGINED: the school's real
 // uniform is not known to this project. Chosen to be believable for a large senior high school in Guangzhou on a warm
-// teaching day and kept consistent: a white short-sleeved polo with a navy collar and navy trousers or a navy pleated
-// skirt for lessons; a white sports shirt with royal-blue sleeves and blue track trousers or shorts for sport. There is
-// no crest, badge, name or lettering on anything. Staff wear ordinary clothes: teachers, a guard in a pale-blue shirt
+// teaching day and kept consistent: a white short-sleeved polo with navy trousers or a navy pleated skirt for lessons;
+// a white sports shirt with royal-blue sleeves and blue track trousers or shorts for sport. There is no crest, badge,
+// name or lettering on anything. Staff wear ordinary clothes: teachers, a guard in a pale-blue shirt
 // and a peaked cap, a cleaner in a blue smock, a gardener in khaki with a sun hat.
 import { SLOT, NSLOT, V, A, bit } from './body.js';
 import { skeleton } from './rig.js';
@@ -30,9 +30,9 @@ function base(r, sex, height, girth, skinIdx) {
 }
 function hairMask(r, sex, adult) {
   if (!sex) { const k = r(); return bit(V.hairBase) | bit(V.nape) | (k < 0.55 ? bit(V.fringe) : 0); }
-  const k = r();
-  if (adult) return bit(V.hairBase) | (k < 0.4 ? bit(V.curtain) | (r() < 0.5 ? bit(V.fringe) : 0) : k < 0.75 ? bit(V.bun) : bit(V.ponytail));
-  return bit(V.hairBase) | (k < 0.62 ? bit(V.ponytail) | (r() < 0.45 ? bit(V.fringe) : 0) : bit(V.curtain) | (r() < 0.7 ? bit(V.fringe) : 0));
+  const k = r();                                                           // (the bob piece of body.js is not used: it did not look right)
+  if (adult) return bit(V.hairBase) | (k < 0.25 ? bit(V.nape) | bit(V.fringe) : k < 0.7 ? bit(V.bun) : bit(V.ponytail));
+  return bit(V.hairBase) | (k < 0.8 ? bit(V.ponytail) | (r() < 0.45 ? bit(V.fringe) : 0) : bit(V.nape) | bit(V.fringe));
 }
 
 /**
@@ -81,18 +81,18 @@ export function dress(role, seed, opts = {}) {
       break;
     }
     case 'guard': {
-      shortSleeves(0xa9c1dc); pal[SLOT.trim] = 0x9ab3d0; mask |= bit(V.collar) | bit(V.cap); trousers(0x1d2433);
+      shortSleeves(0xa9c1dc); pal[SLOT.trim] = 0x9ab3d0; mask |= bit(V.collar); carry |= bit(A.cap); trousers(0x1d2433);
       pal[SLOT.extra] = 0x1a1f2b; pal[SLOT.trim] = 0x13161d; pal[SLOT.shoe] = 0x121212; pal[SLOT.sole] = 0x1c1c1c; mask &= ~bit(V.glasses);
       break;
     }
     case 'cleaner': {
       longSleeves(jitter(r, 0x3f78b8, 0.05)); pal[SLOT.trim] = pal[SLOT.shirt]; trousers(pickOf(r, [0x2b2f38, 0x3a3f4a, 0x1d2433])); mask |= bit(V.collar);
-      if (r() < 0.6) { mask |= bit(V.hat); mask &= ~(bit(V.ponytail) | bit(V.curtain) | bit(V.fringe)); pal[SLOT.extra] = 0xd6c08a; }
+      if (r() < 0.6) { carry |= bit(A.hat); mask &= ~(bit(V.ponytail) | bit(V.curtain) | bit(V.fringe)); pal[SLOT.extra] = 0xd6c08a; }
       pal[SLOT.shoe] = 0x2a2b2f; pal[SLOT.sole] = 0x3a3a3a; carry |= bit(A.broom); pal[SLOT.item] = 0x9a7b4f; pal[SLOT.item2] = 0xb59a62; mask &= ~bit(V.glasses);
       break;
     }
     case 'gardener': {
-      longSleeves(jitter(r, 0x7d7650, 0.05)); pal[SLOT.trim] = pal[SLOT.shirt]; trousers(0x4a4a3a); mask |= bit(V.collar) | bit(V.hat);
+      longSleeves(jitter(r, 0x7d7650, 0.05)); pal[SLOT.trim] = pal[SLOT.shirt]; trousers(0x4a4a3a); mask |= bit(V.collar); carry |= bit(A.hat);
       mask &= ~(bit(V.ponytail) | bit(V.curtain) | bit(V.fringe) | bit(V.glasses)); pal[SLOT.extra] = 0xd9c48c; pal[SLOT.shoe] = 0x3a2e24; pal[SLOT.sole] = 0x2a2a2a;
       carry |= bit(A.can); pal[SLOT.item] = 0x3f8a5a; pal[SLOT.item2] = 0x3f8a5a;
       break;

@@ -55,6 +55,10 @@ const VERT_SKIN = /* glsl */`
 function peopleMaterial(tex, name) {
   const m = new THREE.MeshStandardMaterial({ vertexColors: true, roughness: 0.7, metalness: 0, envMapIntensity: 0.85 });
   m.name = name; m.userData.noGrain = true;
+  // The occlusion pass of post.js redraws the scene with a material of its own, which knows nothing of the skinning
+  // here: it saw everyone in the rest pose and left a grey ghost beside each moving person. It leaves out cut-out
+  // materials, so these are marked as such (nothing is ever cut: every alpha is 1).
+  m.alphaTest = 0.01;
   m.onBeforeCompile = sh => {
     sh.uniforms.uLifeTex = { value: tex };
     sh.vertexShader = sh.vertexShader

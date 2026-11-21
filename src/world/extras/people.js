@@ -3,9 +3,10 @@
 // morning exercises; a guard at the gate, a cleaner, a gardener. They follow a school day driven by the page's time
 // (src/life/day.js).
 //
-// ALL IMAGINED. No person, face, uniform, timetable or habit here stands for a real one: the uniform (a white polo with
-// a navy collar band... see src/life/dress.js) and the sports kit are invented and carry no crest or lettering; the
-// numbers of people, where they go and when are guesses at what a large senior high school looks like on a weekday.
+// ALL IMAGINED. No person, face, uniform, timetable or habit here stands for a real one: the uniform (a white polo,
+// navy trousers or a navy pleated skirt, see src/life/dress.js) and the sports kit are invented and carry no crest
+// or lettering; the numbers of people, where they go and when are guesses at what a large senior high school looks
+// like on a weekday.
 // Nothing comes from photographs, motion capture or downloaded models: bodies, clothes and every movement are computed
 // here (src/life/body.js, rig.js, anim.js).
 //
@@ -18,6 +19,7 @@
 // Where people walk: src/life/paths.js, a network of paths laid over the paving, roads and galleries and checked against
 // the collision geometry. Seats: desks, chairs and library chairs are found by name among the builders' instanced meshes
 // (teaching-slab.js, slab-wide.js, new-building.js, seating.js); benches are listed here from the furniture modules.
+import { timed } from '../../life/timing.js';
 import * as THREE from 'three';
 import { createCrowd } from '../../life/crowd.js';
 import { network, graph, nearestNode } from '../../life/paths.js';
@@ -25,6 +27,7 @@ import { Population, person, contactShadows, pickRole } from '../../life/sim.js'
 import { createSport } from '../../life/sport.js';
 import { stateAt } from '../../life/day.js';
 import { rng } from '../../life/dress.js';
+import { DROPS } from '../../life/signal.js';
 
 const TAU = Math.PI * 2;
 // Benches set down by street.js through landscape.js and builders (world x, z, heading of the seat's front in radians:
@@ -208,9 +211,11 @@ export function build(ctx) {
     // warm start: people already on their way, as many as the streams would have put there
     acc = state.streams.map(() => 0);
     const maxW = low ? 120 : 380;
-    for (const s of state.streams) { const n = Math.min(maxW, s.rate * (state.k || 1) * 3.2 * (low ? 0.4 : 1)); for (let i = 0; i < n && pop.walkers.length < maxW;) i += spawn(s, r, true) || 1; }
+    for (const s of state.streams) { const n = Math.min(maxW, s.rate * (state.k || 1) * 4.5 * (low ? 0.4 : 1));    /* about the minutes a walk takes */ for (let i = 0; i < n && pop.walkers.length < maxW;) i += spawn(s, r, true) || 1; }
+    for (let i = 0; i < (state.galleries || 0) * (low ? 0.6 : 2); i++) { const gl = galleries[Math.floor(r() * galleries.length)]; if (gl === undefined) break; const E = G.edges[gl], a = 2 + r() * (E.len - 4), b = 2 + r() * (E.len - 4); if (Math.abs(a - b) > 4) pop.walkSpan(gl, a + (b - a) * r() * 0.6, b, Math.floor(r() * 1e9)); }
   }
-  let rs = rng(99);
+  let rs = rng(99), gacc = 0;
+  const galleries = G.edges.map((e, i) => (e.kind === 'gallery' && e.y > 1 && e.len > 10 ? i : -1)).filter(i => i >= 0);
   // ---- places in the menu that show life
   if (ctx.place) {
     ctx.place('跑道', 30, 18, 0, 0, false, 0.02);                          // the east straight from the infield, runners coming
@@ -218,7 +223,7 @@ export function build(ctx) {
   }
 
   const sunDir = new THREE.Vector3(0.3, 0.8, 0.2), camLocal = { x: 0, y: 0, z: 0 };
-  ctx.animate((dt, seconds, env) => {
+  ctx.animate(timed('people', (dt, seconds, env) => {
     if (!env || !env.camera) return;
     const L = env.lighting, hour = L && L.getTime ? L.getTime() : 10;
     if (!state || Math.abs(hour - lastHour) > 0.2 || stateAt(hour).period !== period) setState(hour);
@@ -226,6 +231,11 @@ export function build(ctx) {
     // new walkers
     const maxW = low ? 120 : 380;
     state.streams.forEach((s, i) => { acc[i] += s.rate * (state.k || 1) * (low ? 0.4 : 1) * dt / 60; while (acc[i] >= 1) { acc[i] -= pop.walkers.length < maxW ? spawn(s, rs, false) || 1 : 1; } });
+    // pupils set down by cars at the gate walk in
+    while (DROPS.length) { const d = DROPS.shift(), a = node('gate'), b = pickEnd('TEACH', rs); if (a >= 0 && b !== undefined && pop.walkers.length < maxW) pop.walkFrom(d.x, d.z, a, b, Math.floor(rs() * 1e9), d.n); }
+    // along the upper galleries at breaks: from one classroom door to another
+    if (state.galleries) { gacc += state.galleries * 4 * (low ? 0.4 : 1) * dt / 60;
+      while (gacc >= 1) { gacc -= 1; const gl = galleries[Math.floor(rs() * galleries.length)]; if (!gl || pop.walkers.length >= maxW) break; const E = G.edges[gl], a = 2 + rs() * (E.len - 4), b = 2 + rs() * (E.len - 4); if (Math.abs(a - b) > 4) pop.walkSpan(gl, a, b, Math.floor(rs() * 1e9), rs() < 0.5 ? 1 : 2); } }
     const cam = env.camera.position; camLocal.x = cam.x; camLocal.y = cam.y; camLocal.z = cam.z;
     pop.update(dt, camLocal);
     sport.update(dt, pop.time);
@@ -234,6 +244,6 @@ export function build(ctx) {
     const sun = L && (L.suns ? L.suns[0] : L.sun);
     if (sun) { sunDir.copy(sun.position).sub(sun.target.position).normalize(); if (sunDir.y < 0.05) sunDir.set(0, 1, 0); }
     shadows.update(vis, sunDir, L && L.night ? 1 - L.night() * 0.85 : 1);
-  });
+  }));
   if (typeof window !== 'undefined') window.__life = { pop, stats: () => ({ ...pop.stats, crowd: crowd.stats, sport: sport.stats(), period, mode: crowd.mode }) };
 }

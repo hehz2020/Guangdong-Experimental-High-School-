@@ -85,7 +85,7 @@
 // - STAIR AND LOBBY. A stair behind the western stack of balconies: seven levels (0.3, 4.2, 7.8, 11.7, 15.6, 19.5 m and the
 //   roof), two flights between each pair; on storeys 3 to 6 each landing opens through a glazed screen onto the balcony of
 //   that stack; the stair ends in the western roof pavilion, whose steel door leads out under the pergola. A lobby with two
-//   lift doors (always shut; there is no lift car) on every level. On the ground the lobby has a door from the garden (one
+//   lift doors on every level (round 2: the lifts run, see below). On the ground the lobby has a door from the garden (one
 //   of the doors of the stone base, here with steps, a canopy and a plate); on both library storeys a glass door in the
 //   hall's west wall leads into it.
 // - STOREYS 3 TO 6. A hall beside the lobby and a corridor round the light well, glazed toward the well (from the
@@ -99,7 +99,7 @@
 //   toilets in the plain north wing (the face there has only thin high slots); a second stair behind the eastern stack of
 //   balconies exists only as a shut double door. Lockers, benches, boards with posters, a show case, plants, a directory
 //   beside the lifts, exit signs, lights. From inside, the ribbon windows are see-through (a faint pane, sashes, a sill
-//   board, curtains); from outside they stay the painted bands with curtains that the footage shows.
+//   board, curtains); from outside they show drawn rooms since round 2 (see ROUND 2 below).
 // - LIBRARY, added to what the footage shows: instanced tub chairs, books as runs of spines of different height and depth,
 //   rings of light hung over the island and the gaps between its four rings closed, pots and piles of books on it, table
 //   and floor lamps, timber pads, cushions and lines of light on the stair's seating tiers, two self-service lending
@@ -139,10 +139,27 @@
 // for large furniture; chairs, stools, easels and stands have none. The roof is solid, the light well is covered by an
 // unseen lid at roof level and its glass floor is solid too. After dusk the indoor finishes glow more (ctx.animate), the
 // lighting module lights the glass and the lamps.
-// NOT MODELLED: the basement and its ramp (the driveway is level and ends at a shut roller door); lift cars; the rooms
-// behind shut doors (most rooms of storeys 3 to 6, everything on the two lower storeys outside the library hall and the
-// stair lobby); the second stair (its balconies cannot be reached); people, bicycles; the neighbouring buildings seen in
-// the footage. The gold characters on the sculpture's plinth are left out because they cannot be read.
+// ROUND 2 (all IMAGINED unless noted):
+// - The windows of storeys 3 to 6 (ribbons, the fin faces, the balcony doors) show the rooms behind them from outside:
+//   a shader draws a room with parallax behind every pane (roomViews() of slab-block.js), furnished after the door plates
+//   (computer rooms, labs, studios, music, offices, reading rooms; table VK), lit after dusk, about one room in seven dark.
+//   They replace the painted bands of the first round.
+// - The library's island is ONE pale counter with four round cut-outs (as the header reads frames 40-41), each open to
+//   the outside by a slot 1 m wide; chairs and the brass rails stay in the cut-outs. Its sides stop the walker.
+// - The lifts run: behind each pair of lift doors a car (steel walls, mirror, handrail, button panel, light) on every
+//   level; the leaves slide open when the viewer comes within about 3 m; standing still in a car for about 1.5 s closes
+//   them and the viewer is moved one level up (from storey 6 back to the ground floor) with the page's pose hook.
+// - The second stair behind the eastern stack of balconies, between storeys 3 and 6: the corridor door 楼梯间 stands open
+//   onto a small lobby; sign 二号楼梯 · 三至六层 on storey 3 (invented). It does not reach the library storeys or the roof.
+// - The eastern roof pavilion is open: a school club's weather station (plate RF 气象观测站, a desk with a screen
+//   showing 28.6℃ 76%, a chart 本周天气, shelves of instruments, a stool): all invented.
+// - Lamps outside (over the doors in the stone base, the garden door, the driveway's wall lights, the pavilions) are in
+//   LIT with their height.
+// NOT MODELLED: the basement and its ramp (the driveway is level and ends at a shut roller door); the rooms behind shut
+// doors (most rooms of storeys 3 to 6, everything on the two lower storeys outside the library hall and the stair lobby,
+// seen from outside only as drawn rooms); the balconies of both stacks of the eastern side cannot be reached; people,
+// bicycles; the neighbouring buildings seen in the footage. The gold characters on the sculpture's plinth are left out
+// because they cannot be read.
 import { THREE } from '../../kit.js';
 import { Batch } from '../../batch.js';
 import { pbr, SURFACES } from '../../hifi.js';
@@ -509,7 +526,9 @@ export function build(item, ctx) {
   const UPF = [F3, F3 + FH, F3 + 2 * FH, F3 + 3 * FH], LEVELS = [F0, F2, ...UPF, H];       // floors of storeys 3 to 6; every level the stair serves
   // the stair under the western roof pavilion: landings between SS0 and SS1 (metres from B), flights from SS1, half landings to SS2; SD0..SD1 metres in from the face
   const SS0 = 34.75, SS1 = 36.15, SS2 = 41.05, SD0 = 2.55, SD1 = 5.55, ND = [32.8, 34.4];                    // ND: the door of the stair hall in the stone base
-  const STAIRHOLE = [Nf(SS1, SD0), Nf(SS2, SD0), Nf(SS2, SD1), Nf(SS1, SD1)], highGreens = [];      // highGreens: shrubs in planters above the ground [x, y, z, radius], world coordinates
+  const STAIRHOLE = [Nf(SS1, SD0), Nf(SS2, SD0), Nf(SS2, SD1), Nf(SS1, SD1)], highGreens = [];
+  // round 2: the second stair, behind the eastern stack of balconies, from storey 3 to storey 6 (landings ES0..ES1, flights from ES1, half landings to ES2)
+  const ES0 = 10.6, ES1 = 11.8, ES2 = 16.3, ED0 = 2.6, ED1 = 5.6, EHOLE = [Nf(ES1, ED0), Nf(ES2, ED0), Nf(ES2, ED1), Nf(ES1, ED1)], LIFTS = [];      // highGreens: shrubs in planters above the ground [x, y, z, radius], world coordinates
   // ---- the lettering sheet: cards are drawn on first use; the two materials show the same sheet, the second one self-lit (screens, exit signs)
   const SH = new Atlas(low), sheetTex = new THREE.CanvasTexture(SH.c); sheetTex.colorSpace = THREE.SRGBColorSpace; sheetTex.anisotropy = 8;
   const PR = new THREE.MeshStandardMaterial({ map: sheetTex, roughness: 0.55 }); PR.name = 'lib-prints';
@@ -534,7 +553,9 @@ export function build(item, ctx) {
   /** A pile of books or exercise books. */
   const pile = (b, x, y, z, n, seed, w = 0.2, d = 0.28) => { const r = rng(seed * 31 + 7), cols = [0x2f5fa8, 0xb8322a, 0x2f8a55, 0xe0b020, 0xf2efe6, 0x7a4fa0, 0xd9772b, 0x3a3d42]; let yy = y;
     for (let i = 0; i < n; i++) { const t = 0.012 + r() * 0.02; b.box(C(cols[Math.floor(r() * cols.length)]), x + (r() - 0.5) * 0.03, yy + t / 2, z + (r() - 0.5) * 0.03, w * (0.85 + 0.15 * r()), t, d * (0.85 + 0.15 * r()), 'D'); yy += t; } };
-  const LI = new Inst(), LP = [];                                        // instanced chairs and potted plants [x, y, z, radius] of the library
+  const LI = new Inst(), LP = [];
+  /** Round 2: a lamp drawn at local (x, y, z) of batch b's current frame is entered in LIT with its height (the lighting module lights the nearest). */
+  const litAt = (b, x, y, z, r) => { const w = new THREE.Vector3(x, y, z).applyMatrix4(b.m); LIT.push([w.x, w.z, r, w.y]); };                                        // instanced chairs and potted plants [x, y, z, radius] of the library
   /** Collision wall on the segment P-Q (L coordinates). */
   const block = (P, Q, y0, y1, t = 0.24) => { const len = along(c, P, Q); c.slab(G, 0, y0, -t / 2, len, y1 - y0, t); home(c); };
   const blockBox = (X0, Z0, X1, Z1, y0, y1) => c.slab(G, Math.min(X0, X1), y0, Math.min(Z0, Z1), Math.abs(X1 - X0), y1 - y0, Math.abs(Z1 - Z0));
@@ -639,7 +660,7 @@ export function build(item, ctx) {
   // pavilions, pergola and the sign along the north-west edge
   along(v, LB, LA);
   { const z0 = -8.5, z1 = -2.0, yt = H + 3.6, boxes = [[LNW - 44, LNW - 39.1], [LNW - 21.1, LNW - 14.3]], px0 = boxes[0][1], px1 = boxes[1][0];
-    for (const [x0, x1] of boxes) { v.slab(TERR, x0, H, z0, x1 - x0, 3.6, z1 - z0, x0 > 30 ? 'DW' : 'D');      // the western one is hollow: its east wall has the door of the stair v.slab('roofPale', x0 - 0.1, yt, z0 - 0.1, x1 - x0 + 0.2, 0.12, z1 - z0 + 0.2);
+    for (const [x0, x1] of boxes) { v.slab(TERR, x0, H, z0, x1 - x0, 3.6, z1 - z0, x0 > 30 ? 'DW' : 'DE');      // (round 2: the eastern one is hollow too; its door faces the pergola)      // the western one is hollow: its east wall has the door of the stair v.slab('roofPale', x0 - 0.1, yt, z0 - 0.1, x1 - x0 + 0.2, 0.12, z1 - z0 + 0.2);
       v.quad('glassDark', [x0 + 0.8, H + 1.2, z1 + 0.01], [x1 - 0.8, H + 1.2, z1 + 0.01], [x1 - 0.8, H + 2.6, z1 + 0.01], [x0 + 0.8, H + 2.6, z1 + 0.01]); }
     const P = TERR;
     for (let i = 1; i < 3; i++) for (const z of [z0 + 0.2, z1 - 0.2]) v.box(P, px0 + (px1 - px0) * i / 3, H + 1.75, z, 0.2, 3.5, 0.2, 'D');
@@ -660,7 +681,7 @@ export function build(item, ctx) {
   { const FR0 = lm('frame'), win = (x, y, w, h) => { face('glassDark', x, x + w, y, y + h); v.slab(MW, x - 0.08, y - 0.07, 0, w + 0.16, 0.07, 0.07); v.slab(FR0, x - 0.05, y, 0, 0.05, h + 0.05, 0.045, 'D'); v.slab(FR0, x + w, y, 0, 0.05, h + 0.05, 0.045, 'D'); v.slab(FR0, x, y + h, 0, w, 0.05, 0.045); v.slab(FR0, x + w / 2 - 0.02, y, 0, 0.04, h, 0.03, 'UD'); };
     // a pair of cream steel doors in the stone base (frame 55): leaves, frame, pulls, a lamp over them
     const baseDoor = x => { const CR = C(0xe6dfc9, 'gloss'); for (const i of [0, 1]) { v.slab(CR, x + 0.2 + i * 0.8, 0.05, 0, 0.79, 2.25, 0.04, 'D'); v.slab(STL, x + (i ? 1.06 : 0.9), 0.95, 0.04, 0.03, 0.3, 0.035); face('glassDark', x + 0.47 + i * 0.8, x + 0.73 + i * 0.8, 1.35, 1.95, 0.045); }
-      v.slab(FR0, x + 0.14, 0.05, 0, 0.06, 2.31, 0.06, 'D'); v.slab(FR0, x + 1.8, 0.05, 0, 0.06, 2.31, 0.06, 'D'); v.slab(FR0, x + 0.14, 2.3, 0, 1.72, 0.06, 0.06); v.slab(lm('lamp'), x + 0.8, 2.5, 0, 0.4, 0.07, 0.09); };
+      v.slab(FR0, x + 0.14, 0.05, 0, 0.06, 2.31, 0.06, 'D'); v.slab(FR0, x + 1.8, 0.05, 0, 0.06, 2.31, 0.06, 'D'); v.slab(FR0, x + 0.14, 2.3, 0, 1.72, 0.06, 0.06); v.slab(lm('lamp'), x + 0.8, 2.5, 0, 0.4, 0.07, 0.09); litAt(v, x + 1.0, 2.5, 1.2, 3.5); };
     // north-west: pale grey stone, paired windows above, doors, small windows and louvre strips below (frames 55-56)
     let len = along(v, LB, LA); v.slab(lm('stone'), 0, 0, -0.35, ND[0], F3, 0.35, 'N'); v.slab(lm('stone'), ND[1], 0, -0.35, PORTAL[0] - ND[1], F3, 0.35, 'N'); v.slab(lm('stone'), ND[0], 2.45, -0.35, ND[1] - ND[0], F3 - 2.45, 0.35, 'N');
     for (let x = 2.6; x < PORTAL[0] - 3; x += 6) { win(x, 4.9, 1.1, 1.8); win(x + 1.6, 4.9, 1.1, 1.8);
@@ -1061,7 +1082,7 @@ export function build(item, ctx) {
     const hD = type === 'gap' ? 2.3 : 2.1, zc = -sg * 0.1, FM = type === 'lift' ? STL : type === 'gap' ? MW : DOORF;
     b.box(FM, x - 0.035, hD / 2, zc, 0.07, hD, 0.25, 'D'); b.box(FM, x + w + 0.035, hD / 2, zc, 0.07, hD, 0.25, 'D'); b.box(FM, x + w / 2, hD + 0.035, zc, w + 0.14, 0.07, 0.25);
     if (type === 'lift') {
-      for (const i of [0, 1]) b.box(C(0xaeb4b9, 'metal'), x + w * (0.25 + 0.5 * i), hD / 2, zc, w / 2 - 0.006, hD, 0.04, 'D');
+      LIFTS.push({ m: b.m.clone(), x, w, sg, y: b.m.elements[13] });                       // round 2: its leaves are instanced and slide open; a car stands behind (see liftCars)
       cardZ(b, U('liftind', 120, 44, (g, W, Hh) => { BX(g, 0, 0, W, Hh, '#101214'); TX(g, '▲', 28, Hh / 2 + 1, 26, '#ff9a3c', CJK, 'center'); TX(g, '1', 80, Hh / 2 + 2, 32, '#ff9a3c', CJK, 'center', 'bold'); }), x + w / 2 - 0.19, hD + 0.1, sg * 0.012, 0.38, 0.14, sg, true);
       b.box(STL, x + w + 0.3, 1.15, sg * 0.01, 0.09, 0.22, 0.02); b.box(LAMP, x + w + 0.3, 1.19, sg * 0.022, 0.03, 0.03, 0.006);
     } else if (type !== 'gap') {
@@ -1085,7 +1106,7 @@ export function build(item, ctx) {
     const sg = panelWall(b, P, Q, y, y + 1.1, holes, toward, DADO); panelWall(b, P, Q, y + 1.1, y + 1.14, holes, toward, trim); panelWall(b, P, Q, y + 1.14, y + h, holes.map(q => [q[0], q[1], 0, q[3] - 1.14]), toward, WU);
     let c0 = 0;
     for (const [a, w, type, uv] of G2) {
-      if (type === 'open' || type === 'gap') { if (a > c0 + 0.02) block(pt(c0), pt(a), y, y + h, 0.2); c0 = a + w; }
+      if (type === 'open' || type === 'gap' || type === 'lift') { if (a > c0 + 0.02) block(pt(c0), pt(a), y, y + h, 0.2); c0 = a + w; }
       along(uf, P, Q, y); doorSet(uf, a, w, sg, type, uv); home(uf);
     }
     if (len > c0 + 0.02) block(pt(c0), pt(len), y, y + h, 0.2);
@@ -1185,7 +1206,7 @@ export function build(item, ctx) {
     v.slab(lm('granite'), ND[0], 0.0, -0.36, ND[1] - ND[0], F0, 0.36, 'D'); c.slab(G, ND[0], 0, -0.4, ND[1] - ND[0], F0, 0.4);
     v.slab(lm('stone'), 32, 0, 0, 3.2, F0, 1.5, 'DN'); v.slab(lm('stone'), 31.8, 0, 1.5, 3.6, 0.15, 0.4, 'DN'); c.slab(G, 32, 0, 0, 3.2, F0, 1.5); plate(c, G, [[32, F0, 1.5], [32, 0, 2.1], [35.2, 0, 2.1], [35.2, F0, 1.5]], 0.1);
     v.slab(MW, 31.9, 2.72, 0, 3.4, 0.07, 1.5); for (const s of [32.2, 35.0]) bar(v, STL, [s, 2.76, 1.35], [s, 3.5, 0.02], 0.03);
-    v.slab(LAMP, 33.3, 2.69, 0.5, 0.6, 0.02, 0.2);
+    v.slab(LAMP, 33.3, 2.69, 0.5, 0.6, 0.02, 0.2); litAt(v, 33.6, 2.69, 1.4, 3.5);
     cardZ(v, signCard('综合楼 · 北门', '#2a2d30', '#e9c46a', 320, 80), 31.95, 1.45, 0.012, 0.72, 0.18, 1);
     home(uf); home(c); home(v);
   }
@@ -1205,9 +1226,9 @@ export function build(item, ctx) {
     const lo = k < 2, south = lo ? [[55.5, ZS], [55.5, -8.2], [47, -8.2], [47, ZS]] : [[28.9, ZS], [28.9, -5.2], [20.6, -5.2], [20.6, ZS]], PUB = [A1, A2, A3, A4, A5, ...south, AW];
     const nm = NAMES[k], pl = (i, key) => plateCard(String((k + 3) * 100 + i), nm[key]), tr = TRIM[k], W = (P, Q, toward, gaps) => wallU(v, P, Q, y, toward, gaps, CU, tr), dW = dWat(ZS);
     cap(v, TILE, PUB, y + 0.004, true, [LWo]); cap(v, CEU, PUB, y + CU, false, [LWo]);
-    cap(c, G, lo ? [LE, [VOID_S[0], 0], [VOID_S[0], -8], [VOID_S[1], -8], [VOID_S[1], 0], LD, LC, LB, Wf(nwX(-PE), -PE), Wf(PBACK, -PE), Wf(PBACK, -PW), Wf(nwX(-PW), -PW), LA] : [LE, LD, LC, LB, LA], y, true, [LWELL, STAIRHOLE]);
+    cap(c, G, lo ? [LE, [VOID_S[0], 0], [VOID_S[0], -8], [VOID_S[1], -8], [VOID_S[1], 0], LD, LC, LB, Wf(nwX(-PE), -PE), Wf(PBACK, -PE), Wf(PBACK, -PW), Wf(nwX(-PW), -PW), LA] : [LE, LD, LC, LB, LA], y, true, k ? [LWELL, STAIRHOLE, EHOLE] : [LWELL, STAIRHOLE]);
     W(A1, A2, Nf(37, 8), [[SLOB - SS1, SS1 - SS0, 'gap']]); W(A2, A3, Nf(36, 9));
-    W(A3, A4, Nf(20, DN + 1.5), [[0.8, 1, 'shut'], [6.4, 1, 'open', pl(1, 'B2')], [9, 1, 'shut'], [14.75, 1, 'shut', pl(2, 'B1')], [19.2, 1.6, 'shut', signCard('楼梯间', '#0d8a4a', '#ffffff')], [SHALL - 10.3, 1.2, 'gap']]);
+    W(A3, A4, Nf(20, DN + 1.5), [[0.8, 1, 'shut'], [6.4, 1, 'open', pl(1, 'B2')], [9, 1, 'shut'], [14.75, 1, 'shut', pl(2, 'B1')], [19.2, 1.6, 'open', signCard('楼梯间', '#0d8a4a', '#ffffff')], [SHALL - 10.3, 1.2, 'gap']]);
     W(A4, A5, wellC, [[2.6, 1, 'shut', pl(3, 'E3')], [9.6, 1, 'shut', pl(4, 'E2')], [16.6, 1, 'shut', pl(5, 'E1')]]);
     if (lo) {
       W(A5, [55.5, ZS], wellC, [[0.42, 1, 'shut', pl(6, 'SE')]]); W([55.5, ZS], [55.5, -8.2], [51, -10]); W([47, -8.2], [47, ZS], [51, -10]);
@@ -1235,6 +1256,42 @@ export function build(item, ctx) {
     // signs of the hall: the storey, exit signs
     along(uf, A2, A3, y); { const sg = dot(sub(Nf(36, 9), A2), [-(A3[1] - A2[1]), A3[0] - A2[0]]) > 0 ? 1 : -1; cardZ(uf, floorCard(k + 3), 2.3, 1.75, sg * 0.012, 0.7, 0.7, sg); } home(uf);
   });
+  // ---- round 2 (IMAGINED): the second stair, behind the eastern stack of balconies, between storeys 3 and 6. The corridor door
+  // marked 楼梯间 now stands open onto a small lobby; landings, two flights per storey, a half landing at the far end. It does
+  // not go down to the closed library storeys or up to the roof (the eastern roof pavilion is a room of its own).
+  { const FW = 1.4, Tg = 0.27, TRD = C(0xb9b6ac), NOS = C(0x2f3133), zo = [-ED0 - FW, -ED0], zi = [-ED1, -ED1 + FW], mid = Nf(13.5, 8), yTop = UPF[3];
+    along(uf, LB, LA); along(c, LB, LA);
+    for (let i = 0; i < 3; i++) {
+      const y0 = UPF[i], y1 = UPF[i + 1], n = Math.round((y1 - y0) / 0.15), m = n / 2, R = (y1 - y0) / n, ym = y0 + m * R, se = ES1 + m * Tg;
+      for (let j = 0; j < m; j++) {
+        uf.slab(TRD, ES1 + j * Tg, y0 + j * R - 0.03, zo[0], Tg, R + 0.03, FW, 'D'); uf.slab(NOS, ES1 + j * Tg - 0.01, y0 + (j + 1) * R - 0.012, zo[0], 0.05, 0.014, FW, 'D');
+        uf.slab(TRD, se - (j + 1) * Tg, ym + j * R - 0.03, zi[0], Tg, R + 0.03, FW, 'D'); uf.slab(NOS, se - j * Tg - 0.04, ym + (j + 1) * R - 0.012, zi[0], 0.05, 0.014, FW, 'D');
+      }
+      plate(uf, MW, [[ES1, y0 - 0.03, zo[0]], [ES1, y0 - 0.03, zo[1]], [se, ym - 0.03, zo[1]], [se, ym - 0.03, zo[0]]], 0.13);
+      plate(uf, MW, [[ES1, y1 - 0.03, zi[0]], [ES1, y1 - 0.03, zi[1]], [se, ym - 0.03, zi[1]], [se, ym - 0.03, zi[0]]], 0.13);
+      plate(c, G, [[ES1, y0, zo[0]], [ES1, y0, zo[1]], [se, ym, zo[1]], [se, ym, zo[0]]], 0.2);
+      plate(c, G, [[ES1, y1, zi[0]], [ES1, y1, zi[1]], [se, ym, zi[1]], [se, ym, zi[0]]], 0.2);
+      uf.slab(TRD, se, ym - 0.16, -ED1, ES2 - se, 0.16, ED1 - ED0); c.slab(G, se, ym - 0.2, -ED1, ES2 - se, 0.2, ED1 - ED0);        // half landing
+      rail(uf, [ES1, zo[0] - 0.03], [se, zo[0] - 0.03], y0, ym, 0.95, 'Grey'); rail(uf, [se, zi[1] + 0.03], [ES1, zi[1] + 0.03], ym, y1, 0.95, 'Grey'); rail(uf, [se + 0.03, zi[1] + 0.03], [se + 0.03, zo[0] - 0.03], ym, ym, 0.95, 'Grey');
+      bar(uf, STL, [ES1 + 0.1, y0 + 0.95, zo[1] - 0.06], [se, ym + 0.95, zo[1] - 0.06], 0.04); bar(uf, STL, [se, ym + 0.95, zi[0] + 0.06], [ES1 + 0.1, y1 + 0.95, zi[0] + 0.06], 0.04);
+      uf.box(LAMP, ES2 - 0.02, ym + 2.3, -(ED0 + ED1) / 2, 0.03, 0.12, 0.9, 'E');
+    }
+    c.slab(G, ES1, UPF[0], -ED0 - FW - 0.16, ES2 - 1.4 - ES1, yTop + 1.1 - UPF[0], 0.12);                                                  // between the flights
+    c.slab(G, ES1, UPF[0], zi[0], 0.1, 2.3, FW); uf.slab(WU, ES1, UPF[0], zi[0], 0.1, 2.3, FW, 'D');                                          // no way under the upper flight at the foot
+    c.slab(G, ES1, yTop, zo[0], 0.1, 1.3, FW); rail(uf, [ES1 + 0.05, zo[0]], [ES1 + 0.05, zo[1]], yTop, yTop, 1.05, 'Grey');                 // guard at the top
+    c.slab(G, 10.3, UPF[0], -11.2, 0.18, yTop + CU - UPF[0], 11.2 - 2.45).slab(G, 16.33, UPF[0], -11.2, 0.18, yTop + CU - UPF[0], 11.2 - 2.45).slab(G, 10.48, UPF[0], -2.62, 5.85, yTop + CU - UPF[0], 0.16);   // lobby and well walls
+    home(uf); home(c);
+    UPF.forEach((y, k) => {
+      const LOB = [Nf(10.5, ED0), Nf(ES1, ED0), Nf(ES1, ED1), Nf(16.3, ED1), Nf(16.3, 11.2), Nf(10.5, 11.2)];
+      cap(uf, TILE, k ? LOB : [Nf(10.5, ED0), Nf(16.3, ED0), Nf(16.3, 11.2), Nf(10.5, 11.2)], y + 0.004, true); cap(uf, CEU, k < 3 ? LOB : [Nf(10.5, ED0), Nf(16.3, ED0), Nf(16.3, 11.2), Nf(10.5, 11.2)], y + CU, false);
+      for (const [P, Q] of [[Nf(10.5, 11.22), Nf(10.5, 2.62)], [Nf(10.5, 2.62), Nf(16.3, 2.62)], [Nf(16.3, 2.62), Nf(16.3, 11.22)]]) panelWall(uf, P, Q, y, y + (k < 3 ? FH : CU), [], mid, WU);
+      along(uf, LB, LA, y);
+      cardX(uf, floorCard(k + 3), 10.512, 1.5, -10.4, 0.5, 0.5, 1); cardZ(uf, exitCard(), 12.6, 2.42, -11.18, 0.6, 0.21, -1, true);
+      uf.box(LAMP, 13.4, CU - 0.012, -8.4, 1.2, 0.02, 0.16).box(LAMP, 11.0, CU - 0.012, -4.1, 0.16, 0.02, 1.2);
+      if (k === 0) { cardZ(uf, signCard('二号楼梯 · 三至六层', '#0d8a4a', '#ffffff', 300, 70), 13.0, 1.6, -11.17, 0.86, 0.2, -1); }
+      home(uf);
+    });
+  }
   // ---- the western roof pavilion: the stair comes out here; a steel door leads out under the pergola
   { panelWall(v, Nf(34.5, 2), Nf(34.5, 8.5), H, H + 3.6, [[4.1, 5.3, 0, 2.15]], Nf(30, 5), TERR, WU, 0.25);
     panelWall(v, Nf(SS2, SD1), Nf(SS2, 8.25), H, H + 3.5, [], Nf(38, 7), WU); panelWall(v, Nf(34.75, 8.25), Nf(SS2, 8.25), H, H + 3.5, [], Nf(38, 7), WU); panelWall(v, Nf(SS1, 5.7), Nf(SS2, 5.7), H, H + 3.5, [], Nf(38, 7), WU);
@@ -1247,7 +1304,8 @@ export function build(item, ctx) {
     cardZ(v, exitCard(), 34.9, 2.5, -8.23, 0.6, 0.21, 1, true);
     c.slab(G, SS2, 0, -8.5, 0.25, 3.6, 8.5 - SD1); c.slab(G, 34.5, 0, -8.5, 6.8, 3.6, 0.25); c.slab(G, 34.5, 0, -6.1, 0.25, 3.6, 0.4); c.slab(G, 34.5, 0, -8.25, 0.25, 3.6, 0.95);
     c.slab(G, SS1, 0, -5.7, SS2 - SS1, 3.6, 0.15); c.slab(G, 34.5, 3.5, -8.5, 6.8, 0.22, 6.5);
-    c.slab(G, 11.6, 0, -8.5, 4.9, 3.6, 6.5);                                                                                        // the eastern pavilion is closed
+    c.slab(G, 11.6, 0, -8.5, 4.9, 3.6, 0.25).slab(G, 11.6, 0, -2.25, 4.9, 3.6, 0.25).slab(G, 11.6, 0.02, -8.25, 0.25, 3.6, 6.0).slab(G, 16.25, 0.02, -8.25, 0.25, 3.6, 2.35).slab(G, 16.25, 0.02, -4.7, 0.25, 3.6, 2.45);   // round 2: the eastern pavilion is open (its door on the pergola side)
+    c.slab(G, 11.6, 3.5, -8.5, 4.9, 0.22, 6.5);
     home(v); home(c);
   }
 
@@ -1657,7 +1715,7 @@ export function build(item, ctx) {
     for (let i = 0; i < 5; i++) gx.box(i % 2 ? MW : RW, -5.5, 1.02, zc - 0.25 - (i + 0.5) * 0.66, 0.06, 0.1, 0.66, 'NS');
     bar(gx, RW, [-5.5, 1.02, zc + 0.2], [-5.5, 3.9, zc + 1.25], 0.07, 0.1); bar(gx, MW, [-5.5, 1.9, zc + 0.52], [-5.5, 2.5, zc + 0.74], 0.075, 0.105);
     // wall lights along both flanks, a convex mirror outside
-    for (const x of [2, 6, 10]) { gx.box(lm('lamp'), x, 3.3, -PW - 0.05, 0.5, 0.1, 0.07, 'S'); gx.box(lm('lamp'), x, 3.3, -PE + 0.05, 0.5, 0.1, 0.07, 'N'); }
+    for (const x of [2, 6, 10]) { gx.box(lm('lamp'), x, 3.3, -PW - 0.05, 0.5, 0.1, 0.07, 'S'); gx.box(lm('lamp'), x, 3.3, -PE + 0.05, 0.5, 0.1, 0.07, 'N'); litAt(gx, x, 3.3, -PW - 1.2, 3); litAt(gx, x, 3.3, -PE + 1.2, 3); }
     gx.cyl(STL, xo + 0.6, 0, -PE - 0.7, 0.04, 2.3, 8); gx.box(C(0xe2701c), xo + 0.6, 2.45, -PE - 0.7, 0.06, 0.6, 0.6); gx.box(STL, xo + 0.635, 2.45, -PE - 0.7, 0.01, 0.52, 0.52, 'W');
     home(v); home(gx); home(c); }
   // ---- the roof as a place to stand (imagined, except what frames 20 and 55-58 show: railing, pavilions, pergola, sign, light well, white units)
@@ -1671,9 +1729,22 @@ export function build(item, ctx) {
     v.box(DECK, 25.5, 0.03, -5.25, 17.6, 0.06, 6.1, 'D');
     for (const s of [20, 25.5, 31]) { for (const d of [0.2, 0.36, 0.52]) v.box(TW, s, 0.45, -3.2 - d, 1.8, 0.035, 0.13); for (const e of [-0.75, 0.75]) v.box(DKS, s + e, 0.22, -3.56, 0.05, 0.44, 0.44, 'D'); c.slab(G, s - 0.9, 0, -3.8, 1.8, 0.5, 0.5); }
     for (const s of [17.6, 22.2, 26.8, 31.4]) { v.box(CONC, s, 0.3, -7.6, 1.5, 0.6, 0.7, 'D'); v.box(C(0x4b3d2f), s, 0.605, -7.6, 1.3, 0.01, 0.5, 'D'); c.slab(G, s - 0.75, 0, -7.95, 1.5, 0.75, 0.7); for (const e of [-0.4, 0, 0.4]) { const w = toW(Nf(s + e, 7.6)); highGreens.push([w[0], H + 0.6, w[1], 0.3]); } }
-    for (const [s, d] of [[34.42, 4.0], [16.58, 4.0]]) v.box(lm('lamp'), s, 2.5, -d, 0.06, 0.12, 0.3);
-    // the eastern pavilion is closed: a steel door with a plate
-    v.box(C(0x8e9a94, 'metal'), 16.52, 1.05, -5.6, 0.04, 2.1, 0.95, 'D'); v.box(DKS, 16.53, 1.05, -5.6, 0.03, 2.2, 1.06, 'DW'); v.box(STL, 16.56, 1.05, -5.25, 0.04, 0.12, 0.03); cardX(v, plateCard('机房', '电梯 · 水箱'), 16.515, 1.5, -6.6, 0.34, 0.116, 1);
+    for (const [s, d] of [[34.42, 4.0], [16.58, 4.0]]) { v.box(lm('lamp'), s, 2.5, -d, 0.06, 0.12, 0.3); litAt(v, s + (s > 30 ? -1.2 : 1.2), 2.5, -d, 3.5); }
+    // round 2 (IMAGINED): the eastern pavilion is open: a small weather station of a school club, its steel door standing open toward the pergola
+    for (const d of [4.75, 5.85]) v.box(DKS, 16.49, 1.08, -d, 0.27, 2.16, 0.06, 'D'); v.box(DKS, 16.49, 2.18, -5.3, 0.27, 0.06, 1.16);
+    v.box(C(0x8e9a94, 'metal'), 17.12, 1.07, -5.9, 1.05, 2.1, 0.045, 'D'); v.box(STL, 17.55, 1.05, -5.94, 0.12, 0.03, 0.05);          // the leaf swung out against the wall
+    cardX(v, plateCard('RF', '气象观测站'), 16.64, 1.55, -4.62, 0.34, 0.116, 1);
+    { const WD = C(0xc9a77a, 'gloss'), DK2 = C(0x2a2c2f), y = 0;                                                                     // inside: desk with a screen, shelves of instruments, charts, a stool, a lamp
+      v.box(WD, 12.3, 0.74, -6.2, 1.2, 0.04, 2.6).box(DK2, 12.3, 0.37, -5.05, 1.1, 0.72, 0.04, 'UD').box(DK2, 12.3, 0.37, -7.35, 1.1, 0.72, 0.04, 'UD');
+      v.box(DK2, 12.0, 1.0, -6.0, 0.04, 0.42, 0.66); cardX(v, U('wxscreen', 160, 100, (g, W2, Hh) => { BX(g, 0, 0, W2, Hh, '#0e2238'); g.strokeStyle = '#4fc3f7'; g.lineWidth = 3; g.beginPath(); for (let i = 0; i <= 20; i++) g.lineTo(8 + i * 7.2, 70 - 30 * Math.sin(i * 0.45) - i); g.stroke(); TX(g, '28.6℃  76%', W2 / 2, 18, 18, '#ffffff', CJK, 'center', 'bold'); }), 12.025, 0.82, -6.31, 0.62, 0.38, 1, true);
+      v.box(MW, 15.95, 1.0, -3.6, 0.5, 2.0, 1.6, 'D'); for (let i = 0; i < 4; i++) v.box(DK2, 15.7, 0.35 + i * 0.45, -3.6, 0.02, 0.02, 1.5);
+      for (let i = 0; i < 6; i++) v.box([C(0xd0d4d8, 'metal'), C(0xb8322a), STL, C(0xe0b020)][i % 4], 15.85, 0.5 + Math.floor(i / 2) * 0.45, -3.2 - (i % 2) * 0.6, 0.18, 0.2, 0.2);
+      cardX(v, U('wxchart', 200, 140, (g, W2, Hh) => { BX(g, 0, 0, W2, Hh, '#f4f1e6', '#1d4f9c', 3); TX(g, '本周天气', W2 / 2, 18, 20, '#1d4f9c', CJK, 'center', 'bold'); for (let i = 0; i < 7; i++) { BX(g, 14 + i * 25, 120 - 40 - 30 * Math.abs(Math.sin(i)), 18, 40 + 30 * Math.abs(Math.sin(i)), '#e07a2c'); } }), 11.88, 1.3, -8.2, 1.2, 0.84, 1);
+      v.cyl(C(0x3a3d42), 13.2, 0, -6.0, 0.18, 0.45, 10); v.box(LAMP, 14.0, 3.46, -5.2, 1.2, 0.02, 0.16); }
+    { const mid2 = Nf(14, 5.2); home(v); cap(v, TILE, [Nf(11.85, 2.25), Nf(16.25, 2.25), Nf(16.25, 8.25), Nf(11.85, 8.25)], H + 0.006, true);
+      panelWall(v, Nf(11.85, 2.25), Nf(11.85, 8.25), H, H + 3.5, [], mid2, WU); panelWall(v, Nf(11.85, 2.25), Nf(16.25, 2.25), H, H + 3.5, [], mid2, WU); panelWall(v, Nf(11.85, 8.25), Nf(16.25, 8.25), H, H + 3.5, [], mid2, WU);
+      panelWall(v, Nf(16.5, 2.0), Nf(16.5, 8.5), H, H + 3.6, [[2.75, 3.85, 0, 2.15]], Nf(20, 5), TERR, WU, 0.25);
+      cap(v, CEU, [Nf(11.85, 2.25), Nf(16.25, 2.25), Nf(16.25, 8.25), Nf(11.85, 8.25)], H + 3.5, false); along(v, LB, LA, H); }
     // plant: the white units of the footage as outdoor units on plinths, pipes, a water tank, vents
     v.box(CONC, LNW - 12.7, 0.06, -4.2, 1.5, 0.12, 2.1, 'D'); c.slab(G, LNW - 13.3, 0, -5.1, 1.2, 1.4, 1.8);
     home(v); home(c);
@@ -1718,6 +1789,60 @@ export function build(item, ctx) {
   if (highGreens.length) gxG.add(potted(highGreens, 77));
   if (ctx.animate) ctx.animate((dt, t, env) => { const p = env && env.camera ? env.camera.position : null; if (!p) return; const near = Math.hypot(p.x - ctrW[0], p.z - ctrW[1]) < 62;
     roomGroups.forEach((g, k) => { g.visible = near && p.y > UPF[k] - 4.2 && p.y < UPF[k] + 4.4; }); });
+  // ---- round 2 (IMAGINED): the lifts run. Behind every pair of lift doors stands a car (on every level, so that one is always
+  // there); the doors slide open when the viewer comes near; standing still in a car for a moment closes them and the car
+  // takes the viewer one level up (from the sixth storey back to the ground floor). The walker is moved with the page's own
+  // pose hook (window.__app.setPose), the only way a builder can move the viewer.
+  if (LIFTS.length) {
+    const lb = new Batch(), CAR = C(0xb8bcc0, 'metal'), FLR = C(0x4a4d52), MIR = C(0xdfe5e8, 'metal'), PAN = C(0x23262a), DEP = 1.62;
+    const leafM = new THREE.MeshStandardMaterial({ color: 0xaeb4b9, metalness: 0.85, roughness: 0.32 }); leafM.name = 'lib-liftleaf';
+    const leafG = new THREE.BoxGeometry(1, 2.1, 0.04), leaves = new THREE.InstancedMesh(leafG, leafM, LIFTS.length * 2), M4 = new THREE.Matrix4(), V3 = new THREE.Vector3();
+    const shafts = new Map();
+    LIFTS.forEach((L, i) => {
+      const { m, x, w, sg } = L, z0 = -sg * 0.13, z1 = -sg * (0.13 + DEP), zs = Math.min(z0, z1), x0 = x - 0.1, x1 = x + w + 0.1;
+      lb.setMatrix(m);
+      lb.slab(FLR, x0, 0, zs, x1 - x0, 0.02, DEP, 'D').slab(CAR, x0 - 0.04, 0, zs, 0.04, 2.4, DEP).slab(CAR, x1, 0, zs, 0.04, 2.4, DEP).slab(CAR, x0, 0, sg > 0 ? zs - 0.04 : zs + DEP, x1 - x0, 2.4, 0.04);
+      lb.slab(MW, x0, 2.36, zs, x1 - x0, 0.04, DEP).box(LAMP, (x0 + x1) / 2, 2.35, (z0 + z1) / 2, 0.8, 0.012, 0.9, 'U').box(MIR, (x0 + x1) / 2, 1.55, z1 + sg * 0.02, (x1 - x0) * 0.7, 1.1, 0.01).box(STL, (x0 + x1) / 2, 0.9, z1 + sg * 0.06, x1 - x0 - 0.2, 0.04, 0.04);
+      lb.slab(STL, x, 0, Math.min(-sg * 0.15, sg * 0.1), w, 0.014, 0.25);                                     // the sill of the doorway
+      lb.box(PAN, x1 - 0.02, 1.25, z0 - sg * 0.35, 0.02, 0.5, 0.22); for (let q = 0; q < 6; q++) lb.box(LAMP, x1 - 0.035, 1.07 + q * 0.06, z0 - sg * 0.35, 0.006, 0.03, 0.03);
+      L.leaf = (open, k) => { const c0 = x + w * (k ? 0.75 : 0.25) + (k ? 1 : -1) * open * w * 0.46; V3.set(c0, 1.05, -sg * 0.1).applyMatrix4(m); return M4.compose(V3, new THREE.Quaternion().setFromRotationMatrix(m), new THREE.Vector3(w / 2 - 0.006, 1, 1)); };
+      leaves.setMatrixAt(2 * i, L.leaf(0, 0)); leaves.setMatrixAt(2 * i + 1, L.leaf(0, 1)); L.open = 0;
+      const cw = new THREE.Vector3((x0 + x1) / 2, 0, (z0 + z1) / 2).applyMatrix4(m), dw = new THREE.Vector3(x + w / 2, 0, sg * 0.5).applyMatrix4(m), key = Math.round(cw.x * 2) + ',' + Math.round(cw.z * 2);
+      L.car = [cw.x, cw.z]; L.door = [dw.x, dw.z]; L.key = key; L.inv = new THREE.Matrix4().copy(m).invert(); L.box = [x0 + 0.05, x1 - 0.05, Math.min(z0, z1) + 0.05, Math.max(z0, z1) - 0.05];
+      if (!shafts.has(key)) shafts.set(key, L);
+    });
+    // colliders: per shaft three tall walls from the ground floor to above the sixth storey; a car floor on the two library storeys
+    for (const L of shafts.values()) { const { m, x, w, sg } = L, zs = Math.min(-sg * 0.13, -sg * (0.13 + DEP)), x0 = x - 0.1, x1 = x + w + 0.1, M2 = m.clone(); M2.elements[13] = F0;
+      c.setMatrix(M2); c.slab(G, x0 - 0.16, 0.02, zs - 0.05, 0.14, UPF[3] + 2.6 - F0, DEP + 0.1).slab(G, x1 + 0.02, 0.02, zs - 0.05, 0.14, UPF[3] + 2.6 - F0, DEP + 0.1).slab(G, x0 - 0.02, 0.02, sg > 0 ? zs - 0.18 : zs + DEP + 0.04, x1 - x0 + 0.04, UPF[3] + 2.6 - F0, 0.14); }
+    for (const L of LIFTS) if (L.y < F3 - 0.5) { c.setMatrix(L.m); const { x, w, sg } = L, zs = Math.min(-sg * 0.08, -sg * (0.13 + DEP)); c.quad(G, [x - 0.1, 0, zs], [x - 0.1, 0, zs + DEP + 0.05], [x + w + 0.1, 0, zs + DEP + 0.05], [x + w + 0.1, 0, zs]); }
+    home(c);
+    leaves.name = item.id + '-lift-leaves'; leaves.computeBoundingSphere(); leaves.frustumCulled = false;
+    const lg = finish(lb, 'lift-cars', false); lg.add(leaves); ctx.detail(lg, mid[0], mid[1], 105);
+    const levels = [...new Set(LIFTS.map(L => +L.y.toFixed(2)))].sort((a, b) => a - b), ride = { L: null, t: 0, phase: 'idle', still: Infinity }, last = new THREE.Vector3(), loc = new THREE.Vector3();
+    if (ctx.animate) ctx.animate((dt, t, env) => {
+      const cam = env && env.camera; if (!cam || !lg.visible) return;
+      const p = cam.position, feet = p.y - 1.65, speed = last.distanceTo(p) / Math.max(dt, 1e-3); last.copy(p);
+      let inCar = null;
+      for (const L of LIFTS) { if (Math.abs(feet - L.y) > 0.6) continue; loc.copy(p).applyMatrix4(L.inv); if (loc.x > L.box[0] && loc.x < L.box[1] && loc.z > L.box[2] && loc.z < L.box[3]) { inCar = L; break; } }
+      const app = globalThis.__app;                                    // timers run on the page's clock (t), so that slow frames do not stretch them
+      if (ride.phase === 'idle') { if (!(inCar && speed < 0.2)) ride.still = t; else if (t - ride.still > 1.4 && app && app.setPose && !(app.pose() || {}).fly) { ride.phase = 'closing'; ride.t = t; ride.L = inCar; } }
+      else if (ride.phase === 'closing') {
+        if (inCar !== ride.L) { ride.phase = 'idle'; ride.still = t; }                                         // stepped out while the doors closed
+        else if (t - ride.t > 1.0) {
+          const i = levels.indexOf(+ride.L.y.toFixed(2)), next = levels[(i + 1) % levels.length], q = app.pose(); app.setPose(q.x, q.z, q.yawDeg, next + 0.02);
+          ride.phase = 'opening'; ride.t = t; ride.L = LIFTS.find(L => L.key === ride.L.key && Math.abs(L.y - next) < 0.05) || null; ride.still = t; } }
+      else if (t - ride.t > 1.2) { ride.phase = 'idle'; ride.still = t; }
+      let moved = false;
+      LIFTS.forEach((L, i) => {
+        const near2 = Math.abs(feet - L.y) < 1.2 && Math.hypot(p.x - L.door[0], p.z - L.door[1]) < 3.2, closing = ride.phase === 'closing' && ride.L && ride.L.key === L.key;
+        const goal = closing ? 0 : (ride.phase === 'opening' && ride.L === L) || near2 || inCar === L ? 1 : 0, o = L.open + (goal - L.open) * Math.min(1, dt * 3.5);
+        if (Math.abs(o - L.open) > 1e-4) { L.open = o; leaves.setMatrixAt(2 * i, L.leaf(o, 0)); leaves.setMatrixAt(2 * i + 1, L.leaf(o, 1)); moved = true; }
+      });
+      if (moved) leaves.instanceMatrix.needsUpdate = true;
+    });
+  }
+  // the eastern roof pavilion's furniture stops the walker (round 2)
+  block(Nf(12.3, 4.95), Nf(12.3, 7.45), H, H + 0.8, 1.2); block(Nf(15.95, 2.8), Nf(15.95, 4.4), H, H + 2.0, 0.5);
   const cg = ctx.add(c.build({ name: item.id + '-colliders' })); cg.visible = false;
   if (typeof globalThis !== 'undefined') globalThis.__newbSheet = { full: SH.full, usedRows: SH.y, size: [SH.S, SH.T], cards: Object.keys(SH.uv).length };      // for checks: cards that did not fit on the lettering sheet
   cg.traverse(o => { if (o.isMesh) ctx.collide(o); });
