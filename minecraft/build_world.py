@@ -873,6 +873,115 @@ def build_canteen(states, kinds, PAL, PIDX, X0, Z0, Y0):
             elif wall_r - 1.6 < d <= wall_r - 0.6: put(x, 64, z, 'barrel[facing=up,open=false]')
     print(f'canteen: round, {len(inner)} floor and {len(wall)} wall columns, 4 storeys, {n_t} table blocks, doors at {sorted(doors)}')
 
+def build_wanyou(states, kinds, PAL, PIDX, X0, Z0, Y0):
+    """万有楼, the building on the north side of the space-frame plaza (网架广场, 万有广场). The 3D campus has none there
+    (a lawn with trees, and a row of columns standing in for it under the canopy's north edge); the satellite image
+    shows buildings against the plaza's north and west sides, and the owner placed 万有楼 there (F4 on the labelled
+    map; the stairs and the bridge are on the plaza's north side). From the owner's two photos of the plaza: two wings
+    of five storeys with open galleries behind stainless railings on the plaza side, red brick on the ground floor and
+    white tiles above; between the wings a gap, with two broad flights of steps rising from the plaza, one to each
+    wing's second-floor gallery; across the gap a bridge with the plaque 万有楼 and another higher up; through the gap
+    trees and the buildings beyond. Built here: the west wing x 133-160 (and a return along the plaza's west side to
+    z -101), the east wing x 177-188 against the white block north-east of the plaza, the gap x 161-176; storeys at
+    y 64, 68, 72, 76, 80 (as the teaching blocks) under a roof at y 83, level with the canopy's; rooms behind a
+    corridor wall, a stairwell in each wing; bridges across the gap at the fourth floor and on the roof.
+    IMAGINED: the exact plan, the rooms, the stairwells, the windows, the doors' places, the materials."""
+    NY, NZ, NX = states.shape
+    def sid(s):
+        if s not in PIDX: PIDX[s] = len(PAL); PAL.append(s)
+        return PIDX[s]
+    yb = int(math.floor(Y0)) + GROUND_Y
+    def put(x, y, z, block, kind=4):
+        c = (y - yb, z - int(Z0), x - int(X0))
+        if 0 <= c[0] < NY and 0 <= c[1] < NZ and 0 <= c[2] < NX:
+            states[c] = sid(block) if block != 'air' else 0; kinds[c] = kind if block != 'air' else 0
+    S = (64, 68, 72, 76, 80); ROOF = 83
+    body = {(x, z) for x in range(133, 148) for z in range(-132, -100)} | {(x, z) for x in range(148, 161) for z in range(-132, -118)} \
+         | {(x, z) for x in range(177, 189) for z in range(-132, -118)}
+    gallery = {(x, z) for x in range(148, 161) for z in range(-118, -115)} | {(x, z) for x in range(177, 189) for z in range(-118, -115)}
+    F = body | gallery
+    gap = {(x, z) for x in range(161, 177) for z in range(-132, -114)}
+    # clear the lawn, trees and lamps where the building and the gap stand
+    for (x, z) in F | gap:
+        for y in range(64, ROOF + 4): put(x, y, z, 'air')
+    N4 = ((1, 0), (-1, 0), (0, 1), (0, -1))
+    outside = lambda c: c not in F
+    ext = {c for c in body if any(outside((c[0] + dx, c[1] + dz)) for dx, dz in N4)}
+    corr = {c for c in body - ext if any((c[0] + dx, c[1] + dz) in gallery for dx, dz in N4)}
+    rail = {c for c in gallery if outside((c[0], c[1] + 1))}
+    PART_X = (151,)                                             # a room partition (along z) in the west wing
+    # stairwells: a switchback in a 2-wide, 6-long shaft; runs along x, landings at both ends
+    wells = [(135, -131), (179, -131)]                          # (x of the first landing, z of the first row)
+    holes, steps = set(), {}
+    for wx, wz in wells:
+        for k, s in enumerate(S[:-1]):
+            row = wz if k % 2 == 0 else wz + 1
+            xs = [wx + 1 + i for i in range(4)] if k % 2 == 0 else [wx + 4 - i for i in range(4)]
+            facing = 'east' if k % 2 == 0 else 'west'
+            for i, x in enumerate(xs):
+                steps[(x, s + i, row)] = f'smooth_quartz_stairs[facing={facing},half=bottom,shape=straight,waterlogged=false]'
+            for x in xs[0:3]: holes.add((x, s + 3, row))        # the floor above the run is open (head room)
+    well_cells = {(wx + i, wz + j) for wx, wz in wells for i in range(6) for j in range(2)}
+    def door(x, y, z, facing, hinge='left', wood='dark_oak'):
+        put(x, y, z, f'{wood}_door[facing={facing},half=lower,hinge={hinge},open=false,powered=false]', 6)
+        put(x, y + 1, z, f'{wood}_door[facing={facing},half=upper,hinge={hinge},open=false,powered=false]', 6)
+    for si, s in enumerate(S):
+        fy = s - 1
+        for (x, z) in F:
+            if (x, fy, z) in holes: put(x, fy, z, 'air'); continue
+            if fy == 63: put(x, fy, z, 'polished_andesite' if (x, z) in body else 'smooth_stone')
+            else: put(x, fy, z, 'smooth_sandstone' if (x, z) in ext or (x, z) in rail else 'polished_diorite')
+        for (x, z) in F:
+            for y in range(s, s + 3):
+                if (x, z) in ext:
+                    win = y > s and (x + z) % 3 != 0
+                    corner = sum((x + dx, z + dz) in ext for dx, dz in N4) >= 2 and sum(outside((x + dx, z + dz)) for dx, dz in N4) >= 2
+                    if si == 0: put(x, y, z, 'bricks' if not (win and not corner) else 'glass')
+                    else: put(x, y, z, 'white_concrete' if not (win and not corner) else 'glass')
+                elif (x, z) in corr:
+                    put(x, y, z, 'white_concrete' if (y == s or (x % 4) not in (1, 2)) else 'glass')
+                elif (x, z) in rail:
+                    if si == 0: put(x, y, z, 'bricks' if not (y > s and x % 4 in (1, 2)) else 'glass')
+                    elif y == s: put(x, y, z, 'iron_bars[east=true,north=false,south=false,waterlogged=false,west=true]')
+                elif (x, z) in body and x in PART_X and (x, z) not in well_cells:
+                    put(x, y, z, 'white_concrete')
+        # room doors in the corridor wall, one per room; the gallery's door into the west return
+        for (x, z) in corr:
+            if x in (155, 180, 186) or (x == 147 and z == -117):
+                if x == 147: door(x, s, z, 'west', 'left', 'oak')
+                else: door(x, s, z, 'north', 'left', 'oak')
+        if si == 0:
+            # ground floor: double doors from the plaza into each wing, and from the gap
+            for x in (153, 154): door(x, s, -116, 'north', 'left' if x == 153 else 'right')
+            for x in (182, 183): door(x, s, -116, 'north', 'left' if x == 182 else 'right')
+            door(147, s, -108, 'west', 'left')                  # the west return's door on the plaza
+            door(160, s, -125, 'west', 'left'); door(177, s, -125, 'east', 'left')
+    for (x, y, z), st_ in steps.items(): put(x, y, z, st_, 6)
+    # roof, parapet
+    for (x, z) in F:
+        put(x, ROOF, z, 'smooth_stone')
+        if any(outside((x + dx, z + dz)) for dx, dz in N4): put(x, ROOF + 1, z, 'white_concrete')
+    # the two flights from the plaza (y 64) to the second-floor galleries (y 68): two blocks wide, toward each wing,
+    # landing on a deck that joins the gallery's end
+    for z in (-116, -115):
+        for i, x in enumerate((168, 167, 166, 165)):
+            put(x, 64 + i, z, 'smooth_quartz_stairs[facing=west,half=bottom,shape=straight,waterlogged=false]', 6)
+        for i, x in enumerate((170, 171, 172, 173)):
+            put(x, 64 + i, z, 'smooth_quartz_stairs[facing=east,half=bottom,shape=straight,waterlogged=false]', 6)
+    for x in list(range(161, 165)) + list(range(174, 177)):
+        for z in range(-118, -114): put(x, 67, z, 'smooth_sandstone')
+    for x in list(range(161, 164)) + list(range(175, 177)): put(x, 68, -115, 'iron_bars[east=true,north=false,south=false,waterlogged=false,west=true]')
+    # bridges across the gap: the fourth floor (deck y 75, with the plaque on its south face) and the roof (deck y 83)
+    for deck in (75, ROOF):
+        for x in range(161, 177):
+            for z in range(-118, -115):
+                put(x, deck, z, 'smooth_quartz'); put(x, deck - 1, z, 'white_concrete' if z == -116 else 'air')
+            for z in (-118, -116): put(x, deck + 1, z, 'iron_bars[east=true,north=false,south=false,waterlogged=false,west=true]')
+    # paving in the gap and along the front of the wings
+    for (x, z) in gap: put(x, 63, z, 'smooth_stone')
+    for x in range(133, 190): put(x, 63, -115, 'polished_diorite')
+    print(f'万有楼: {len(body)} body and {len(gallery)} gallery columns, 5 storeys, 2 stairwells, 2 flights from the plaza, 2 bridges')
+
 def stair_shapes(states, PAL, PIDX):
     """Corner stairs, as the game shapes them when a stair is placed beside another (StairBlock.getStairsShape): every
     stair here was written straight, and the game only reshapes a stair when a neighbour changes, so where two stairs
@@ -1291,6 +1400,7 @@ def main():
     ap.add_argument('--lamps', default=None, help='lamps.mjs output: the 3D campus lamps, set as lanterns and lamp posts')
     ap.add_argument('--trees', default=None, help='trees.mjs output: the 3D campus trees, grown again as Minecraft trees')
     ap.add_argument('--balustrades', default=None, help="groupcells.mjs output for the canal's balustrade: set as wall blocks")
+    ap.add_argument('--wanyou', action='store_true', help='build 万有楼 on the north side of the space-frame plaza')
     ap.add_argument('--canteen', action='store_true', help='build the canteen in the round building south of the track (issue #1)')
     ap.add_argument('--boards', default=None, help="boards.mjs output: where the lesson boards are, for the classrooms' rows of desks and chairs")
     a = ap.parse_args()
@@ -1334,6 +1444,7 @@ def main():
     if a.boards: classroom_rows(states, kinds, PAL, PIDX, json.load(open(a.boards, encoding='utf-8'))['cards'], X0, Z0, Y0)
     if a.trees: place_trees(states, kinds, PAL, PIDX, json.load(open(a.trees)), X0, Z0, Y0)
     if a.canteen: build_canteen(states, kinds, PAL, PIDX, X0, Z0, Y0)
+    if a.wanyou: build_wanyou(states, kinds, PAL, PIDX, X0, Z0, Y0)
     light_rooms(states, kinds, PAL, PIDX)
     if a.lamps: place_lamps(states, kinds, PAL, PIDX, json.load(open(a.lamps)), X0, Z0, Y0)
     for fx_path in (a.fixes.split(',') if a.fixes else []):
