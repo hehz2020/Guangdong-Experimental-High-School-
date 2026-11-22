@@ -1,7 +1,7 @@
 #!/usr/bin/env python3
 """Door plates over the doors build_world.py hung in 求实楼, as small text displays (imagined: the numbering follows
 the 3D site's invented scheme, storey then a two-digit number in order along the corridor). Since v19 the other
-teaching buildings (北教学楼, 南教学楼, 实验楼) carry the 3D site's own room plates instead (boards.py), so only 求实楼,
+teaching buildings (高一楼, 高二楼, 高三楼: the 3D site's 北教学楼, 南教学楼, 实验楼) carry the 3D site's own room plates instead (boards.py), so only 求实楼,
 which has none in the 3D site, gets these; its box overlaps the north block, whose doors are left out here.
 
 usage: python minecraft/doorplates.py <doors.json> <commands.txt>   (appends to commands.txt)
@@ -11,9 +11,9 @@ import json, sys
 
 # building boxes in game blocks (x0, x1, z0, z1), the storey heights (block y of each floor's standing level)
 BUILDINGS = [
-    ('北教学楼', (209, 258, -120, -101), [64, 68, 72, 76, 80]),
-    ('南教学楼', (203, 251, -81, -63), [64, 68, 72, 76, 80]),
-    ('实验楼', (87, 136, -82, -67), [64, 68, 72, 76, 80]),
+    ('高一楼', (209, 258, -120, -101), [64, 68, 72, 76, 80]),
+    ('高二楼', (203, 251, -81, -63), [64, 68, 72, 76, 80]),
+    ('高三楼', (87, 136, -82, -67), [64, 68, 72, 76, 80]),
     ('求实楼', (64, 250, -171, -94), [64, 68, 72, 76, 80]),
 ]
 

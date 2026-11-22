@@ -52,7 +52,7 @@ def style(c, B):
         return [(f'{n}  {building}', '#ffffff'), (name, '#ffffff')], argb('#2468b4'), 'center', 0.01
     if kind == 'floor' and plate:
         n, _, building = plate; n = int(n)
-        return [(f'{n}F', '#9c2a22'), (f'{building} · {CN[n - 1]}楼', '#5a2a26')], argb('#f4f2ea'), 'center', 0.01
+        return [(f'{n}F', '#9c2a22'), (f'{building} · {CN[n - 1]}层', '#5a2a26')], argb('#f4f2ea'), 'center', 0.01
     if kind == 'exit':
         d = i - 1
         return [('安全出口', '#ffffff'), (('← ' if d < 0 else '') + 'EXIT' + (' →' if d > 0 else ''), '#ffffff')], argb('#0a8f4e'), 'center', 0.01
@@ -76,9 +76,29 @@ def style(c, B):
     if kind == 'essay': return [(['我的理想', '读后感'][i % 2], '#c3201b')], argb('#fffef8'), 'center', 0.01
     return None
 
+# The 3D site's names for the teaching blocks, and what the school calls them (the owner, on issue #1): the north
+# block is the first-year building, the south block the second-year one, and the west block the 3D site calls 实验楼
+# (it has the labs) is the third-year building. The 3D site puts every grade in every block (高一 on the lower
+# storeys, 高三 at the top); here each block's classes are its own grade's, numbered in the order of the rooms.
+NAMES = {'北教学楼': ('高一楼', '高一'), '南教学楼': ('高二楼', '高二'), '实验楼': ('高三楼', '高三')}
+
+def renamed(plates):
+    out, k = {}, {}
+    for key in sorted(plates, key=lambda q: (plates[q] or ['', '', ''])[2] + (plates[q] or ['0'])[0].zfill(4) + q):
+        v = plates[key]
+        if not v or v[2] not in NAMES: out[key] = v; continue
+        bname, grade = NAMES[v[2]]
+        name = v[1]
+        if name and name.startswith('高') and name.endswith('班'):
+            k[bname] = k.get(bname, 0) + 1
+            name = f'{grade}（{k[bname]}）班'
+        out[key] = [v[0], name, bname]
+    return out
+
 def main():
     spec, src, out = sys.argv[1:4]
     B = json.load(open(spec, encoding='utf-8'))
+    B['plates'] = renamed(B.get('plates', {}))
     d = np.load(src)
     st, pal, box = d['states'], [str(p) for p in d['pal']], d['box']
     X0, X1, Z0, Z1, Y0, Y1 = box

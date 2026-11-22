@@ -11,8 +11,13 @@ scaled to fit the 3D sign and set in front of the wall's face as boards.py does 
 left where the 3D campus hangs it when there is no wall behind it). Left out: signs within half a metre of a card
 boards.py sets, within 3 m of the big lettering of lettering.json (both carry the same words), and signs smaller
 than a few centimetres a letter. The font is the game's.
+Also left out (issue #1): the signs of the reading pavilion the 3D campus has in the round building south of the
+track, which the map makes the canteen (build_world.py build_canteen), and two signs that named the pavilion and the
+canteen elsewhere: a '阅览室' east of it and the '食堂' on the annex further south, which is not the canteen.
 CHOSEN: the contrast threshold, the smallest letter (scale 0.08), the margins.
 """
+CANTEEN = (28.9, 108.2, 12.0)                     # centre x, z and the radius within which the pavilion's signs are dropped
+DROP = [('阅览室', (38.1, 118.2)), ('食堂', (40.5, 158.9))]
 import json, math, sys
 import numpy as np
 
@@ -52,6 +57,9 @@ def main():
         if any(math.dist((cx, cy, cz), p) < 0.5 for p in done): count('on a board card'); continue
         if any(math.dist((cx, cy, cz), p) < 3 for p in big): count('big lettering'); continue
         if not (X0 <= cx < X1 and Z0 <= cz < Z1): count('outside'); continue
+        words = ''.join(t for t, _ in lines)
+        if math.hypot(cx - CANTEEN[0], cz - CANTEEN[1]) < CANTEEN[2] or any(words == w and math.hypot(cx - p[0], cz - p[1]) < 1 for w, p in DROP):
+            count('the old pavilion'); continue
         margin = min(0.04, h * 0.1)
         s = min((h - margin) / (len(lines) * LINE), (w - 2 * margin) / (max(px(t) for t, _ in lines) * 0.025 + 0.05), 1.5)
         if s < 0.08: count('too small'); continue

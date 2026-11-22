@@ -397,5 +397,1587 @@
     "facing": "east"
    }
   ]
+ },
+ {
+  "why": "体育馆（issue #1：只有朝操场的两个门，侧面没门）：南北两面各开两个双开门（门外一级台阶），东面开正门——玻璃墙上两个双开门，从门里穿过看台下一条两格高的通道进场馆（看台在东面，正门在它后面）",
+  "ops": [
+   {
+    "op": "fill",
+    "from": [
+     78,
+     64,
+     -43
+    ],
+    "to": [
+     79,
+     64,
+     -43
+    ],
+    "block": "spruce_stairs[facing=south,half=bottom,shape=straight,waterlogged=false]"
+   },
+   {
+    "op": "fill",
+    "from": [
+     78,
+     65,
+     -43
+    ],
+    "to": [
+     79,
+     66,
+     -43
+    ],
+    "block": "air"
+   },
+   {
+    "op": "fill",
+    "from": [
+     78,
+     64,
+     -42
+    ],
+    "to": [
+     79,
+     64,
+     -42
+    ],
+    "block": "smooth_stone"
+   },
+   {
+    "op": "fill",
+    "from": [
+     78,
+     65,
+     -42
+    ],
+    "to": [
+     79,
+     66,
+     -42
+    ],
+    "block": "air"
+   },
+   {
+    "op": "fill",
+    "from": [
+     78,
+     64,
+     -41
+    ],
+    "to": [
+     79,
+     64,
+     -41
+    ],
+    "block": "smooth_stone"
+   },
+   {
+    "op": "fill",
+    "from": [
+     78,
+     65,
+     -41
+    ],
+    "to": [
+     78,
+     65,
+     -41
+    ],
+    "block": "spruce_door[facing=south,half=lower,hinge=right,open=false,powered=false]"
+   },
+   {
+    "op": "fill",
+    "from": [
+     78,
+     66,
+     -41
+    ],
+    "to": [
+     78,
+     66,
+     -41
+    ],
+    "block": "spruce_door[facing=south,half=upper,hinge=right,open=false,powered=false]"
+   },
+   {
+    "op": "fill",
+    "from": [
+     79,
+     65,
+     -41
+    ],
+    "to": [
+     79,
+     65,
+     -41
+    ],
+    "block": "spruce_door[facing=south,half=lower,hinge=left,open=false,powered=false]"
+   },
+   {
+    "op": "fill",
+    "from": [
+     79,
+     66,
+     -41
+    ],
+    "to": [
+     79,
+     66,
+     -41
+    ],
+    "block": "spruce_door[facing=south,half=upper,hinge=left,open=false,powered=false]"
+   },
+   {
+    "op": "fill",
+    "from": [
+     78,
+     64,
+     12
+    ],
+    "to": [
+     79,
+     64,
+     12
+    ],
+    "block": "spruce_stairs[facing=north,half=bottom,shape=straight,waterlogged=false]"
+   },
+   {
+    "op": "fill",
+    "from": [
+     78,
+     65,
+     12
+    ],
+    "to": [
+     79,
+     66,
+     12
+    ],
+    "block": "air"
+   },
+   {
+    "op": "fill",
+    "from": [
+     78,
+     64,
+     11
+    ],
+    "to": [
+     79,
+     64,
+     11
+    ],
+    "block": "smooth_stone"
+   },
+   {
+    "op": "fill",
+    "from": [
+     78,
+     65,
+     11
+    ],
+    "to": [
+     79,
+     66,
+     11
+    ],
+    "block": "air"
+   },
+   {
+    "op": "fill",
+    "from": [
+     78,
+     64,
+     10
+    ],
+    "to": [
+     79,
+     64,
+     10
+    ],
+    "block": "smooth_stone"
+   },
+   {
+    "op": "fill",
+    "from": [
+     78,
+     65,
+     10
+    ],
+    "to": [
+     78,
+     65,
+     10
+    ],
+    "block": "spruce_door[facing=north,half=lower,hinge=left,open=false,powered=false]"
+   },
+   {
+    "op": "fill",
+    "from": [
+     78,
+     66,
+     10
+    ],
+    "to": [
+     78,
+     66,
+     10
+    ],
+    "block": "spruce_door[facing=north,half=upper,hinge=left,open=false,powered=false]"
+   },
+   {
+    "op": "fill",
+    "from": [
+     79,
+     65,
+     10
+    ],
+    "to": [
+     79,
+     65,
+     10
+    ],
+    "block": "spruce_door[facing=north,half=lower,hinge=right,open=false,powered=false]"
+   },
+   {
+    "op": "fill",
+    "from": [
+     79,
+     66,
+     10
+    ],
+    "to": [
+     79,
+     66,
+     10
+    ],
+    "block": "spruce_door[facing=north,half=upper,hinge=right,open=false,powered=false]"
+   },
+   {
+    "op": "fill",
+    "from": [
+     102,
+     64,
+     -43
+    ],
+    "to": [
+     103,
+     64,
+     -43
+    ],
+    "block": "spruce_stairs[facing=south,half=bottom,shape=straight,waterlogged=false]"
+   },
+   {
+    "op": "fill",
+    "from": [
+     102,
+     65,
+     -43
+    ],
+    "to": [
+     103,
+     66,
+     -43
+    ],
+    "block": "air"
+   },
+   {
+    "op": "fill",
+    "from": [
+     102,
+     64,
+     -42
+    ],
+    "to": [
+     103,
+     64,
+     -42
+    ],
+    "block": "smooth_stone"
+   },
+   {
+    "op": "fill",
+    "from": [
+     102,
+     65,
+     -42
+    ],
+    "to": [
+     103,
+     66,
+     -42
+    ],
+    "block": "air"
+   },
+   {
+    "op": "fill",
+    "from": [
+     102,
+     64,
+     -41
+    ],
+    "to": [
+     103,
+     64,
+     -41
+    ],
+    "block": "smooth_stone"
+   },
+   {
+    "op": "fill",
+    "from": [
+     102,
+     65,
+     -41
+    ],
+    "to": [
+     102,
+     65,
+     -41
+    ],
+    "block": "spruce_door[facing=south,half=lower,hinge=right,open=false,powered=false]"
+   },
+   {
+    "op": "fill",
+    "from": [
+     102,
+     66,
+     -41
+    ],
+    "to": [
+     102,
+     66,
+     -41
+    ],
+    "block": "spruce_door[facing=south,half=upper,hinge=right,open=false,powered=false]"
+   },
+   {
+    "op": "fill",
+    "from": [
+     103,
+     65,
+     -41
+    ],
+    "to": [
+     103,
+     65,
+     -41
+    ],
+    "block": "spruce_door[facing=south,half=lower,hinge=left,open=false,powered=false]"
+   },
+   {
+    "op": "fill",
+    "from": [
+     103,
+     66,
+     -41
+    ],
+    "to": [
+     103,
+     66,
+     -41
+    ],
+    "block": "spruce_door[facing=south,half=upper,hinge=left,open=false,powered=false]"
+   },
+   {
+    "op": "fill",
+    "from": [
+     102,
+     64,
+     12
+    ],
+    "to": [
+     103,
+     64,
+     12
+    ],
+    "block": "spruce_stairs[facing=north,half=bottom,shape=straight,waterlogged=false]"
+   },
+   {
+    "op": "fill",
+    "from": [
+     102,
+     65,
+     12
+    ],
+    "to": [
+     103,
+     66,
+     12
+    ],
+    "block": "air"
+   },
+   {
+    "op": "fill",
+    "from": [
+     102,
+     64,
+     11
+    ],
+    "to": [
+     103,
+     64,
+     11
+    ],
+    "block": "smooth_stone"
+   },
+   {
+    "op": "fill",
+    "from": [
+     102,
+     65,
+     11
+    ],
+    "to": [
+     103,
+     66,
+     11
+    ],
+    "block": "air"
+   },
+   {
+    "op": "fill",
+    "from": [
+     102,
+     64,
+     10
+    ],
+    "to": [
+     103,
+     64,
+     10
+    ],
+    "block": "smooth_stone"
+   },
+   {
+    "op": "fill",
+    "from": [
+     102,
+     65,
+     10
+    ],
+    "to": [
+     102,
+     65,
+     10
+    ],
+    "block": "spruce_door[facing=north,half=lower,hinge=left,open=false,powered=false]"
+   },
+   {
+    "op": "fill",
+    "from": [
+     102,
+     66,
+     10
+    ],
+    "to": [
+     102,
+     66,
+     10
+    ],
+    "block": "spruce_door[facing=north,half=upper,hinge=left,open=false,powered=false]"
+   },
+   {
+    "op": "fill",
+    "from": [
+     103,
+     65,
+     10
+    ],
+    "to": [
+     103,
+     65,
+     10
+    ],
+    "block": "spruce_door[facing=north,half=lower,hinge=right,open=false,powered=false]"
+   },
+   {
+    "op": "fill",
+    "from": [
+     103,
+     66,
+     10
+    ],
+    "to": [
+     103,
+     66,
+     10
+    ],
+    "block": "spruce_door[facing=north,half=upper,hinge=right,open=false,powered=false]"
+   },
+   {
+    "op": "fill",
+    "from": [
+     118,
+     65,
+     -15
+    ],
+    "to": [
+     126,
+     66,
+     -12
+    ],
+    "block": "air"
+   },
+   {
+    "op": "fill",
+    "from": [
+     128,
+     64,
+     -15
+    ],
+    "to": [
+     128,
+     64,
+     -12
+    ],
+    "block": "smooth_quartz_stairs[facing=west,half=bottom,shape=straight,waterlogged=false]"
+   },
+   {
+    "op": "fill",
+    "from": [
+     128,
+     65,
+     -15
+    ],
+    "to": [
+     128,
+     66,
+     -12
+    ],
+    "block": "air"
+   },
+   {
+    "op": "fill",
+    "from": [
+     127,
+     65,
+     -15
+    ],
+    "to": [
+     127,
+     65,
+     -15
+    ],
+    "block": "dark_oak_door[facing=west,half=lower,hinge=right,open=false,powered=false]"
+   },
+   {
+    "op": "fill",
+    "from": [
+     127,
+     66,
+     -15
+    ],
+    "to": [
+     127,
+     66,
+     -15
+    ],
+    "block": "dark_oak_door[facing=west,half=upper,hinge=right,open=false,powered=false]"
+   },
+   {
+    "op": "fill",
+    "from": [
+     127,
+     65,
+     -14
+    ],
+    "to": [
+     127,
+     65,
+     -14
+    ],
+    "block": "dark_oak_door[facing=west,half=lower,hinge=left,open=false,powered=false]"
+   },
+   {
+    "op": "fill",
+    "from": [
+     127,
+     66,
+     -14
+    ],
+    "to": [
+     127,
+     66,
+     -14
+    ],
+    "block": "dark_oak_door[facing=west,half=upper,hinge=left,open=false,powered=false]"
+   },
+   {
+    "op": "fill",
+    "from": [
+     127,
+     65,
+     -13
+    ],
+    "to": [
+     127,
+     65,
+     -13
+    ],
+    "block": "dark_oak_door[facing=west,half=lower,hinge=right,open=false,powered=false]"
+   },
+   {
+    "op": "fill",
+    "from": [
+     127,
+     66,
+     -13
+    ],
+    "to": [
+     127,
+     66,
+     -13
+    ],
+    "block": "dark_oak_door[facing=west,half=upper,hinge=right,open=false,powered=false]"
+   },
+   {
+    "op": "fill",
+    "from": [
+     127,
+     65,
+     -12
+    ],
+    "to": [
+     127,
+     65,
+     -12
+    ],
+    "block": "dark_oak_door[facing=west,half=lower,hinge=left,open=false,powered=false]"
+   },
+   {
+    "op": "fill",
+    "from": [
+     127,
+     66,
+     -12
+    ],
+    "to": [
+     127,
+     66,
+     -12
+    ],
+    "block": "dark_oak_door[facing=west,half=upper,hinge=left,open=false,powered=false]"
+   }
+  ]
+ },
+ {
+  "why": "宿舍（issue #1：没有大门）：一栋南面、二栋南面、三栋北面、四栋南面各开正门（3D 版“学生公寓 X栋”牌子下面；一栋没有牌子，开在朝院子的南面中间），双开门，门里的门斗清空（三栋原来的门后面一格就是玻璃，进不去）",
+  "ops": [
+   {
+    "op": "fill",
+    "from": [
+     184,
+     64,
+     56
+    ],
+    "to": [
+     187,
+     64,
+     56
+    ],
+    "block": "air"
+   },
+   {
+    "op": "fill",
+    "from": [
+     184,
+     64,
+     54
+    ],
+    "to": [
+     187,
+     65,
+     54
+    ],
+    "block": "air"
+   },
+   {
+    "op": "fill",
+    "from": [
+     184,
+     66,
+     55
+    ],
+    "to": [
+     187,
+     66,
+     55
+    ],
+    "block": "light_blue_stained_glass"
+   },
+   {
+    "op": "fill",
+    "from": [
+     184,
+     64,
+     55
+    ],
+    "to": [
+     184,
+     64,
+     55
+    ],
+    "block": "birch_door[facing=north,half=lower,hinge=left,open=false,powered=false]"
+   },
+   {
+    "op": "fill",
+    "from": [
+     184,
+     65,
+     55
+    ],
+    "to": [
+     184,
+     65,
+     55
+    ],
+    "block": "birch_door[facing=north,half=upper,hinge=left,open=false,powered=false]"
+   },
+   {
+    "op": "fill",
+    "from": [
+     185,
+     64,
+     55
+    ],
+    "to": [
+     185,
+     64,
+     55
+    ],
+    "block": "birch_door[facing=north,half=lower,hinge=right,open=false,powered=false]"
+   },
+   {
+    "op": "fill",
+    "from": [
+     185,
+     65,
+     55
+    ],
+    "to": [
+     185,
+     65,
+     55
+    ],
+    "block": "birch_door[facing=north,half=upper,hinge=right,open=false,powered=false]"
+   },
+   {
+    "op": "fill",
+    "from": [
+     186,
+     64,
+     55
+    ],
+    "to": [
+     186,
+     64,
+     55
+    ],
+    "block": "birch_door[facing=north,half=lower,hinge=left,open=false,powered=false]"
+   },
+   {
+    "op": "fill",
+    "from": [
+     186,
+     65,
+     55
+    ],
+    "to": [
+     186,
+     65,
+     55
+    ],
+    "block": "birch_door[facing=north,half=upper,hinge=left,open=false,powered=false]"
+   },
+   {
+    "op": "fill",
+    "from": [
+     187,
+     64,
+     55
+    ],
+    "to": [
+     187,
+     64,
+     55
+    ],
+    "block": "birch_door[facing=north,half=lower,hinge=right,open=false,powered=false]"
+   },
+   {
+    "op": "fill",
+    "from": [
+     187,
+     65,
+     55
+    ],
+    "to": [
+     187,
+     65,
+     55
+    ],
+    "block": "birch_door[facing=north,half=upper,hinge=right,open=false,powered=false]"
+   },
+   {
+    "op": "fill",
+    "from": [
+     185,
+     64,
+     77
+    ],
+    "to": [
+     186,
+     66,
+     77
+    ],
+    "block": "air"
+   },
+   {
+    "op": "fill",
+    "from": [
+     185,
+     64,
+     76
+    ],
+    "to": [
+     185,
+     64,
+     76
+    ],
+    "block": "birch_door[facing=south,half=lower,hinge=right,open=false,powered=false]"
+   },
+   {
+    "op": "fill",
+    "from": [
+     185,
+     65,
+     76
+    ],
+    "to": [
+     185,
+     65,
+     76
+    ],
+    "block": "birch_door[facing=south,half=upper,hinge=right,open=false,powered=false]"
+   },
+   {
+    "op": "fill",
+    "from": [
+     186,
+     64,
+     76
+    ],
+    "to": [
+     186,
+     64,
+     76
+    ],
+    "block": "birch_door[facing=south,half=lower,hinge=left,open=false,powered=false]"
+   },
+   {
+    "op": "fill",
+    "from": [
+     186,
+     65,
+     76
+    ],
+    "to": [
+     186,
+     65,
+     76
+    ],
+    "block": "birch_door[facing=south,half=upper,hinge=left,open=false,powered=false]"
+   },
+   {
+    "op": "fill",
+    "from": [
+     180,
+     64,
+     110
+    ],
+    "to": [
+     183,
+     65,
+     110
+    ],
+    "block": "air"
+   },
+   {
+    "op": "fill",
+    "from": [
+     180,
+     64,
+     111
+    ],
+    "to": [
+     180,
+     64,
+     111
+    ],
+    "block": "birch_door[facing=north,half=lower,hinge=left,open=false,powered=false]"
+   },
+   {
+    "op": "fill",
+    "from": [
+     180,
+     65,
+     111
+    ],
+    "to": [
+     180,
+     65,
+     111
+    ],
+    "block": "birch_door[facing=north,half=upper,hinge=left,open=false,powered=false]"
+   },
+   {
+    "op": "fill",
+    "from": [
+     181,
+     64,
+     111
+    ],
+    "to": [
+     181,
+     64,
+     111
+    ],
+    "block": "birch_door[facing=north,half=lower,hinge=right,open=false,powered=false]"
+   },
+   {
+    "op": "fill",
+    "from": [
+     181,
+     65,
+     111
+    ],
+    "to": [
+     181,
+     65,
+     111
+    ],
+    "block": "birch_door[facing=north,half=upper,hinge=right,open=false,powered=false]"
+   },
+   {
+    "op": "fill",
+    "from": [
+     182,
+     64,
+     111
+    ],
+    "to": [
+     182,
+     64,
+     111
+    ],
+    "block": "birch_door[facing=north,half=lower,hinge=left,open=false,powered=false]"
+   },
+   {
+    "op": "fill",
+    "from": [
+     182,
+     65,
+     111
+    ],
+    "to": [
+     182,
+     65,
+     111
+    ],
+    "block": "birch_door[facing=north,half=upper,hinge=left,open=false,powered=false]"
+   },
+   {
+    "op": "fill",
+    "from": [
+     183,
+     64,
+     111
+    ],
+    "to": [
+     183,
+     64,
+     111
+    ],
+    "block": "birch_door[facing=north,half=lower,hinge=right,open=false,powered=false]"
+   },
+   {
+    "op": "fill",
+    "from": [
+     183,
+     65,
+     111
+    ],
+    "to": [
+     183,
+     65,
+     111
+    ],
+    "block": "birch_door[facing=north,half=upper,hinge=right,open=false,powered=false]"
+   },
+   {
+    "op": "fill",
+    "from": [
+     186,
+     64,
+     31
+    ],
+    "to": [
+     187,
+     65,
+     31
+    ],
+    "block": "air"
+   },
+   {
+    "op": "fill",
+    "from": [
+     186,
+     64,
+     32
+    ],
+    "to": [
+     186,
+     64,
+     32
+    ],
+    "block": "birch_door[facing=north,half=lower,hinge=left,open=false,powered=false]"
+   },
+   {
+    "op": "fill",
+    "from": [
+     186,
+     65,
+     32
+    ],
+    "to": [
+     186,
+     65,
+     32
+    ],
+    "block": "birch_door[facing=north,half=upper,hinge=left,open=false,powered=false]"
+   },
+   {
+    "op": "fill",
+    "from": [
+     187,
+     64,
+     32
+    ],
+    "to": [
+     187,
+     64,
+     32
+    ],
+    "block": "birch_door[facing=north,half=lower,hinge=right,open=false,powered=false]"
+   },
+   {
+    "op": "fill",
+    "from": [
+     187,
+     65,
+     32
+    ],
+    "to": [
+     187,
+     65,
+     32
+    ],
+    "block": "birch_door[facing=north,half=upper,hinge=right,open=false,powered=false]"
+   }
+  ]
+ },
+ {
+  "why": "南山楼（两栋教学楼之间、挂校名的那栋；issue #1：和高一楼、高二楼没连上）：楼里的楼面按两栋教学楼的层高铺齐（二、三、四楼和屋顶），二、三、四楼各有一条带玻璃的连廊：北边从高一楼的外廊过来，南边接到高二楼东头的楼梯间",
+  "ops": [
+   {
+    "op": "floor",
+    "from": [
+     246,
+     71,
+     -102
+    ],
+    "to": [
+     256,
+     71,
+     -85
+    ],
+    "block": "smooth_quartz"
+   },
+   {
+    "op": "floor",
+    "from": [
+     246,
+     75,
+     -102
+    ],
+    "to": [
+     256,
+     75,
+     -85
+    ],
+    "block": "smooth_quartz"
+   },
+   {
+    "op": "floor",
+    "from": [
+     246,
+     79,
+     -102
+    ],
+    "to": [
+     256,
+     79,
+     -85
+    ],
+    "block": "smooth_quartz"
+   },
+   {
+    "op": "floor",
+    "from": [
+     246,
+     67,
+     -102
+    ],
+    "to": [
+     256,
+     67,
+     -85
+    ],
+    "block": "smooth_quartz"
+   },
+   {
+    "op": "clear_slabs",
+    "from": [
+     246,
+     78,
+     -102
+    ],
+    "to": [
+     256,
+     78,
+     -85
+    ]
+   },
+   {
+    "op": "fill",
+    "from": [
+     249,
+     67,
+     -106
+    ],
+    "to": [
+     251,
+     67,
+     -104
+    ],
+    "block": "smooth_quartz"
+   },
+   {
+    "op": "fill",
+    "from": [
+     249,
+     68,
+     -107
+    ],
+    "to": [
+     251,
+     69,
+     -103
+    ],
+    "block": "air"
+   },
+   {
+    "op": "fill",
+    "from": [
+     248,
+     68,
+     -106
+    ],
+    "to": [
+     248,
+     69,
+     -104
+    ],
+    "block": "light_gray_stained_glass_pane[east=false,north=true,south=true,waterlogged=false,west=false]"
+   },
+   {
+    "op": "fill",
+    "from": [
+     252,
+     68,
+     -106
+    ],
+    "to": [
+     252,
+     69,
+     -104
+    ],
+    "block": "light_gray_stained_glass_pane[east=false,north=true,south=true,waterlogged=false,west=false]"
+   },
+   {
+    "op": "fill",
+    "from": [
+     248,
+     70,
+     -106
+    ],
+    "to": [
+     252,
+     70,
+     -104
+    ],
+    "block": "smooth_quartz"
+   },
+   {
+    "op": "fill",
+    "from": [
+     247,
+     67,
+     -83
+    ],
+    "to": [
+     248,
+     67,
+     -81
+    ],
+    "block": "smooth_quartz"
+   },
+   {
+    "op": "fill",
+    "from": [
+     247,
+     68,
+     -84
+    ],
+    "to": [
+     248,
+     69,
+     -80
+    ],
+    "block": "air"
+   },
+   {
+    "op": "fill",
+    "from": [
+     246,
+     68,
+     -83
+    ],
+    "to": [
+     246,
+     69,
+     -81
+    ],
+    "block": "light_gray_stained_glass_pane[east=false,north=true,south=true,waterlogged=false,west=false]"
+   },
+   {
+    "op": "fill",
+    "from": [
+     249,
+     68,
+     -83
+    ],
+    "to": [
+     249,
+     69,
+     -81
+    ],
+    "block": "light_gray_stained_glass_pane[east=false,north=true,south=true,waterlogged=false,west=false]"
+   },
+   {
+    "op": "fill",
+    "from": [
+     246,
+     70,
+     -83
+    ],
+    "to": [
+     249,
+     70,
+     -81
+    ],
+    "block": "smooth_quartz"
+   },
+   {
+    "op": "fill",
+    "from": [
+     249,
+     71,
+     -106
+    ],
+    "to": [
+     251,
+     71,
+     -104
+    ],
+    "block": "smooth_quartz"
+   },
+   {
+    "op": "fill",
+    "from": [
+     249,
+     72,
+     -107
+    ],
+    "to": [
+     251,
+     73,
+     -103
+    ],
+    "block": "air"
+   },
+   {
+    "op": "fill",
+    "from": [
+     248,
+     72,
+     -106
+    ],
+    "to": [
+     248,
+     73,
+     -104
+    ],
+    "block": "light_gray_stained_glass_pane[east=false,north=true,south=true,waterlogged=false,west=false]"
+   },
+   {
+    "op": "fill",
+    "from": [
+     252,
+     72,
+     -106
+    ],
+    "to": [
+     252,
+     73,
+     -104
+    ],
+    "block": "light_gray_stained_glass_pane[east=false,north=true,south=true,waterlogged=false,west=false]"
+   },
+   {
+    "op": "fill",
+    "from": [
+     248,
+     74,
+     -106
+    ],
+    "to": [
+     252,
+     74,
+     -104
+    ],
+    "block": "smooth_quartz"
+   },
+   {
+    "op": "fill",
+    "from": [
+     247,
+     71,
+     -83
+    ],
+    "to": [
+     248,
+     71,
+     -81
+    ],
+    "block": "smooth_quartz"
+   },
+   {
+    "op": "fill",
+    "from": [
+     247,
+     72,
+     -84
+    ],
+    "to": [
+     248,
+     73,
+     -80
+    ],
+    "block": "air"
+   },
+   {
+    "op": "fill",
+    "from": [
+     246,
+     72,
+     -83
+    ],
+    "to": [
+     246,
+     73,
+     -81
+    ],
+    "block": "light_gray_stained_glass_pane[east=false,north=true,south=true,waterlogged=false,west=false]"
+   },
+   {
+    "op": "fill",
+    "from": [
+     249,
+     72,
+     -83
+    ],
+    "to": [
+     249,
+     73,
+     -81
+    ],
+    "block": "light_gray_stained_glass_pane[east=false,north=true,south=true,waterlogged=false,west=false]"
+   },
+   {
+    "op": "fill",
+    "from": [
+     246,
+     74,
+     -83
+    ],
+    "to": [
+     249,
+     74,
+     -81
+    ],
+    "block": "smooth_quartz"
+   },
+   {
+    "op": "fill",
+    "from": [
+     249,
+     75,
+     -106
+    ],
+    "to": [
+     251,
+     75,
+     -104
+    ],
+    "block": "smooth_quartz"
+   },
+   {
+    "op": "fill",
+    "from": [
+     249,
+     76,
+     -107
+    ],
+    "to": [
+     251,
+     77,
+     -103
+    ],
+    "block": "air"
+   },
+   {
+    "op": "fill",
+    "from": [
+     248,
+     76,
+     -106
+    ],
+    "to": [
+     248,
+     77,
+     -104
+    ],
+    "block": "light_gray_stained_glass_pane[east=false,north=true,south=true,waterlogged=false,west=false]"
+   },
+   {
+    "op": "fill",
+    "from": [
+     252,
+     76,
+     -106
+    ],
+    "to": [
+     252,
+     77,
+     -104
+    ],
+    "block": "light_gray_stained_glass_pane[east=false,north=true,south=true,waterlogged=false,west=false]"
+   },
+   {
+    "op": "fill",
+    "from": [
+     248,
+     78,
+     -106
+    ],
+    "to": [
+     252,
+     78,
+     -104
+    ],
+    "block": "smooth_quartz"
+   },
+   {
+    "op": "fill",
+    "from": [
+     247,
+     75,
+     -83
+    ],
+    "to": [
+     248,
+     75,
+     -81
+    ],
+    "block": "smooth_quartz"
+   },
+   {
+    "op": "fill",
+    "from": [
+     247,
+     76,
+     -84
+    ],
+    "to": [
+     248,
+     77,
+     -80
+    ],
+    "block": "air"
+   },
+   {
+    "op": "fill",
+    "from": [
+     246,
+     76,
+     -83
+    ],
+    "to": [
+     246,
+     77,
+     -81
+    ],
+    "block": "light_gray_stained_glass_pane[east=false,north=true,south=true,waterlogged=false,west=false]"
+   },
+   {
+    "op": "fill",
+    "from": [
+     249,
+     76,
+     -83
+    ],
+    "to": [
+     249,
+     77,
+     -81
+    ],
+    "block": "light_gray_stained_glass_pane[east=false,north=true,south=true,waterlogged=false,west=false]"
+   },
+   {
+    "op": "fill",
+    "from": [
+     246,
+     78,
+     -83
+    ],
+    "to": [
+     249,
+     78,
+     -81
+    ],
+    "block": "smooth_quartz"
+   }
+  ]
  }
 ]

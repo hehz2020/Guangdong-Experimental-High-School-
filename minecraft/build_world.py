@@ -450,26 +450,36 @@ def hang_doors(states, kinds, PAL, PIDX, opened, X0, Z0, Y0):
 
 def light_rooms(states, kinds, PAL, PIDX, step=6, level=13):
     """Indoor light without fittings: an invisible light block (the game's 'light') under the ceiling of every covered
-    standing place on a grid of step blocks, so that rooms deep inside the buildings are not dark at noon or at night."""
+    standing place on a grid of step blocks, so that rooms deep inside the buildings are not dark at noon or at night.
+    Halls (a ceiling 7 to 30 blocks up: the gym, the canteen's middle, atriums) get theirs 3 blocks above the floor, at
+    full strength and on a grid twice as dense (the same grid and one moved half a step), since a light under such a
+    ceiling would not reach the floor (issue #1: the gym was dark inside)."""
     NY, NZ, NX = states.shape
-    lid = PIDX.get(f'light[level={level},waterlogged=false]')
-    if lid is None:
-        lid = len(PAL); PAL.append(f'light[level={level},waterlogged=false]'); PIDX[PAL[-1]] = lid
+    def light_id(lv):
+        s_ = f'light[level={lv},waterlogged=false]'
+        if s_ not in PIDX: PIDX[s_] = len(PAL); PAL.append(s_)
+        return PIDX[s_]
+    lid, hid = light_id(level), light_id(15)
+    LEAVES = ('oak_leaves', 'jungle_leaves', 'spruce_leaves', 'azalea', 'flowering', 'dark_oak_leaves', 'birch_leaves', 'cherry_leaves', 'mangrove_leaves', 'acacia_leaves')
     air = states == 0
-    n = 0
-    for z in range(0, NZ, step):
-        for x in range(0, NX, step):
-            col = states[:, z, x]
-            y = 1
-            while y < NY - 3:
-                if air[y, z, x] and air[y + 1, z, x] and not air[y - 1, z, x]:
-                    # a standing place: is there a ceiling 2 to 6 blocks up?
-                    top = next((k for k in range(y + 2, min(NY, y + 7)) if not air[k, z, x]), None)
-                    if top is not None and not PAL[col[top]].startswith(('oak_leaves', 'jungle_leaves', 'spruce_leaves', 'azalea', 'flowering', 'dark_oak_leaves')):
-                        states[top - 1, z, x] = lid; kinds[top - 1, z, x] = 0; n += 1
-                        y = top
-                y += 1
-    print(f'invisible lights under ceilings: {n}')
+    n = nh = 0
+    for off in (0, step // 2):
+        for z in range(off, NZ, step):
+            for x in range(off, NX, step):
+                col = states[:, z, x]
+                y = 1
+                while y < NY - 3:
+                    if air[y, z, x] and air[y + 1, z, x] and not air[y - 1, z, x]:
+                        # a standing place: is there a ceiling 2 to 6 blocks up, or a hall's 7 to 30?
+                        top = next((k for k in range(y + 2, min(NY, y + 31)) if not air[k, z, x]), None)
+                        if top is not None and not PAL[col[top]].startswith(LEAVES):
+                            if top - y <= 6:
+                                if off == 0: states[top - 1, z, x] = lid; kinds[top - 1, z, x] = 0; n += 1
+                            else:
+                                states[y + 3, z, x] = hid; kinds[y + 3, z, x] = 0; nh += 1
+                            y = top
+                    y += 1
+    print(f'invisible lights under ceilings: {n}, in halls: {nh}')
 
 
 def place_lamps(states, kinds, PAL, PIDX, lamps, X0, Z0, Y0):
@@ -766,6 +776,103 @@ def seal_water(states, kinds, PAL, PIDX):
                 states[y, zz, xx] = stone; kinds[y, zz, xx] = 4; A[y, zz, xx] = False; n_side += 1
     print(f'water sealed: {n_side} blocks of bank beside it, {n_below} of water under it')
 
+CANTEEN = (28.9, 108.2, 8.8)                      # the round building at the south end of the track: centre x, z and roof radius
+
+def build_canteen(states, kinds, PAL, PIDX, X0, Z0, Y0):
+    """The school canteen (食堂). The real canteen is the round building south of the track (the owner, on issue #1);
+    the 3D campus made it a reading pavilion: a small glazed drum (5.5 m) inside a ring of columns under an 8.8 m roof
+    disc, with a spiral stair the blocks could not keep, so the map had a room far too small for a canteen and no way
+    up. Here the whole disc becomes the building: a round wall of dark glass with twelve white columns and white floor
+    bands, four storeys (standing at y 64, 68, 72, 76, as the 3D's four glazed levels) and the roof; a spiral stair of
+    oak slabs round a white pillar in the middle (where the 3D's spiral stair stood), half a block a step, one turn a
+    storey; on every storey long tables (spruce top slabs) between benches (spruce bottom slabs) in rows, and on the
+    ground floor the serving counters along the south wall with barrels behind them; double doors toward the track
+    (north) and toward the south yard; hanging lanterns. IMAGINED, all of it but the place, the round plan and the four
+    levels: the layout, the furniture, the doors' places, the materials."""
+    NY, NZ, NX = states.shape
+    def sid(s):
+        if s not in PIDX: PIDX[s] = len(PAL); PAL.append(s)
+        return PIDX[s]
+    cx, cz, R = CANTEEN
+    yb = int(math.floor(Y0)) + GROUND_Y
+    def put(x, y, z, block, kind=4):
+        c = (y - yb, z - int(Z0), x - int(X0))
+        if 0 <= c[0] < NY and 0 <= c[1] < NZ and 0 <= c[2] < NX:
+            states[c] = sid(block) if block != 'air' else 0; kinds[c] = kind if block != 'air' else 0
+    S = (64, 68, 72, 76); FLOORS = (67, 71, 75); ROOF = 79
+    px, pz = int(math.floor(cx)), int(math.floor(cz))          # the stair's pillar
+    ring = [(0, -1), (1, -1), (1, 0), (1, 1), (0, 1), (-1, 1), (-1, 0), (-1, -1)]
+    stair = {(px + dx, pz + dz) for dx, dz in ring} | {(px, pz)}
+    cells = {}
+    for z in range(int(cz - R) - 2, int(cz + R) + 3):
+        for x in range(int(cx - R) - 2, int(cx + R) + 3):
+            d = math.hypot(x + 0.5 - cx, z + 0.5 - cz)
+            if d <= R + 0.6: cells[(x, z)] = d
+    # clear the old pavilion (drum, columns, disc, furniture, any leaves that grew in)
+    for (x, z) in cells:
+        for y in range(64, ROOF + 2): put(x, y, z, 'air')
+    wall_r, n_col = R - 0.6, 12
+    inner = {c for c, d in cells.items() if d <= wall_r - 0.5}
+    # the wall: one block thick, every cell outside the floor that touches it along x or z (so it has no gap)
+    wall = {c for c in cells if c not in inner and any((c[0] + dx, c[1] + dz) in inner for dx, dz in ((1, 0), (-1, 0), (0, 1), (0, -1)))}
+    doors = {}
+    for sgn, facing in ((-1, 'south'), (1, 'north')):          # toward the track (north) and the south yard
+        for x in (px, px + 1) if cx - px > 0.5 else (px - 1, px):
+            zs = [c[1] for c in wall if c[0] == x]
+            doors[(x, min(zs) if sgn < 0 else max(zs))] = facing
+    for (x, z), d in cells.items():
+        if (x, z) in wall:
+            col = abs(((math.atan2(z + 0.5 - cz, x + 0.5 - cx) + math.pi) / (2 * math.pi) * n_col) % 1 - 0.5) > 0.4   # twelve white columns
+            for y in range(64, ROOF):
+                if (x, z) in doors and y in (64, 65): continue
+                put(x, y, z, 'white_concrete' if col or y in FLOORS else 'gray_stained_glass')
+            put(x, ROOF, z, 'white_concrete')
+        elif (x, z) in inner:
+            for y in FLOORS:
+                if (x, z) not in stair: put(x, y, z, 'smooth_quartz')
+            put(x, ROOF, z, 'smooth_quartz')
+            put(x, 63, z, 'polished_andesite')
+        elif d <= R + 0.2:
+            put(x, ROOF, z, 'white_concrete')                       # the eave
+    # the doors (double, birch) with the step outside level with the ground
+    RIGHT = {'north': (1, 0), 'east': (0, 1), 'south': (-1, 0), 'west': (0, -1)}
+    for (x, z), facing in doors.items():
+        mate = [(a, b) for (a, b), f in doors.items() if f == facing and (a, b) != (x, z)][0]
+        rx, rz = RIGHT[facing]
+        hinge = 'right' if (x - mate[0]) * rx + (z - mate[1]) * rz > 0 else 'left'
+        put(x, 64, z, f'birch_door[facing={facing},half=lower,hinge={hinge},open=false,powered=false]', 6)
+        put(x, 65, z, f'birch_door[facing={facing},half=upper,hinge={hinge},open=false,powered=false]', 6)
+    # the spiral stair: one turn a storey, half a block a step, round a white pillar
+    for y in range(64, ROOF): put(px, y, pz, 'white_concrete')
+    for s in S[:-1]:
+        for i, (dx, dz) in enumerate(ring):
+            put(px + dx, s + i // 2, pz + dz, f"oak_slab[type={'bottom' if i % 2 == 0 else 'top'},waterlogged=false]", 6)
+    # furniture: rows of bench, table, bench, aisle (east-west), away from the wall, the stair and the doors' paths
+    def free_spot(x, z, d):
+        return not (d > wall_r - 1.6 or (abs(x - px) <= 2 and abs(z - pz) <= 2))
+    n_t = 0
+    for s in S:
+        for (x, z), d in cells.items():
+            if (x, z) not in inner or not free_spot(x, z, d): continue
+            if abs(x + 0.5 - cx) < 1.6: continue                # a north-south aisle from door to door
+            if s == 64 and z + 0.5 - cz > 3.5: continue          # the serving side of the ground floor
+            k = (z - (pz - 1)) % 4
+            if k == 3: continue
+            if (x - px) % 5 == 0: continue                       # breaks in the rows
+            if k == 1: put(x, s, z, 'spruce_slab[type=top,waterlogged=false]', 6); n_t += 1
+            else: put(x, s, z, 'spruce_slab[type=bottom,waterlogged=false]', 6)
+        # lanterns under the ceiling, on a ring
+        for k in range(8):
+            ang = k * math.pi / 4 + math.pi / 8
+            put(int(math.floor(cx + math.cos(ang) * 5)), s + 2, int(math.floor(cz + math.sin(ang) * 5)), 'lantern[hanging=true,waterlogged=false]', 6)
+    # serving counters on the ground floor: a counter ring segment on the south side, barrels behind it
+    for (x, z), d in cells.items():
+        dz_ = z + 0.5 - cz
+        if (x, z) in inner and dz_ > 3.5 and abs(x + 0.5 - cx) >= 1.6:
+            if wall_r - 2.6 < d <= wall_r - 1.6: put(x, 64, z, 'polished_andesite_slab[type=top,waterlogged=false]', 6)
+            elif wall_r - 1.6 < d <= wall_r - 0.6: put(x, 64, z, 'barrel[facing=up,open=false]')
+    print(f'canteen: round, {len(inner)} floor and {len(wall)} wall columns, 4 storeys, {n_t} table blocks, doors at {sorted(doors)}')
+
 def stair_shapes(states, PAL, PIDX):
     """Corner stairs, as the game shapes them when a stair is placed beside another (StairBlock.getStairsShape): every
     stair here was written straight, and the game only reshapes a stair when a neighbour changes, so where two stairs
@@ -817,8 +924,9 @@ def stair_shapes(states, PAL, PIDX):
     print(f'stair corners: {n} of {len(ys)} stairs reshaped')
 
 def apply_fixes(states, kinds, PAL, PIDX, path, X0, Z0, Y0):
-    """Hand-made changes in fixes.json, in game block coordinates, applied last: 'fill' sets a box to one block, 'ladder'
-    puts ladders up a column (facing: the way the ladder faces, away from the wall it hangs on)."""
+    """Hand-made changes in fixes.json, in game block coordinates, applied last: 'fill' sets a box to one block, 'floor'
+    fills only the empty blocks of a box, 'clear_slabs' takes the slabs out of a box, 'ladder' puts ladders up a column
+    (facing: the way the ladder faces, away from the wall it hangs on)."""
     def sid(s):
         if s not in PIDX: PIDX[s] = len(PAL); PAL.append(s)
         return PIDX[s]
@@ -836,6 +944,20 @@ def apply_fixes(states, kinds, PAL, PIDX, path, X0, Z0, Y0):
                             if 0 <= c[0] < NY and 0 <= c[1] < NZ and 0 <= c[2] < NX:
                                 states[c] = 0 if op['block'] == 'air' else sid(op['block'])
                                 kinds[c] = 0 if op['block'] == 'air' else 4; n += 1
+            elif op['op'] in ('floor', 'clear_slabs'):
+                # floor: fill only the empty blocks of a box (a storey's floor round what stands there);
+                # clear_slabs: take the slabs out of a box (a floor at the wrong height)
+                (ax, ay, az), (bx_, by_, bz_) = op['from'], op['to']
+                for y in range(min(ay, by_), max(ay, by_) + 1):
+                    for z in range(min(az, bz_), max(az, bz_) + 1):
+                        for x in range(min(ax, bx_), max(ax, bx_) + 1):
+                            c = (y - yb, z - int(Z0), x - int(X0))
+                            if not (0 <= c[0] < NY and 0 <= c[1] < NZ and 0 <= c[2] < NX): continue
+                            p = PAL[states[c]]
+                            if op['op'] == 'floor' and (p == 'air' or p.startswith('light[')):
+                                states[c] = sid(op['block']); kinds[c] = 4; n += 1
+                            elif op['op'] == 'clear_slabs' and '_slab[' in p:
+                                states[c] = 0; kinds[c] = 0; n += 1
             elif op['op'] == 'ladder':
                 for y in range(op['y0'], op['y1'] + 1):
                     c = (y - yb, op['z'] - int(Z0), op['x'] - int(X0))
@@ -1169,6 +1291,7 @@ def main():
     ap.add_argument('--lamps', default=None, help='lamps.mjs output: the 3D campus lamps, set as lanterns and lamp posts')
     ap.add_argument('--trees', default=None, help='trees.mjs output: the 3D campus trees, grown again as Minecraft trees')
     ap.add_argument('--balustrades', default=None, help="groupcells.mjs output for the canal's balustrade: set as wall blocks")
+    ap.add_argument('--canteen', action='store_true', help='build the canteen in the round building south of the track (issue #1)')
     ap.add_argument('--boards', default=None, help="boards.mjs output: where the lesson boards are, for the classrooms' rows of desks and chairs")
     a = ap.parse_args()
     t0 = time.time()
@@ -1210,6 +1333,7 @@ def main():
     if a.balustrades: place_balustrades(states, kinds, PAL, PIDX, json.load(open(a.balustrades)), X0, Z0, Y0)
     if a.boards: classroom_rows(states, kinds, PAL, PIDX, json.load(open(a.boards, encoding='utf-8'))['cards'], X0, Z0, Y0)
     if a.trees: place_trees(states, kinds, PAL, PIDX, json.load(open(a.trees)), X0, Z0, Y0)
+    if a.canteen: build_canteen(states, kinds, PAL, PIDX, X0, Z0, Y0)
     light_rooms(states, kinds, PAL, PIDX)
     if a.lamps: place_lamps(states, kinds, PAL, PIDX, json.load(open(a.lamps)), X0, Z0, Y0)
     for fx_path in (a.fixes.split(',') if a.fixes else []):
