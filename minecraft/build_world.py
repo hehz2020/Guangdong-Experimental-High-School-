@@ -1045,27 +1045,57 @@ def build_pool_hall(states, kinds, PAL, PIDX, X0, Z0, Y0):
         for z in (dz0, dz0 + 1): put(x0 - 1, 66, z, 'cyan_stained_glass')
     print(f'pool hall: pool {PX1 - PX0 + 1} x {PZ1 - PZ0 + 1} m, 8 lanes; upper floor with {n_c} badminton courts and {n_t} table tennis tables')
 
+WY_GAP = (162, 175)                               # 万有楼: the gap between its wings (blocks x, inclusive)
+
 def wanyou_cells():
-    """Plan of 万有楼: the wings' columns, their galleries' on the plaza side, and the gap between the wings."""
-    body = {(x, z) for x in range(133, 148) for z in range(-132, -100)} | {(x, z) for x in range(148, 161) for z in range(-132, -118)} \
-         | {(x, z) for x in range(177, 189) for z in range(-132, -118)}
-    gallery = {(x, z) for x in range(148, 161) for z in range(-118, -115)} | {(x, z) for x in range(177, 189) for z in range(-118, -115)}
-    gap = {(x, z) for x in range(161, 177) for z in range(-132, -114)}
-    return body, gallery, gap
+    """Plan of 万有楼: the wings' columns ('body'), their galleries on the plaza side, the platform between the wings,
+    the two podium blocks in front of the wings (each with its cheek wall beside the stair), the grand stair and the
+    round steps behind the platform ({column: height in half blocks}), and a margin kept free in front of the stair."""
+    g0, g1 = WY_GAP
+    body = {(x, z) for x in range(133, 148) for z in range(-132, -100)} | {(x, z) for x in range(148, g0) for z in range(-132, -118)} \
+         | {(x, z) for x in range(g1 + 1, 189) for z in range(-132, -118)}
+    gallery = {(x, z) for x in range(148, g0) for z in range(-118, -115)} | {(x, z) for x in range(g1 + 1, 189) for z in range(-118, -115)}
+    platform = {(x, z) for x in range(g0, g1 + 1) for z in range(-132, -115)}
+    podium = ({(x, z) for x in range(g0 - 6, g0 + 3) for z in range(-115, -111)} - {(g0 - 6, -112)}) \
+           | ({(x, z) for x in range(g1 - 2, g1 + 7) for z in range(-115, -111)} - {(g1 + 6, -112)})
+    mid = (g0 + g1 + 1) / 2                                     # the axis of the stairs
+    stair = {}
+    for j in range(1, 8):                                       # rows south of the platform's edge, half a block down each
+        hw = 4 if j <= 4 else j
+        for x in range(int(mid) - hw, int(mid) + hw): stair[(x, -116 + j)] = 8 - j
+    back = {}
+    for z in range(-140, -132):
+        for x in range(int(mid) - 11, int(mid) + 11):
+            d = math.hypot(max(0.0, abs(x + 0.5 - mid) - 3), z + 0.5 + 132)
+            if d < 7: back[(x, z)] = 7 - int(d)
+    margin = {(x, z) for x in range(g0 - 2, g1 + 3) for z in (-108, -107)}
+    return dict(body=body, gallery=gallery, platform=platform, podium=podium, stair=stair, back=back, margin=margin)
 
 def build_wanyou(states, kinds, PAL, PIDX, X0, Z0, Y0):
     """万有楼, the building on the north side of the space-frame plaza (网架广场, 万有广场). The 3D campus has none there
     (a lawn with trees, and a row of columns standing in for it under the canopy's north edge); the satellite image
-    shows buildings against the plaza's north and west sides, and the owner placed 万有楼 there (F4 on the labelled
-    map; the stairs and the bridge are on the plaza's north side). From the owner's two photos of the plaza: two wings
-    of five storeys with open galleries behind stainless railings on the plaza side, red brick on the ground floor and
-    white tiles above; between the wings a gap, with two broad flights of steps rising from the plaza, one to each
-    wing's second-floor gallery; across the gap a bridge with the plaque 万有楼 and another higher up; through the gap
-    trees and the buildings beyond. Built here: the west wing x 133-160 (and a return along the plaza's west side to
-    z -101), the east wing x 177-188 against the white block north-east of the plaza, the gap x 161-176; storeys at
-    y 64, 68, 72, 76, 80 (as the teaching blocks) under a roof at y 83, level with the canopy's; rooms behind a
-    corridor wall, a stairwell in each wing; bridges across the gap at the fourth floor and on the roof.
-    IMAGINED: the exact plan, the rooms, the stairwells, the windows, the doors' places, the materials."""
+    shows buildings against the plaza's north and west sides, with a gap in the north row and a pale half-round
+    apron north of the gap, and the owner placed 万有楼 there (F4 on the labelled map; its stairs on the plaza's north
+    side). Built from the owner's photo of its front (and two of the plaza with a stage in it):
+      - two wings of five storeys; toward the plaza open galleries: white columns, a white band at every floor, a
+        dark red parapet on every storey above the ground (cream at the bays beside the gap), the ground storey an
+        open colonnade; behind the galleries a wall of doors and green windows; the wings' ends toward the gap red
+        brick; a cream cornice;
+      - between the wings a gap of 14 m. In it, one storey up, a platform; on it a red sculpture at the head of the
+        stairs and two planters of palms behind it;
+      - from the plaza one broad flight up to the platform, 8 m wide at the top between two tall red brick cheek
+        walls with white copings, flaring to 14 m at the foot;
+      - beside the stair, in front of each wing, a red brick podium block of one storey (doors and windows in its
+        front, the outer corner cut off) with a railed terrace on its roof, level with the platform and the
+        galleries; through each terrace rise two tall white columns that carry the plaza's canopy;
+      - across the gap a bridge at the fourth floor with a red parapet and the plaque 万有楼 on its white edge, a
+        lighter bridge at the fifth floor, and a white lattice at the roof;
+      - behind the platform round steps down to the lawn (the apron of the satellite image; that it is steps is a
+        guess); under the platform a store room reached from the wings.
+    The wings stand x 133-161 (with a return along the plaza's west side to z -101) and x 176-188, storeys at y 64,
+    68, 72, 76, 80 (as the teaching blocks) under a roof at y 83, level with the canopy's.
+    IMAGINED: the rooms, the stairwells inside the wings, the room under the platform, the west return, the form of
+    the sculpture (a red shape of blocks), the materials; the widths are read off one photo."""
     NY, NZ, NX = states.shape
     def sid(s):
         if s not in PIDX: PIDX[s] = len(PAL); PAL.append(s)
@@ -1075,16 +1105,25 @@ def build_wanyou(states, kinds, PAL, PIDX, X0, Z0, Y0):
         c = (y - yb, z - int(Z0), x - int(X0))
         if 0 <= c[0] < NY and 0 <= c[1] < NZ and 0 <= c[2] < NX:
             states[c] = sid(block) if block != 'air' else 0; kinds[c] = kind if block != 'air' else 0
+    def door(x, y, z, facing, hinge='left', wood='dark_oak'):
+        put(x, y, z, f'{wood}_door[facing={facing},half=lower,hinge={hinge},open=false,powered=false]', 6)
+        put(x, y + 1, z, f'{wood}_door[facing={facing},half=upper,hinge={hinge},open=false,powered=false]', 6)
     S = (64, 68, 72, 76, 80); ROOF = 83
-    body, gallery, gap = wanyou_cells()
+    g0, g1 = WY_GAP
+    C = wanyou_cells()
+    body, gallery, platform, podium, stair, back = C['body'], C['gallery'], C['platform'], C['podium'], C['stair'], C['back']
     F = body | gallery
-    # clear the lawn, trees and lamps where the building and the gap stand
-    for (x, z) in F | gap:
-        for y in range(64, ROOF + 4): put(x, y, z, 'air')
+    BARS_X = 'iron_bars[east=true,north=false,south=false,waterlogged=false,west=true]'
+    BARS_Z = 'iron_bars[east=false,north=true,south=true,waterlogged=false,west=false]'
+    # clear the lawn, the trees, and under the canopy's edge its stand-in columns, the notice board and the benches
+    # (the canopy's own frame, from y 81 up, stays)
+    for (x, z) in F | platform | podium | set(stair) | set(back) | {(x, z) for x in range(149, 189) for z in range(-115, -109)}:
+        for y in range(64, 81 if z >= -115 else ROOF + 4): put(x, y, z, 'air')
     outside = lambda c: c not in F
     ext = {c for c in body if any(outside((c[0] + dx, c[1] + dz)) for dx, dz in N4)}
     corr = {c for c in body - ext if any((c[0] + dx, c[1] + dz) in gallery for dx, dz in N4)}
     rail = {c for c in gallery if outside((c[0], c[1] + 1))}
+    COLS = (151, 156, g0 - 1, g1 + 1, 181, 186)                 # the galleries' columns
     PART_X = (151,)                                             # a room partition (along z) in the west wing
     # stairwells: a switchback in a 2-wide, 6-long shaft; runs along x, landings at both ends
     wells = [(135, -131), (179, -131)]                          # (x of the first landing, z of the first row)
@@ -1098,65 +1137,96 @@ def build_wanyou(states, kinds, PAL, PIDX, X0, Z0, Y0):
                 steps[(x, s + i, row)] = f'smooth_quartz_stairs[facing={facing},half=bottom,shape=straight,waterlogged=false]'
             for x in xs[0:3]: holes.add((x, s + 3, row))        # the floor above the run is open (head room)
     well_cells = {(wx + i, wz + j) for wx, wz in wells for i in range(6) for j in range(2)}
-    def door(x, y, z, facing, hinge='left', wood='dark_oak'):
-        put(x, y, z, f'{wood}_door[facing={facing},half=lower,hinge={hinge},open=false,powered=false]', 6)
-        put(x, y + 1, z, f'{wood}_door[facing={facing},half=upper,hinge={hinge},open=false,powered=false]', 6)
     for si, s in enumerate(S):
         fy = s - 1
         for (x, z) in F:
             if (x, fy, z) in holes: put(x, fy, z, 'air'); continue
             if fy == 63: put(x, fy, z, 'polished_andesite' if (x, z) in body else 'smooth_stone')
-            else: put(x, fy, z, 'smooth_sandstone' if (x, z) in ext or (x, z) in rail else 'polished_diorite')
+            else: put(x, fy, z, 'smooth_quartz' if (x, z) in rail else 'smooth_sandstone' if (x, z) in ext else 'polished_diorite')
         for (x, z) in F:
             for y in range(s, s + 3):
                 if (x, z) in ext:
+                    if x in (g0 - 1, g1 + 1) and z < -118: put(x, y, z, 'bricks'); continue       # the ends toward the gap: red brick
                     win = y > s and (x + z) % 3 != 0
                     corner = sum((x + dx, z + dz) in ext for dx, dz in N4) >= 2 and sum(outside((x + dx, z + dz)) for dx, dz in N4) >= 2
-                    if si == 0: put(x, y, z, 'bricks' if not (win and not corner) else 'glass')
-                    else: put(x, y, z, 'white_concrete' if not (win and not corner) else 'glass')
+                    put(x, y, z, 'glass' if win and not corner else 'bricks' if si == 0 else 'white_concrete')
                 elif (x, z) in corr:
-                    put(x, y, z, 'white_concrete' if (y == s or (x % 4) not in (1, 2)) else 'glass')
+                    put(x, y, z, ('bricks' if si == 0 else 'white_concrete') if (y == s or (x % 4) not in (1, 2)) else 'cyan_stained_glass')
                 elif (x, z) in rail:
-                    if si == 0: put(x, y, z, 'bricks' if not (y > s and x % 4 in (1, 2)) else 'glass')
-                    elif y == s: put(x, y, z, 'iron_bars[east=true,north=false,south=false,waterlogged=false,west=true]')
+                    if x in COLS: put(x, y, z, 'white_concrete')                                  # a column, full height
+                    elif si > 0 and y == s:
+                        on_terrace = si == 1 and (g0 - 6 <= x < g0 or g1 < x <= g1 + 6)           # the podiums' terraces join the gallery
+                        if not on_terrace: put(x, y, z, 'smooth_sandstone' if (g0 - 4 <= x < g0 or g1 < x <= g1 + 4) else 'red_terracotta')
                 elif (x, z) in body and x in PART_X and (x, z) not in well_cells:
                     put(x, y, z, 'white_concrete')
         # room doors in the corridor wall, one per room; the gallery's door into the west return
         for (x, z) in corr:
-            if x in (155, 180, 186) or (x == 147 and z == -117):
+            if x in (150, 155, 159, 180, 186) or (x == 147 and z == -117):
                 if x == 147: door(x, s, z, 'west', 'left', 'oak')
                 else: door(x, s, z, 'north', 'left', 'oak')
         if si == 0:
-            # ground floor: double doors from the plaza into each wing, and from the gap
-            for x in (153, 154): door(x, s, -116, 'north', 'left' if x == 153 else 'right')
-            for x in (182, 183): door(x, s, -116, 'north', 'left' if x == 182 else 'right')
             door(147, s, -108, 'west', 'left')                  # the west return's door on the plaza
-            door(160, s, -125, 'west', 'left'); door(177, s, -125, 'east', 'left')
+            door(g0 - 1, s, -125, 'west', 'left'); door(g1 + 1, s, -125, 'east', 'left')        # into the room under the platform
+        if si == 2:                                             # the third storey's gallery ends in a cream balcony over the gap
+            for x in (g0, g1):
+                for z in (-118, -117, -116): put(x, fy, z, 'smooth_sandstone'); put(x, s, z, 'smooth_sandstone')
     for (x, y, z), st_ in steps.items(): put(x, y, z, st_, 6)
-    # roof, parapet
+    # roof and its cream cornice
     for (x, z) in F:
         put(x, ROOF, z, 'smooth_stone')
-        if any(outside((x + dx, z + dz)) for dx, dz in N4): put(x, ROOF + 1, z, 'white_concrete')
-    # the two flights from the plaza (y 64) to the second-floor galleries (y 68): two blocks wide, toward each wing,
-    # landing on a deck that joins the gallery's end
-    for z in (-116, -115):
-        for i, x in enumerate((168, 167, 166, 165)):
-            put(x, 64 + i, z, 'smooth_quartz_stairs[facing=west,half=bottom,shape=straight,waterlogged=false]', 6)
-        for i, x in enumerate((170, 171, 172, 173)):
-            put(x, 64 + i, z, 'smooth_quartz_stairs[facing=east,half=bottom,shape=straight,waterlogged=false]', 6)
-    for x in list(range(161, 165)) + list(range(174, 177)):
-        for z in range(-118, -114): put(x, 67, z, 'smooth_sandstone')
-    for x in list(range(161, 164)) + list(range(175, 177)): put(x, 68, -115, 'iron_bars[east=true,north=false,south=false,waterlogged=false,west=true]')
-    # bridges across the gap: the fourth floor (deck y 75, with the plaque on its south face) and the roof (deck y 83)
-    for deck in (75, ROOF):
-        for x in range(161, 177):
-            for z in range(-118, -115):
-                put(x, deck, z, 'smooth_quartz'); put(x, deck - 1, z, 'white_concrete' if z == -116 else 'air')
-            for z in (-118, -116): put(x, deck + 1, z, 'iron_bars[east=true,north=false,south=false,waterlogged=false,west=true]')
-    # paving in the gap and along the front of the wings
-    for (x, z) in gap: put(x, 63, z, 'smooth_stone')
-    for x in range(133, 190): put(x, 63, -115, 'polished_diorite')
-    print(f'万有楼: {len(body)} body and {len(gallery)} gallery columns, 5 storeys, 2 stairwells, 2 flights from the plaza, 2 bridges')
+        if any(outside((x + dx, z + dz)) for dx, dz in N4): put(x, ROOF + 1, z, 'smooth_sandstone')
+    # ---- the platform between the wings, one storey up, and the room under it
+    for (x, z) in platform:
+        put(x, 63, z, 'smooth_stone')
+        put(x, 67, z, 'smooth_quartz' if z in (-116, -132) else 'smooth_stone')
+        if z in (-116, -132):
+            for y in (64, 65, 66): put(x, y, z, 'bricks')
+    for x in range(g0, g1 + 1):                                 # a railing along the back, but for the head of the round steps
+        if back.get((x, -133), 0) < 7: put(x, 68, -132, BARS_X, 7)
+    mx = (g0 + g1) // 2                                         # the sculpture: a red shape at the head of the stairs
+    for dx, dy in ((0, 0), (1, 0), (-1, 1), (0, 1), (1, 1), (2, 1), (-1, 2), (2, 2)): put(mx + dx, 68 + dy, -118, 'red_concrete')
+    for px_ in (g0 + 2, g1 - 3):                                # two planters of palms behind it
+        for dx in (0, 1):
+            for dz in (0, 1):
+                put(px_ + dx, 68, -122 + dz, 'smooth_quartz'); put(px_ + dx, 69, -122 + dz, 'jungle_leaves[distance=1,persistent=true,waterlogged=false]', 5)
+        put(px_, 70, -122, 'jungle_leaves[distance=1,persistent=true,waterlogged=false]', 5)
+    # ---- the podium blocks with their terraces, and the cheek walls beside the stair
+    for (x, z) in podium:
+        edge = any((x + dx, z + dz) not in podium for dx, dz in N4)
+        cheek = x in (g0 + 2, g1 - 2)
+        put(x, 63, z, 'smooth_stone')
+        if cheek:
+            for y in range(64, 71): put(x, y, z, 'bricks')
+            put(x, 71, z, 'smooth_quartz_slab[type=bottom,waterlogged=false]', 6)
+            continue
+        if edge:
+            for y in (64, 65, 66): put(x, y, z, 'glass' if y == 65 and z == -112 and x % 2 == 0 else 'bricks')
+        put(x, 67, z, 'smooth_quartz' if edge else 'smooth_stone')
+        if edge and z > -115 and (x, z + 1) not in podium: put(x, 68, z, BARS_X, 7)              # the terrace's railing: front
+        elif edge and z > -115 and ((x - 1, z) not in podium or (x + 1, z) not in podium): put(x, 68, z, BARS_Z, 7)   # and outer side
+    for xa in (g0 - 3, g1 + 3):                                 # the podiums' front doors
+        door(xa, 64, -112, 'north', 'left', 'birch'); door(xa + 1, 64, -112, 'north', 'right', 'birch')
+    for x in (g0 - 5, g0 - 3, g1 + 3, g1 + 5):                  # the tall columns that carry the canopy
+        for y in range(64, 82): put(x, y, -115, 'white_concrete')
+    # ---- the grand stair from the plaza, and the round steps behind the platform: solid, half a block a step
+    for cells in (stair, back):
+        for (x, z), h in cells.items():
+            put(x, 63, z, 'smooth_stone')
+            for y in range(64, 64 + h // 2): put(x, y, z, 'smooth_stone')
+            if h % 2: put(x, 64 + h // 2, z, 'smooth_stone_slab[type=bottom,waterlogged=false]', 6)
+    # ---- across the gap: the fourth floor's bridge (red parapets; the plaque hangs on its white edge), the fifth
+    # floor's (railings), the lattice at the roof
+    for deck, guard in ((75, 'red_terracotta'), (79, BARS_X)):
+        for x in range(g0, g1 + 1):
+            for z in (-118, -117, -116): put(x, deck, z, 'smooth_quartz')
+            for z in (-118, -116): put(x, deck + 1, z, guard, 7 if guard == BARS_X else 4)
+    for x in range(g0, g1 + 1):
+        for z in range(-119, -114):
+            if z in (-119, -115) or x % 2 == 0: put(x, ROOF, z, 'smooth_quartz_slab[type=top,waterlogged=false]', 6)
+    for x in range(133, 190):
+        if (x, -115) not in podium and (x, -115) not in stair: put(x, 63, -115, 'polished_diorite')
+    print(f'万有楼: {len(body)} body and {len(gallery)} gallery columns, 5 storeys; platform {len(platform)}, grand stair {len(stair)}, '
+          f'round steps {len(back)}, podiums {len(podium)} columns; bridges at the 4th and 5th floors, a lattice at the roof')
 
 def stair_shapes(states, PAL, PIDX):
     """Corner stairs, as the game shapes them when a stair is placed beside another (StairBlock.getStairsShape): every
@@ -1621,7 +1691,8 @@ def main():
     if a.boards: classroom_rows(states, kinds, PAL, PIDX, json.load(open(a.boards, encoding='utf-8'))['cards'], X0, Z0, Y0)
     BUILT.clear()
     if a.canteen: disc_, _, _, hall_, canopy_ = canteen_cells(); BUILT.update(set(disc_) | hall_ | canopy_)
-    if a.wanyou: body_, gallery_, gap_ = wanyou_cells(); BUILT.update(body_ | gallery_ | gap_)
+    if a.wanyou:
+        for v in wanyou_cells().values(): BUILT.update(v)
     if a.trees: place_trees(states, kinds, PAL, PIDX, json.load(open(a.trees)), X0, Z0, Y0)
     if a.canteen: build_canteen(states, kinds, PAL, PIDX, X0, Z0, Y0)
     if a.wanyou: build_wanyou(states, kinds, PAL, PIDX, X0, Z0, Y0)

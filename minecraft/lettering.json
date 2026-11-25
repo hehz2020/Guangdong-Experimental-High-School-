@@ -331,7 +331,7 @@
   "where": "万有楼天桥牌匾",
   "pos": [
    169.0,
-   74.12,
+   75.2,
    -114.94
   ],
   "yaw": 0,
@@ -340,7 +340,7 @@
   "background": "#2A2420",
   "alpha": 255,
   "text": "万有楼",
-  "why": "owner's photo: a dark plaque with gold letters on the bridge across the gap on the plaza's north side (build_world.py build_wanyou)"
+  "why": "owner's photo of the front: a dark plaque with gold letters on the white edge of the fourth floor's bridge across the gap (build_world.py build_wanyou)"
  },
  {
   "where": "食堂主楼正门",
