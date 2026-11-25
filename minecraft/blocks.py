@@ -227,7 +227,9 @@ def color_of(block):
              'glowstone': (171, 131, 84), 'lantern': (250, 200, 110), 'oak_wood': (109, 85, 50), 'dark_oak_log': (60, 46, 26), 'shroomlight': (240, 146, 70), 'spruce_log': (58, 37, 16), 'oak_log': (109, 85, 50),
              'jungle_log': (85, 67, 25), 'stripped_birch_log': (196, 176, 118), 'iron_bars': (136, 139, 135),
              'glass_pane': (190, 215, 220), 'red_tulip': (180, 60, 50), 'poppy': (190, 40, 30), 'oxeye_daisy': (220, 225, 210),
-             'azure_bluet': (200, 210, 225), 'dandelion': (230, 200, 40)}
+             'azure_bluet': (200, 210, 225), 'dandelion': (230, 200, 40),
+             'barrel': (134, 100, 58), 'smoker': (84, 82, 78), 'blast_furnace': (80, 80, 82), 'furnace': (110, 110, 110),
+             'water_cauldron': (60, 68, 90), 'cauldron': (72, 72, 74), 'lectern': (162, 131, 79)}
     if block in extra: return extra[block]
     wool = {'white': (234, 236, 237), 'light_gray': (142, 142, 135), 'gray': (63, 68, 72), 'black': (21, 21, 26), 'red': (161, 39, 35),
             'orange': (240, 118, 19), 'yellow': (249, 198, 40), 'lime': (112, 185, 26), 'green': (84, 109, 27), 'cyan': (21, 137, 145),

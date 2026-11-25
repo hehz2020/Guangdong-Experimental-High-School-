@@ -265,7 +265,7 @@
   "color": "#FFFFFF",
   "background": "#1A2430",
   "alpha": 200,
-  "text": "广东实验中学（荔湾校区）\nMinecraft 地图 · 1:1，一格 = 1 米\n← 左边公告栏：全校地图\n—— 传送 ——\n校门外　/tp 262 64 -20\n网架广场　/tp 170 64 -81\n万有楼　/tp 169 64 -100\n钟楼顶　/tp 192 96 -69\n操场　/tp 0 64 0\n体育馆　/tp 83 65 -14\n食堂　/tp 29 64 96\n二层教室　/tp 215 68 -114\n楼梯塔敞廊　/tp 260 80 -114\n图书馆　/tp 195 65 -197\n圆顶楼露台　/tp 220 77 -175\n宿舍区　/tp 190 64 60\n升旗台　/tp 64 64 -53\n河涌边　/tp 280 64 -10"
+  "text": "广东实验中学（荔湾校区）\nMinecraft 地图 · 1:1，一格 = 1 米\n← 左边公告栏：全校地图\n—— 传送 ——\n校门外　/tp 262 64 -20\n网架广场　/tp 170 64 -81\n万有楼　/tp 169 64 -100\n钟楼顶　/tp 192 96 -69\n操场　/tp 0 64 0\n体育馆　/tp 83 65 -14\n食堂　/tp 29 64 96\n游泳馆　/tp -86 64 -54\n羽毛球馆　/tp -90 71 -15\n二层教室　/tp 215 68 -114\n楼梯塔敞廊　/tp 260 80 -114\n图书馆　/tp 195 65 -197\n圆顶楼露台　/tp 220 77 -175\n宿舍区　/tp 190 64 60\n升旗台　/tp 64 64 -53\n河涌边　/tp 280 64 -10"
  },
  {
   "where": "体育馆东面正门",
@@ -341,5 +341,125 @@
   "alpha": 255,
   "text": "万有楼",
   "why": "owner's photo: a dark plaque with gold letters on the bridge across the gap on the plaza's north side (build_world.py build_wanyou)"
+ },
+ {
+  "where": "食堂主楼正门",
+  "pos": [
+   16.0,
+   66.15,
+   101.94
+  ],
+  "yaw": 180,
+  "scale": 1.4,
+  "color": "#FFFFFF",
+  "background": "#B3261E",
+  "alpha": 255,
+  "text": "学生食堂",
+  "why": "v32：食堂主楼（build_world.py build_canteen）玻璃雨棚下的正门"
+ },
+ {
+  "where": "食堂一楼打饭窗口",
+  "pos": [
+   10.0,
+   66.3,
+   121.94
+  ],
+  "yaw": 180,
+  "scale": 1.5,
+  "color": "#B3261E",
+  "background": "#F4F1E8",
+  "alpha": 255,
+  "text": "一楼 · 打饭窗口",
+  "why": "v32：食堂主楼一楼，窗口墙上方"
+ },
+ {
+  "where": "食堂二楼小炒",
+  "pos": [
+   10.0,
+   70.3,
+   121.94
+  ],
+  "yaw": 180,
+  "scale": 1.5,
+  "color": "#B3261E",
+  "background": "#F4F1E8",
+  "alpha": 255,
+  "text": "二楼 · 小炒",
+  "why": "v32：校友在全景上的留言“二楼小炒”"
+ },
+ {
+  "where": "食堂三楼",
+  "pos": [
+   10.0,
+   74.3,
+   121.94
+  ],
+  "yaw": 180,
+  "scale": 1.5,
+  "color": "#B3261E",
+  "background": "#F4F1E8",
+  "alpha": 255,
+  "text": "三楼餐厅",
+  "why": "v32：校友在全景上的留言“饭堂三楼”"
+ },
+ {
+  "where": "游泳馆北门",
+  "pos": [
+   -86.0,
+   66.15,
+   -51.06
+  ],
+  "yaw": 180,
+  "scale": 1.6,
+  "color": "#FFFFFF",
+  "background": "#B3261E",
+  "alpha": 255,
+  "text": "游泳馆",
+  "why": "v32：操场西边看台后面的体育馆，低层是游泳池（校友说的；build_world.py build_pool_hall）"
+ },
+ {
+  "where": "游泳馆东门",
+  "pos": [
+   -70.94,
+   66.15,
+   -44.0
+  ],
+  "yaw": -90,
+  "scale": 1.4,
+  "color": "#FFFFFF",
+  "background": "#B3261E",
+  "alpha": 255,
+  "text": "游泳馆",
+  "why": "v32：朝看台后面通道的门"
+ },
+ {
+  "where": "游泳馆池边",
+  "pos": [
+   -86.0,
+   67.0,
+   -49.94
+  ],
+  "yaw": 0,
+  "scale": 3.0,
+  "color": "#FFFFFF",
+  "background": "#1F5FA8",
+  "alpha": 255,
+  "text": "游泳馆",
+  "why": "v32：池边北墙上"
+ },
+ {
+  "where": "羽毛球馆乒乓球馆",
+  "pos": [
+   -86.0,
+   74.0,
+   6.94
+  ],
+  "yaw": 180,
+  "scale": 3.0,
+  "color": "#FFFFFF",
+  "background": "#1F7A4A",
+  "alpha": 255,
+  "text": "羽毛球馆 · 乒乓球馆",
+  "why": "v32：顶层南墙上（校友说的：顶层是羽毛球场和乒乓球场）"
  }
 ]

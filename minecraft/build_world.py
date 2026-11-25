@@ -521,6 +521,7 @@ def place_lamps(states, kinds, PAL, PIDX, lamps, X0, Z0, Y0):
         bx, bz = int(math.floor(x - X0)), int(math.floor(z - Z0))
         hb = int(math.floor(y - Y0))
         if not (0 <= bx < NX and 0 <= bz < NZ and g0 <= hb < NY - 1): n['outside'] += 1; continue
+        if (int(math.floor(x)), int(math.floor(z))) in BUILT: n['where a building is built'] = n.get('where a building is built', 0) + 1; continue
         if r < 1.5: n['small'] += 1; continue
         near = states[max(0, hb - 1):hb + 2, max(0, bz - 1):bz + 2, max(0, bx - 1):bx + 2]
         if np.isin(near, list(lit)).any(): n['already lit'] += 1; continue
@@ -643,6 +644,7 @@ def place_trees(states, kinds, PAL, PIDX, trees, X0, Z0, Y0):
     oak_log, oak_wood = sid('oak_log[axis=y]'), {a: sid(f'oak_wood[axis={a}]') for a in 'xyz'}
     for ti, t in enumerate(trees):
         fx, fy, fz = t['foot']
+        if (int(math.floor(fx)), int(math.floor(fz))) in BUILT: n['where a building is built'] = n.get('where a building is built', 0) + 1; continue
         r0 = rowf(fy + 0.01)
         if t['k'] == 'b':
             leaf = sid(('dark_oak_leaves' if t.get('hue') == 86 else 'oak_leaves') + '[distance=1,persistent=true,waterlogged=false]')
@@ -776,102 +778,280 @@ def seal_water(states, kinds, PAL, PIDX):
                 states[y, zz, xx] = stone; kinds[y, zz, xx] = 4; A[y, zz, xx] = False; n_side += 1
     print(f'water sealed: {n_side} blocks of bank beside it, {n_below} of water under it')
 
-CANTEEN = (28.9, 108.2, 8.8)                      # the round building at the south end of the track: centre x, z and roof radius
+CANTEEN = (28.9, 108.2, 8.8)                      # the canteen's rotunda at the south end of the track: centre x, z and roof radius
+CANTEEN_HALL = (0, 28, 102, 130)                  # the canteen's main building behind it: x0, x1, z0, z1 (blocks, inclusive)
+CANTEEN_BAY = (9.5, 102.0, 5.2)                   # the half-round bay on its north face: centre x, z and radius
+POOL_HALL = (-99, -73, -50, 6)                    # inside of the hall under the big roof west of the stand: x0, x1, z0, z1
+BUILT = set()                                     # world columns (x, z) of the buildings generated here: the 3D park's trees and lamp posts stay out
+N4 = ((1, 0), (-1, 0), (0, 1), (0, -1))
+
+def canteen_cells():
+    """Plan of the canteen: the rotunda's disc {column: distance from its centre}, its floor and its ring wall, the main
+    building's columns (rectangle and bay, less the rotunda) and the glass canopy's."""
+    cx, cz, R = CANTEEN
+    hx0, hx1, hz0, hz1 = CANTEEN_HALL
+    disc = {}
+    for z in range(int(cz - R) - 2, int(cz + R) + 3):
+        for x in range(int(cx - R) - 2, int(cx + R) + 3):
+            d = math.hypot(x + 0.5 - cx, z + 0.5 - cz)
+            if d <= R + 0.6: disc[(x, z)] = d
+    inner = {c for c, d in disc.items() if d <= R - 1.1}
+    # the ring wall: one block thick, every column outside the floor that touches it along x or z (so it has no gap)
+    wall = {c for c in disc if c not in inner and any((c[0] + dx, c[1] + dz) in inner for dx, dz in N4)}
+    bx_, bz_, br = CANTEEN_BAY
+    bay = {(x, z) for x in range(int(bx_ - br) - 1, int(bx_ + br) + 2) for z in range(int(bz_ - br) - 1, int(bz_))
+           if math.hypot(x + 0.5 - bx_, z + 0.5 - bz_) <= br}
+    hall = ({(x, z) for x in range(hx0, hx1 + 1) for z in range(hz0, hz1 + 1)} | bay) - inner - wall
+    canopy = {(x, z) for x in range(15, 22) for z in range(hz0 - 3, hz0)} - hall - set(disc)
+    return disc, inner, wall, hall, canopy
 
 def build_canteen(states, kinds, PAL, PIDX, X0, Z0, Y0):
-    """The school canteen (食堂). The real canteen is the round building south of the track (the owner, on issue #1);
-    the 3D campus made it a reading pavilion: a small glazed drum (5.5 m) inside a ring of columns under an 8.8 m roof
-    disc, with a spiral stair the blocks could not keep, so the map had a room far too small for a canteen and no way
-    up. Here the whole disc becomes the building: a round wall of dark glass with twelve white columns and white floor
-    bands, four storeys (standing at y 64, 68, 72, 76, as the 3D's four glazed levels) and the roof; a spiral stair of
-    oak slabs round a white pillar in the middle (where the 3D's spiral stair stood), half a block a step, one turn a
-    storey; on every storey long tables (spruce top slabs) between benches (spruce bottom slabs) in rows, and on the
-    ground floor the serving counters along the south wall with barrels behind them; double doors toward the track
-    (north) and toward the south yard; hanging lanterns. IMAGINED, all of it but the place, the round plan and the four
-    levels: the layout, the furniture, the doors' places, the materials."""
+    """The school canteen (食堂, 饭堂): the rotunda at the south end of the track and the main building behind it.
+    The 3D campus has only the rotunda, as a reading pavilion (a small glazed drum inside a ring of columns under an
+    8.8 m roof disc); the owner said the round building is the canteen (issue #1), then that it is only the canteen's
+    corner: the aerial photo of the owner's panorama tour (2016) shows the round roof at the north-east corner of a
+    much larger rectangular building with a dark flat roof, a half-round white bay on its north face toward the track
+    and a pale glass canopy between the bay and the rotunda; former students' notes on that panorama name its second
+    floor (小炒), its third floor and its roof terrace (饭堂天台). Today's satellite image shows a dark rectangle of
+    about 30 by 28 m there, x 0 to 30, which gives the place and the size.
+      The rotunda (as v30): a round wall of dark glass with twelve white columns and white floor bands, four storeys
+    (standing at y 64, 68, 72, 76), a spiral stair of oak slabs round a white pillar, tables and benches, doors north
+    (toward the track) and east; on every storey it opens west into the main building, the fourth onto its roof.
+      The main building: 29 by 29 m, three storeys (y 64, 68, 72) under a roof terrace (y 76) with a parapet; white
+    walls with bands of windows; the half-round bay, full height, on the north face; the entrance between the bay
+    and the rotunda under the glass canopy; on each storey a dining hall of four-seat tables (white tables, orange
+    stools) in rows, and behind a wall of serving windows along the south side the kitchen (stoves, sinks, barrels,
+    worktops); a switchback stair by the east wall.
+    IMAGINED: everything but the place, the round plan, the outline, the bay, the canopy and the count of storeys: the
+    inner layout, the furniture, the kitchen, the stairs, the doors' places, the materials."""
     NY, NZ, NX = states.shape
     def sid(s):
         if s not in PIDX: PIDX[s] = len(PAL); PAL.append(s)
         return PIDX[s]
     cx, cz, R = CANTEEN
+    hx0, hx1, hz0, hz1 = CANTEEN_HALL
     yb = int(math.floor(Y0)) + GROUND_Y
     def put(x, y, z, block, kind=4):
         c = (y - yb, z - int(Z0), x - int(X0))
         if 0 <= c[0] < NY and 0 <= c[1] < NZ and 0 <= c[2] < NX:
             states[c] = sid(block) if block != 'air' else 0; kinds[c] = kind if block != 'air' else 0
-    S = (64, 68, 72, 76); FLOORS = (67, 71, 75); ROOF = 79
-    px, pz = int(math.floor(cx)), int(math.floor(cz))          # the stair's pillar
+    def door(x, y, z, facing, hinge, wood='birch'):
+        put(x, y, z, f'{wood}_door[facing={facing},half=lower,hinge={hinge},open=false,powered=false]', 6)
+        put(x, y + 1, z, f'{wood}_door[facing={facing},half=upper,hinge={hinge},open=false,powered=false]', 6)
+    S = (64, 68, 72, 76); FLOORS = (67, 71, 75); ROOF = 79      # the rotunda
+    HS = (64, 68, 72); HROOF = 75                               # the main building
+    px, pz = int(math.floor(cx)), int(math.floor(cz))          # the spiral stair's pillar
     ring = [(0, -1), (1, -1), (1, 0), (1, 1), (0, 1), (-1, 1), (-1, 0), (-1, -1)]
     stair = {(px + dx, pz + dz) for dx, dz in ring} | {(px, pz)}
-    cells = {}
-    for z in range(int(cz - R) - 2, int(cz + R) + 3):
-        for x in range(int(cx - R) - 2, int(cx + R) + 3):
-            d = math.hypot(x + 0.5 - cx, z + 0.5 - cz)
-            if d <= R + 0.6: cells[(x, z)] = d
-    # clear the old pavilion (drum, columns, disc, furniture, any leaves that grew in)
-    for (x, z) in cells:
+    disc, inner, wall, hall, canopy = canteen_cells()
+    # clear what stands there (the old pavilion, trees, lamps)
+    for (x, z) in set(disc) | hall | canopy:
         for y in range(64, ROOF + 2): put(x, y, z, 'air')
-    wall_r, n_col = R - 0.6, 12
-    inner = {c for c, d in cells.items() if d <= wall_r - 0.5}
-    # the wall: one block thick, every cell outside the floor that touches it along x or z (so it has no gap)
-    wall = {c for c in cells if c not in inner and any((c[0] + dx, c[1] + dz) in inner for dx, dz in ((1, 0), (-1, 0), (0, 1), (0, -1)))}
+
+    # ---- the rotunda
+    n_col = 12
     doors = {}
-    for sgn, facing in ((-1, 'south'), (1, 'north')):          # toward the track (north) and the south yard
-        for x in (px, px + 1) if cx - px > 0.5 else (px - 1, px):
-            zs = [c[1] for c in wall if c[0] == x]
-            doors[(x, min(zs) if sgn < 0 else max(zs))] = facing
-    for (x, z), d in cells.items():
+    for x in (px, px + 1) if cx - px > 0.5 else (px - 1, px):
+        doors[(x, min(c[1] for c in wall if c[0] == x))] = 'south'          # north door, toward the track
+    for z in (pz - 1, pz):
+        doors[(max(c[0] for c in wall if c[1] == z), z)] = 'west'           # east door
+    arch = {(min(c[0] for c in wall if c[1] == z), z) for z in (pz - 1, pz, pz + 1)}    # openings into the main building
+    for (x, z), d in disc.items():
         if (x, z) in wall:
             col = abs(((math.atan2(z + 0.5 - cz, x + 0.5 - cx) + math.pi) / (2 * math.pi) * n_col) % 1 - 0.5) > 0.4   # twelve white columns
             for y in range(64, ROOF):
                 if (x, z) in doors and y in (64, 65): continue
-                put(x, y, z, 'white_concrete' if col or y in FLOORS else 'gray_stained_glass')
+                if (x, z) in arch and (y - 64) % 4 in (0, 1): continue
+                put(x, y, z, 'white_concrete' if col or y in FLOORS or (x, z) in arch else 'gray_stained_glass')
             put(x, ROOF, z, 'white_concrete')
         elif (x, z) in inner:
             for y in FLOORS:
                 if (x, z) not in stair: put(x, y, z, 'smooth_quartz')
-            put(x, ROOF, z, 'smooth_quartz')
+            put(x, ROOF, z, 'prismarine_bricks')                    # the round roof is pale green in the aerial photo
             put(x, 63, z, 'polished_andesite')
         elif d <= R + 0.2:
             put(x, ROOF, z, 'white_concrete')                       # the eave
-    # the doors (double, birch) with the step outside level with the ground
     RIGHT = {'north': (1, 0), 'east': (0, 1), 'south': (-1, 0), 'west': (0, -1)}
     for (x, z), facing in doors.items():
         mate = [(a, b) for (a, b), f in doors.items() if f == facing and (a, b) != (x, z)][0]
         rx, rz = RIGHT[facing]
-        hinge = 'right' if (x - mate[0]) * rx + (z - mate[1]) * rz > 0 else 'left'
-        put(x, 64, z, f'birch_door[facing={facing},half=lower,hinge={hinge},open=false,powered=false]', 6)
-        put(x, 65, z, f'birch_door[facing={facing},half=upper,hinge={hinge},open=false,powered=false]', 6)
+        door(x, 64, z, facing, 'right' if (x - mate[0]) * rx + (z - mate[1]) * rz > 0 else 'left')
     # the spiral stair: one turn a storey, half a block a step, round a white pillar
     for y in range(64, ROOF): put(px, y, pz, 'white_concrete')
     for s in S[:-1]:
         for i, (dx, dz) in enumerate(ring):
             put(px + dx, s + i // 2, pz + dz, f"oak_slab[type={'bottom' if i % 2 == 0 else 'top'},waterlogged=false]", 6)
-    # furniture: rows of bench, table, bench, aisle (east-west), away from the wall, the stair and the doors' paths
-    def free_spot(x, z, d):
-        return not (d > wall_r - 1.6 or (abs(x - px) <= 2 and abs(z - pz) <= 2))
+    # rows of bench, table, bench, aisle, clear of the wall, the stair and the ways to the doors and the openings
     n_t = 0
     for s in S:
-        for (x, z), d in cells.items():
-            if (x, z) not in inner or not free_spot(x, z, d): continue
-            if abs(x + 0.5 - cx) < 1.6: continue                # a north-south aisle from door to door
-            if s == 64 and z + 0.5 - cz > 3.5: continue          # the serving side of the ground floor
+        for (x, z) in inner:
+            d = disc[(x, z)]
+            if d > R - 2.2 or (abs(x - px) <= 2 and abs(z - pz) <= 2): continue
+            if abs(x + 0.5 - cx) < 1.6 or abs(z + 0.5 - cz) < 1.6: continue      # the aisles from door to door
             k = (z - (pz - 1)) % 4
-            if k == 3: continue
-            if (x - px) % 5 == 0: continue                       # breaks in the rows
+            if k == 3 or (x - px) % 5 == 0: continue
             if k == 1: put(x, s, z, 'spruce_slab[type=top,waterlogged=false]', 6); n_t += 1
             else: put(x, s, z, 'spruce_slab[type=bottom,waterlogged=false]', 6)
-        # lanterns under the ceiling, on a ring
-        for k in range(8):
+        for k in range(8):                                               # lanterns under the ceiling, on a ring
             ang = k * math.pi / 4 + math.pi / 8
             put(int(math.floor(cx + math.cos(ang) * 5)), s + 2, int(math.floor(cz + math.sin(ang) * 5)), 'lantern[hanging=true,waterlogged=false]', 6)
-    # serving counters on the ground floor: a counter ring segment on the south side, barrels behind it
-    for (x, z), d in cells.items():
-        dz_ = z + 0.5 - cz
-        if (x, z) in inner and dz_ > 3.5 and abs(x + 0.5 - cx) >= 1.6:
-            if wall_r - 2.6 < d <= wall_r - 1.6: put(x, 64, z, 'polished_andesite_slab[type=top,waterlogged=false]', 6)
-            elif wall_r - 1.6 < d <= wall_r - 0.6: put(x, 64, z, 'barrel[facing=up,open=false]')
-    print(f'canteen: round, {len(inner)} floor and {len(wall)} wall columns, 4 storeys, {n_t} table blocks, doors at {sorted(doors)}')
+
+    # ---- the main building
+    solid_plan = hall | inner | wall
+    ext = {c for c in hall if any((c[0] + dx, c[1] + dz) not in solid_plan for dx, dz in N4)}
+    by_rot = {c for c in hall if any((c[0] + dx, c[1] + dz) in wall for dx in (-1, 0, 1) for dz in (-1, 0, 1))}
+    KZ = hz1 - 8                                                # the wall of serving windows; the kitchen lies south of it
+    WX, WZ = hx1 - 6, KZ - 4                                    # the stair: flights along x in two rows, landings at both ends
+    steps, holes = {}, set()
+    for k, s in enumerate(HS[:-1]):
+        row = WZ + k % 2
+        xs = [WX + 1 + i for i in range(4)] if k % 2 == 0 else [WX + 4 - i for i in range(4)]
+        for i, x in enumerate(xs):
+            steps[(x, s + i, row)] = f"smooth_quartz_stairs[facing={'east' if k % 2 == 0 else 'west'},half=bottom,shape=straight,waterlogged=false]"
+        for x in xs[0:3]: holes.add((x, s + 3, row))                  # the floor above the flight is open (head room)
+    def pier(x, z):
+        return (x + z) % 4 == 0 or (any((x + d, z) in ext for d in (1, -1)) and any((x, z + d) in ext for d in (1, -1)))
+    n_seat = 0
+    for s in HS:
+        fy = s - 1
+        for (x, z) in hall:
+            if (x, fy, z) in holes: continue
+            put(x, fy, z, 'white_concrete' if (x, z) in ext else 'polished_andesite' if fy == 63 else 'smooth_quartz')
+        for (x, z) in ext:
+            put(x, s, z, 'white_concrete')
+            for y in (s + 1, s + 2):
+                glass = not pier(x, z) and not (z == hz1 and y == s + 1)        # the kitchen's wall has high windows only
+                put(x, y, z, 'gray_stained_glass' if glass else 'white_concrete')
+        for (x, z) in hall - ext:
+            if z == KZ:                                             # serving windows over a counter; a door at the west end
+                if x == hx0 + 2: door(x, s, z, 'south', 'left', 'spruce'); put(x, s + 2, z, 'white_concrete'); continue
+                put(x, s, z, 'smooth_stone')
+                if x % 3 == 0: put(x, s + 1, z, 'white_concrete')
+                put(x, s + 2, z, 'white_concrete')
+            elif z > KZ:                                            # the kitchen
+                if z == hz1 - 1:
+                    put(x, s, z, ('smoker[facing=north,lit=false]', 'smoker[facing=north,lit=false]', 'cauldron',
+                                  'barrel[facing=up,open=false]', 'blast_furnace[facing=north,lit=false]', 'air')[x % 6])
+                elif z == KZ + 4 and 3 <= x <= hx1 - 3 and x % 7 != 0:
+                    put(x, s, z, 'smooth_stone_slab[type=top,waterlogged=false]', 6)        # worktops
+            elif z <= KZ - 4:                                       # the dining hall: stool, table, stool, aisle; two rows, aisle
+                if (x, z) in by_rot or any((x + dx, z + dz) in ext for dx, dz in N4): continue
+                if x in (15, 16) or (14 <= x <= 19 and pz - 2 <= z <= pz + 2): continue     # from the entrance; from the rotunda
+                if WX - 1 <= x and z >= WZ - 1: continue                                     # round the stair
+                kx, kz = (x - 1) % 4, (z - 104) % 3
+                if kx == 3 or kz == 2: continue
+                if kx == 1: put(x, s, z, 'smooth_quartz_slab[type=top,waterlogged=false]', 6)
+                else: put(x, s, z, 'acacia_slab[type=bottom,waterlogged=false]', 6); n_seat += 1
+    for (x, y, z), st_ in steps.items(): put(x, y, z, st_, 6)
+    # roof terrace: paving, a parapet, a few plant boxes of the kitchen's at the west end
+    for (x, z) in hall:
+        put(x, HROOF, z, 'white_concrete' if (x, z) in ext else 'polished_deepslate')     # a dark flat roof in the aerial photo
+        if (x, z) in ext: put(x, HROOF + 1, z, 'white_concrete')
+    for bx_, bz_ in ((hx0 + 2, hz1 - 4), (hx0 + 2, hz1 - 9), (hx0 + 6, hz1 - 3)):
+        for dx in (0, 1):
+            for dz in (0, 1):
+                for y in (HROOF + 1, HROOF + 2): put(bx_ + dx, y, bz_ + dz, 'light_gray_concrete')
+    # ground floor doors: the entrance under the glass canopy, the kitchen's back door
+    door(15, 64, hz0, 'south', 'right'); door(16, 64, hz0, 'south', 'left')
+    door(hx0 + 14, 64, hz1, 'north', 'left', 'spruce')
+    for (x, z) in canopy:
+        put(x, 67, z, 'white_stained_glass'); put(x, 63, z, 'smooth_stone')
+    for x in (min(c[0] for c in canopy), max(c[0] for c in canopy)):
+        for y in (64, 65, 66): put(x, y, hz0 - 3, 'white_concrete')
+    print(f'canteen: rotunda {len(inner)} floor and {len(wall)} wall columns, 4 storeys, {n_t} table blocks; '
+          f'main building {len(hall)} columns, 3 storeys and a roof terrace, {n_seat} stools')
+
+def build_pool_hall(states, kinds, PAL, PIDX, X0, Z0, Y0):
+    """The sports hall west of the track, behind the grandstand (the owner: its lower level is the swimming pool, its
+    top level the badminton and table tennis halls). The 3D campus has its outside (walls, the big curved roof, the
+    stand on its east side) and nothing inside: one empty room 27 by 57 m and 14 m high.
+      Lower level: a 50 by 21 m pool of eight lanes (lane lines on its floor, starting blocks at both ends) in the
+    hall's floor, two blocks deep, with a deck of 3 m round it; the fit of a 50 m pool with its decks into the hall
+    is the only ground for its size.
+      Upper level: a floor at y 70 (7 m up; standing at y 71 under the roof at y 78): six badminton courts in two rows
+    of three (13 by 6 blocks each, green with white lines, a net across) and eight table tennis tables (3 by 2
+    blocks, a net across) at the south end.
+      Stairs: a straight flight at each end of the hall from the pool's deck up to the upper floor. Doors: the 3D
+    campus's two entrances in the west wall (glass there, double doors here), double doors in the north wall and in
+    the east wall (onto the concourse behind the stand), a door from the south deck into the wing south of the hall.
+    IMAGINED: all of it but the two levels and what is on them: the pool's size and lanes, the count and the places of
+    the courts and tables, the stairs, the doors, the materials."""
+    NY, NZ, NX = states.shape
+    def sid(s):
+        if s not in PIDX: PIDX[s] = len(PAL); PAL.append(s)
+        return PIDX[s]
+    yb = int(math.floor(Y0)) + GROUND_Y
+    def put(x, y, z, block, kind=4):
+        c = (y - yb, z - int(Z0), x - int(X0))
+        if 0 <= c[0] < NY and 0 <= c[1] < NZ and 0 <= c[2] < NX:
+            states[c] = sid(block) if block != 'air' else 0; kinds[c] = kind if block != 'air' else 0
+    def door(x, y, z, facing, hinge, wood='dark_oak'):
+        put(x, y, z, f'{wood}_door[facing={facing},half=lower,hinge={hinge},open=false,powered=false]', 6)
+        put(x, y + 1, z, f'{wood}_door[facing={facing},half=upper,hinge={hinge},open=false,powered=false]', 6)
+    x0, x1, z0, z1 = POOL_HALL
+    UF = 70                                                     # the upper floor's blocks
+    for x in range(x0, x1 + 1):                                 # the hall is empty in the 3D campus; make sure of it
+        for z in range(z0, z1 + 1):
+            for y in range(64, 77): put(x, y, z, 'air')
+    # the pool
+    PX0, PX1, PZ0, PZ1 = x0 + 3, x1 - 3, z0 + 3, z1 - 4
+    LINES = (1, 4, 6, 9, 11, 14, 16, 19)                        # the lane lines (the middle of each of eight lanes of 2.5 m)
+    for x in range(PX0 - 1, PX1 + 2):
+        for z in range(PZ0 - 1, PZ1 + 2):
+            if PX0 <= x <= PX1 and PZ0 <= z <= PZ1:
+                put(x, 61, z, 'blue_concrete' if (x - PX0) in LINES and PZ0 + 2 <= z <= PZ1 - 2 else 'light_blue_concrete')
+                put(x, 62, z, 'water[level=0]', 3); put(x, 63, z, 'water[level=0]', 3)
+            else:
+                put(x, 61, z, 'light_blue_concrete'); put(x, 62, z, 'light_blue_concrete'); put(x, 63, z, 'smooth_quartz')
+    for off in LINES:
+        for z in (PZ0 - 1, PZ1 + 1): put(PX0 + off, 64, z, 'smooth_quartz_slab[type=bottom,waterlogged=false]', 6)   # starting blocks
+    for z in range(PZ0 + 4, PZ1 - 3, 6): put(x0, 64, z, 'birch_slab[type=bottom,waterlogged=false]', 6)                # benches by the west wall
+    # the upper floor, with an opening over each stair
+    SX = -80                                                    # the foot of both flights; they rise toward the west
+    rows = {z0: 1, z0 + 1: 1, z1 - 1: -1, z1: -1}               # the flights' rows, and the side their opening's railing is on
+    opening = {(SX - i, z) for i in range(2, 7) for z in rows}
+    for x in range(x0, x1 + 1):
+        for z in range(z0, z1 + 1):
+            if (x, z) not in opening: put(x, UF, z, 'birch_planks')
+    for z in rows:
+        for i in range(7): put(SX - i, 64 + i, z, 'smooth_quartz_stairs[facing=west,half=bottom,shape=straight,waterlogged=false]', 6)
+        put(SX - 1, UF + 1, z, 'iron_bars[east=false,north=true,south=true,waterlogged=false,west=false]', 7)
+    for zr in (z0 + 2, z1 - 2):
+        for x in range(SX - 5, SX): put(x, UF + 1, zr, 'iron_bars[east=true,north=false,south=false,waterlogged=false,west=true]', 7)
+    # badminton courts: 6 wide (x), 13 long (z), three abreast, two rows
+    BAR = 'iron_bars[east=true,north=false,south=false,waterlogged=false,west=true]'
+    n_c = n_t = 0
+    for cz0 in (z0 + 4, z0 + 19):
+        for cx0 in (x0 + 2, x0 + 10, x0 + 18):
+            for dx in range(6):
+                for dz in range(13):
+                    line = dx in (0, 5) or dz in (0, 4, 8, 12)
+                    put(cx0 + dx, UF, cz0 + dz, 'white_concrete' if line else 'green_concrete')
+                put(cx0 + dx, UF + 1, cz0 + 6, BAR, 7)
+            n_c += 1
+    # table tennis tables: 2 wide (x), 3 long (z), a net across the middle
+    for tz0 in (z0 + 38, z0 + 45):
+        for tx0 in (x0 + 3, x0 + 9, x0 + 15, x0 + 21):
+            for dx in (0, 1):
+                for dz in (0, 1, 2): put(tx0 + dx, UF + 1, tz0 + dz, 'dark_prismarine_slab[type=top,waterlogged=false]', 6)
+                put(tx0 + dx, UF + 2, tz0 + 1, BAR, 7)
+            n_t += 1
+    # doors
+    door(-87, 64, z0 - 1, 'south', 'right'); door(-86, 64, z0 - 1, 'south', 'left')                 # the north wall
+    door(x1 + 1, 64, -45, 'west', 'right'); door(x1 + 1, 64, -44, 'west', 'left')                    # the east wall, onto the concourse
+    door(-88, 64, z1 + 1, 'south', 'right', 'birch'); door(-87, 64, z1 + 1, 'south', 'left', 'birch')  # into the south wing
+    for dz0 in (-33, -11):                                      # the 3D campus's two entrances (入口) in the west wall: glass there, doors here
+        door(x0 - 1, 64, dz0, 'east', 'left'); door(x0 - 1, 64, dz0 + 1, 'east', 'right')
+        for z in (dz0, dz0 + 1): put(x0 - 1, 66, z, 'cyan_stained_glass')
+    print(f'pool hall: pool {PX1 - PX0 + 1} x {PZ1 - PZ0 + 1} m, 8 lanes; upper floor with {n_c} badminton courts and {n_t} table tennis tables')
+
+def wanyou_cells():
+    """Plan of 万有楼: the wings' columns, their galleries' on the plaza side, and the gap between the wings."""
+    body = {(x, z) for x in range(133, 148) for z in range(-132, -100)} | {(x, z) for x in range(148, 161) for z in range(-132, -118)} \
+         | {(x, z) for x in range(177, 189) for z in range(-132, -118)}
+    gallery = {(x, z) for x in range(148, 161) for z in range(-118, -115)} | {(x, z) for x in range(177, 189) for z in range(-118, -115)}
+    gap = {(x, z) for x in range(161, 177) for z in range(-132, -114)}
+    return body, gallery, gap
 
 def build_wanyou(states, kinds, PAL, PIDX, X0, Z0, Y0):
     """万有楼, the building on the north side of the space-frame plaza (网架广场, 万有广场). The 3D campus has none there
@@ -896,15 +1076,11 @@ def build_wanyou(states, kinds, PAL, PIDX, X0, Z0, Y0):
         if 0 <= c[0] < NY and 0 <= c[1] < NZ and 0 <= c[2] < NX:
             states[c] = sid(block) if block != 'air' else 0; kinds[c] = kind if block != 'air' else 0
     S = (64, 68, 72, 76, 80); ROOF = 83
-    body = {(x, z) for x in range(133, 148) for z in range(-132, -100)} | {(x, z) for x in range(148, 161) for z in range(-132, -118)} \
-         | {(x, z) for x in range(177, 189) for z in range(-132, -118)}
-    gallery = {(x, z) for x in range(148, 161) for z in range(-118, -115)} | {(x, z) for x in range(177, 189) for z in range(-118, -115)}
+    body, gallery, gap = wanyou_cells()
     F = body | gallery
-    gap = {(x, z) for x in range(161, 177) for z in range(-132, -114)}
     # clear the lawn, trees and lamps where the building and the gap stand
     for (x, z) in F | gap:
         for y in range(64, ROOF + 4): put(x, y, z, 'air')
-    N4 = ((1, 0), (-1, 0), (0, 1), (0, -1))
     outside = lambda c: c not in F
     ext = {c for c in body if any(outside((c[0] + dx, c[1] + dz)) for dx, dz in N4)}
     corr = {c for c in body - ext if any((c[0] + dx, c[1] + dz) in gallery for dx, dz in N4)}
@@ -1400,8 +1576,9 @@ def main():
     ap.add_argument('--lamps', default=None, help='lamps.mjs output: the 3D campus lamps, set as lanterns and lamp posts')
     ap.add_argument('--trees', default=None, help='trees.mjs output: the 3D campus trees, grown again as Minecraft trees')
     ap.add_argument('--balustrades', default=None, help="groupcells.mjs output for the canal's balustrade: set as wall blocks")
+    ap.add_argument('--pool', action='store_true', help='fit out the sports hall west of the track: the pool below, badminton and table tennis above')
     ap.add_argument('--wanyou', action='store_true', help='build 万有楼 on the north side of the space-frame plaza')
-    ap.add_argument('--canteen', action='store_true', help='build the canteen in the round building south of the track (issue #1)')
+    ap.add_argument('--canteen', action='store_true', help='build the canteen: the rotunda south of the track and the main building behind it')
     ap.add_argument('--boards', default=None, help="boards.mjs output: where the lesson boards are, for the classrooms' rows of desks and chairs")
     a = ap.parse_args()
     t0 = time.time()
@@ -1442,9 +1619,13 @@ def main():
         json.dump(hung, open(os.path.join(os.path.dirname(os.path.abspath(a.out)), 'doors.json'), 'w'))
     if a.balustrades: place_balustrades(states, kinds, PAL, PIDX, json.load(open(a.balustrades)), X0, Z0, Y0)
     if a.boards: classroom_rows(states, kinds, PAL, PIDX, json.load(open(a.boards, encoding='utf-8'))['cards'], X0, Z0, Y0)
+    BUILT.clear()
+    if a.canteen: disc_, _, _, hall_, canopy_ = canteen_cells(); BUILT.update(set(disc_) | hall_ | canopy_)
+    if a.wanyou: body_, gallery_, gap_ = wanyou_cells(); BUILT.update(body_ | gallery_ | gap_)
     if a.trees: place_trees(states, kinds, PAL, PIDX, json.load(open(a.trees)), X0, Z0, Y0)
     if a.canteen: build_canteen(states, kinds, PAL, PIDX, X0, Z0, Y0)
     if a.wanyou: build_wanyou(states, kinds, PAL, PIDX, X0, Z0, Y0)
+    if a.pool: build_pool_hall(states, kinds, PAL, PIDX, X0, Z0, Y0)
     light_rooms(states, kinds, PAL, PIDX)
     if a.lamps: place_lamps(states, kinds, PAL, PIDX, json.load(open(a.lamps)), X0, Z0, Y0)
     for fx_path in (a.fixes.split(',') if a.fixes else []):
